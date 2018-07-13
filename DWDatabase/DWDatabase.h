@@ -137,7 +137,7 @@ NS_ASSUME_NONNULL_BEGIN
  2. 增删改查对应相关方法
  */
 -(BOOL)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
--(BOOL)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
+-(BOOL)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path byDw_id:(BOOL)byID keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(BOOL)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path conditionKeys:(nullable NSArray *)conditionKeys queryKeys:(nullable NSArray *)queryKeys error:(NSError * _Nullable __autoreleasing *)error;
 
@@ -318,17 +318,18 @@ NS_ASSUME_NONNULL_BEGIN
  删除当前库指定表中对应的模型信息
 
  @param model 指定模型
+ @param byID 如果Dw_id存在是否已Dw_id作为删除条件
  @param keys 指定属性数组
  @param conf 数据库句柄
  @param error 删除错误信息
  @return 返回是否删除成功
  
  @disc 1.此处传入表明数据库句柄
-       2.当model中存在Dw_id时，将直接以Dw_id作为条件进行删除
+       2.当model中存在Dw_id且以Dw_id作为删除条件时，将直接以Dw_id作为条件进行删除
        3.当model中不存在Dw_id时，且keys不为空时，将按照指定的键值作为条件进行删除
        4.当model中不存在Dw_id时，且keys为空时将以model所有非nil值作为条件进行删除
  */
--(BOOL)deleteTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(BOOL)deleteTableWithModel:(NSObject *)model byDw_id:(BOOL)byID keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
 /**
@@ -349,6 +350,48 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 /**
+ 根据指定条件在当前库指定表中查询指定条数数据
+
+ @param model 作为条件的数据模型
+ @param conditionKeys 作为查询条件的键值
+ @param queryKeys 想要查询的键值
+ @param limit 查询的最大条数
+ @param offset 查询的步长
+ @param orderKey 指定的排序的key
+ @param ascending 是否正序
+ @param conf 数据库句柄
+ @param error 查询错误信息
+ @return 返回查询结果
+ 
+ @disc 1.此处传入表名数据库句柄
+       2.model将作为数据承载的载体
+       3.conditionKeys和queryKeys中均应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
+       4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
+       5.将从数据表中查询queryKeys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
+       6.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
+       7.当offset为大于0的数是将作为查询的步长，即每隔多少条查询一次，为0时逐条查询
+       8.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序
+       9.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
+       10.返回的数组中将以传入的model同类的实例作为数据载体
+ */
+-(nullable NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model conditionKeys:(nullable NSArray <NSString *>*)conditionKeys queryKeys:(nullable NSArray <NSString *>*)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+
+
+/**
+ 根据sql语句在指定表查询数据并将数据赋值到指定模型
+
+ @param sql 指定sql
+ @param cls 承载数据的模型的类
+ @param conf 数据库句柄
+ @param error 查询错误信息
+ @return 返回查询结果
+ 
+ @disc 此处传入表名数据库句柄
+ */
+-(nullable NSArray <__kindof NSObject *>*)queryTableWithSql:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+
+
+/**
  根据指定条件在当前库指定表中查询数据
 
  @param model 作为条件的数据模型
@@ -356,7 +399,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param queryKeys 想要查询的键值
  @param conf 数据库句柄
  @param error 查询错误信息
- @return 返回是否查询成功
+ @return 返回查询结果
  
  @disc 1.此处传入表名数据库句柄
        2.model将作为数据承载的载体

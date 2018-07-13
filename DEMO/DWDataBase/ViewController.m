@@ -81,7 +81,7 @@
     V * v = [V new];
     v.unsignedLongLongNum = 20020200202;
     v.intNum = -100;
-    BOOL success = [db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
+    BOOL success = [db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" byDw_id:NO keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
     if (success) {
         NSLog(@"Delete Success:%@",[db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" conditionKeys:nil queryKeys:nil error:&error]);
     } else {
