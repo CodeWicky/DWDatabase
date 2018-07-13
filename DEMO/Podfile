@@ -1,0 +1,3 @@
+target 'DWDataBase' do
+pod 'FMDB', '~> 2.7.2'
+end		
