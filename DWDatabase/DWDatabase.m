@@ -996,12 +996,13 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     if (!valid) {
         return nil;
     }
-    return [self queryTableWithModel:[cls new] tableName:conf.tableName conditionKeys:nil conditionMap:@{kUniqueID:Dw_id} queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop, NSError *__autoreleasing *error) {
+    return [self queryTableWithModel:[cls new] tableName:conf.tableName conditionKeys:nil conditionMap:@{kUniqueID:Dw_id} queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop,BOOL *returnNil, NSError *__autoreleasing *error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10016);
             safeLinkError(error, err);
             *stop = YES;
+            *returnNil = YES;
             return;
         }
         __block BOOL validValue = NO;
@@ -1387,7 +1388,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
 }
 
 #pragma mark ------ 查询表 ------
--(NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys conditionMap:(NSDictionary *)conditionMap queryKeys:(NSArray *)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*conditionKeysProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,NSError * __autoreleasing * error))handler {
+-(NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys conditionMap:(NSDictionary *)conditionMap queryKeys:(NSArray *)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*conditionKeysProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil,NSError * __autoreleasing * error))handler {
     if (!queue) {
         NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10014);
         safeLinkError(error, err);
@@ -1564,9 +1565,10 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     ///组装数组
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
     BOOL stop = NO;
+    BOOL returnNil = NO;
     while ([set next]) {
         if (handler) {
-            handler(cls,set,queryKeysProInfos,conditionKeysProInfos,map,ret,&stop,error);
+            handler(cls,set,queryKeysProInfos,conditionKeysProInfos,map,ret,&stop,&returnNil,error);
         }
         if (stop) {
             break;
@@ -1574,8 +1576,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     }
     [set close];
     
-    ///此处10016错误是类名不合法，由于改造后在Block里所以此处单独判断进行返回
-    if (error && (*error).code == 10016) {
+    if (returnNil) {
         return nil;
     }
     
@@ -1588,12 +1589,13 @@ static NSString * const kDwIdKey = @"kDwIdKey";
 
 #pragma mark ------ 其他 ------
 -(NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys queryKeys:(NSArray *)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error {
-    return [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop, NSError *__autoreleasing * error) {
+    return [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop,BOOL * returnNil, NSError *__autoreleasing * error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10016);
             safeLinkError(error, err);
             *stop = YES;
+            *returnNil = YES;
             return;
         }
         __block BOOL validValue = NO;
@@ -1627,7 +1629,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
 }
 
 -(NSInteger)queryTableForCountWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys queryKeys:(NSArray *)queryKeys inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error {
-    NSArray * ret = [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, NSError *__autoreleasing *error) {
+    NSArray * ret = [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop,BOOL *returnNilss, NSError *__autoreleasing *error) {
         [resultArr addObject:@1];
     }];
     if (!ret) {
