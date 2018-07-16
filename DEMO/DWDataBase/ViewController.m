@@ -33,7 +33,7 @@
 - (IBAction)insert:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         V * v = [V new];
         v.shortNum = -1;
@@ -81,9 +81,9 @@
     V * v = [V new];
     v.unsignedLongLongNum = 20020200202;
     v.intNum = -100;
-    BOOL success = [db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" byDw_id:NO keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
+    BOOL success = [db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" byDw_id:NO keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
     if (success) {
-        NSLog(@"Delete Success:%@",[db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" conditionKeys:nil queryKeys:nil error:&error]);
+        NSLog(@"Delete Success:%@",[db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" conditionKeys:nil queryKeys:nil error:&error]);
     } else {
         NSLog(@"%@",error);
     }
@@ -92,7 +92,7 @@
 - (IBAction)update:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
@@ -119,7 +119,7 @@
 - (IBAction)query:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
@@ -137,7 +137,7 @@
 - (IBAction)queryCount:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
@@ -155,7 +155,7 @@
 - (IBAction)queryField:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         NSArray * ret = [db queryAllFieldInTableWithConfiguration:conf translateToPropertyName:NO class:Nil error:&error];
         if (ret) {
@@ -170,7 +170,7 @@
 - (IBAction)queryID:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         V * ret = [db queryTableWithClass:[V class] Dw_id:@(7) queryKeys:nil configuration:conf error:&error];
         if (ret) {
@@ -185,7 +185,7 @@
 - (IBAction)clear:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         if ([db clearTableWithConfiguration:conf error:&error]) {
             NSLog(@"Clear Success:%@",[db queryTableWithModel:[V new] conditionKeys:nil queryKeys:nil configuration:conf error:&error]);
