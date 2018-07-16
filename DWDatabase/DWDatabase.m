@@ -1141,18 +1141,8 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
     NSDictionary * map = databaseMapFromClass(cls);
-    [infos enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
-        id value = modelValueWithPropertyInfo(model, obj);
-        ///如果value不为空且name不为空
-        if (value && obj.name.length) {
-            ///先取表明
-            NSString * name = propertyInfoTblName(obj, map);
-            if (name.length) {
-                [validKeys addObject:name];
-                [args addObject:value];
-            }
-        }
-    }];
+    
+    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:nil];
     
     ///无有效插入值
     if (!args.count) {
@@ -1244,19 +1234,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
         NSDictionary * map = databaseMapFromClass(cls);
         ///先配置更新值得sql
-        [infos enumerateKeysAndObjectsUsingBlock:^(NSString * key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
-            id value = modelValueWithPropertyInfo(model, obj);
-            ///如果value不为空且name不为空
-            if (value && obj.name.length) {
-                ///先取表明
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    name = [name stringByAppendingString:@" = ? "];
-                    [validKeys addObject:name];
-                    [args addObject:value];
-                }
-            }
-        }];
+        [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?"];
         
         ///无有效插入值
         if (!args.count) {
@@ -1275,7 +1253,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         ///如果没有缓存的sql则拼装sql
         if (!sql) {
             ///先配置更新值得sql
-            sql = [NSString stringWithFormat:@"DELETE FROM %@ WHERE %@",tblName,[validKeys componentsJoinedByString:@"AND "]];
+            sql = [NSString stringWithFormat:@"DELETE FROM %@ WHERE %@",tblName,[validKeys componentsJoinedByString:@" AND "]];
             ///计算完缓存sql
             if (cacheSqlKey.length) {
                 [self.sqlsCache setValue:sql forKey:cacheSqlKey];
@@ -1332,20 +1310,9 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
         NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
         NSDictionary * map = databaseMapFromClass(cls);
+        
         ///先配置更新值得sql
-        [infos enumerateKeysAndObjectsUsingBlock:^(NSString * key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
-            id value = modelValueWithPropertyInfo(model, obj);
-            ///如果value不为空且name不为空
-            if (value && obj.name.length) {
-                ///先取表明
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    name = [name stringByAppendingString:@" = ?"];
-                    [validKeys addObject:name];
-                    [args addObject:value];
-                }
-            }
-        }];
+        [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?"];
         
         ///无有效插入值
         if (!args.count) {
@@ -1450,14 +1417,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         [validQueryKeys addObject:@"*"];
     } else {
         [validQueryKeys addObject:kUniqueID];
-        [queryKeysProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            if (obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    [validQueryKeys addObject:name];
-                }
-            }
-        }];
+        [self configInfos:queryKeysProInfos map:map model:nil validKeysContainer:validQueryKeys argumentsContaienr:nil appendingString:nil];
         if (validQueryKeys.count == 1) {
             NSString * msg = [NSString stringWithFormat:@"Invalid model(%@) who have no valid keys to query.",model];
             NSError * err = errorWithMessage(msg, 10009);
@@ -1474,17 +1434,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     
     ///条件属性存在时以条件属性作为条件，不存在时若条件字典存在时以条件字典做条件
     if (conditionKeysProInfos.allKeys.count) {
-        [conditionKeysProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            id value = modelValueWithPropertyInfo(model, obj);
-            if (value && obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    name = [name stringByAppendingString:@" = ?"];
-                    [validConditionKeys addObject:name];
-                    [args addObject:value];
-                }
-            }
-        }];
+        [self configInfos:conditionKeysProInfos map:map model:model validKeysContainer:validConditionKeys argumentsContaienr:args appendingString:@" = ?"];
     } else if (conditionMap.allKeys.count) {
         [conditionMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
             NSString * name = [key stringByAppendingString:@" = ?"];
@@ -1614,9 +1564,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
             [conditionKeysProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
                 if (obj.name.length) {
                     id value = modelValueWithPropertyInfo(model, obj);
-                    if (value) {
-                        modelSetValueWithPropertyInfo(tmp, obj, value);
-                    }
+                    modelSetValueWithPropertyInfo(tmp, obj, value);
                 }
             }];
             NSNumber * Dw_id = [set objectForColumn:kUniqueID];
@@ -1780,6 +1728,40 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     NSString * keyString = [keys componentsJoinedByString:@"-"];
     keyString = [NSString stringWithFormat:@"%@-%@-%@",prefix,NSStringFromClass(cls),keyString];
     return keyString;
+}
+
+-(void)configInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args appendingString:(NSString *)appending {
+    void (^ab)(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) = nil;
+    if (args) {
+        ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+            if (obj.name) {
+                id value = modelValueWithPropertyInfo(model, obj);
+                if (value) {
+                    NSString * name = propertyInfoTblName(obj, map);
+                    if (name.length) {
+                        if (appending.length) {
+                            name = [name stringByAppendingString:appending];
+                        }
+                        [validKeys addObject:name];
+                        [args addObject:value];
+                    }
+                }
+            }
+        };
+    } else {
+        ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+            if (obj.name.length) {
+                NSString * name = propertyInfoTblName(obj, map);
+                if (name.length) {
+                    if (appending.length) {
+                        name = [name stringByAppendingString:appending];
+                        [validKeys addObject:name];
+                    }
+                }
+            }
+        };
+    }
+    [props enumerateKeysAndObjectsUsingBlock:ab];
 }
 
 
