@@ -996,12 +996,13 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     if (!valid) {
         return nil;
     }
-    return [self queryTableWithModel:[cls new] tableName:conf.tableName conditionKeys:nil conditionMap:@{kUniqueID:Dw_id} queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop, NSError *__autoreleasing *error) {
+    return [self queryTableWithModel:[cls new] tableName:conf.tableName conditionKeys:nil conditionMap:@{kUniqueID:Dw_id} queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop,BOOL *returnNil, NSError *__autoreleasing *error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10016);
             safeLinkError(error, err);
             *stop = YES;
+            *returnNil = YES;
             return;
         }
         __block BOOL validValue = NO;
@@ -1140,18 +1141,8 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
     NSDictionary * map = databaseMapFromClass(cls);
-    [infos enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
-        id value = modelValueWithPropertyInfo(model, obj);
-        ///如果value不为空且name不为空
-        if (value && obj.name.length) {
-            ///先取表明
-            NSString * name = propertyInfoTblName(obj, map);
-            if (name.length) {
-                [validKeys addObject:name];
-                [args addObject:value];
-            }
-        }
-    }];
+    
+    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:nil];
     
     ///无有效插入值
     if (!args.count) {
@@ -1243,19 +1234,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
         NSDictionary * map = databaseMapFromClass(cls);
         ///先配置更新值得sql
-        [infos enumerateKeysAndObjectsUsingBlock:^(NSString * key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
-            id value = modelValueWithPropertyInfo(model, obj);
-            ///如果value不为空且name不为空
-            if (value && obj.name.length) {
-                ///先取表明
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    name = [name stringByAppendingString:@" = ? "];
-                    [validKeys addObject:name];
-                    [args addObject:value];
-                }
-            }
-        }];
+        [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?"];
         
         ///无有效插入值
         if (!args.count) {
@@ -1274,7 +1253,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         ///如果没有缓存的sql则拼装sql
         if (!sql) {
             ///先配置更新值得sql
-            sql = [NSString stringWithFormat:@"DELETE FROM %@ WHERE %@",tblName,[validKeys componentsJoinedByString:@"AND "]];
+            sql = [NSString stringWithFormat:@"DELETE FROM %@ WHERE %@",tblName,[validKeys componentsJoinedByString:@" AND "]];
             ///计算完缓存sql
             if (cacheSqlKey.length) {
                 [self.sqlsCache setValue:sql forKey:cacheSqlKey];
@@ -1331,20 +1310,9 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
         NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
         NSDictionary * map = databaseMapFromClass(cls);
+        
         ///先配置更新值得sql
-        [infos enumerateKeysAndObjectsUsingBlock:^(NSString * key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
-            id value = modelValueWithPropertyInfo(model, obj);
-            ///如果value不为空且name不为空
-            if (value && obj.name.length) {
-                ///先取表明
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    name = [name stringByAppendingString:@" = ?"];
-                    [validKeys addObject:name];
-                    [args addObject:value];
-                }
-            }
-        }];
+        [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?"];
         
         ///无有效插入值
         if (!args.count) {
@@ -1387,7 +1355,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
 }
 
 #pragma mark ------ 查询表 ------
--(NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys conditionMap:(NSDictionary *)conditionMap queryKeys:(NSArray *)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*conditionKeysProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,NSError * __autoreleasing * error))handler {
+-(NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys conditionMap:(NSDictionary *)conditionMap queryKeys:(NSArray *)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*conditionKeysProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil,NSError * __autoreleasing * error))handler {
     if (!queue) {
         NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10014);
         safeLinkError(error, err);
@@ -1449,14 +1417,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         [validQueryKeys addObject:@"*"];
     } else {
         [validQueryKeys addObject:kUniqueID];
-        [queryKeysProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            if (obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    [validQueryKeys addObject:name];
-                }
-            }
-        }];
+        [self configInfos:queryKeysProInfos map:map model:nil validKeysContainer:validQueryKeys argumentsContaienr:nil appendingString:nil];
         if (validQueryKeys.count == 1) {
             NSString * msg = [NSString stringWithFormat:@"Invalid model(%@) who have no valid keys to query.",model];
             NSError * err = errorWithMessage(msg, 10009);
@@ -1473,17 +1434,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     
     ///条件属性存在时以条件属性作为条件，不存在时若条件字典存在时以条件字典做条件
     if (conditionKeysProInfos.allKeys.count) {
-        [conditionKeysProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            id value = modelValueWithPropertyInfo(model, obj);
-            if (value && obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    name = [name stringByAppendingString:@" = ?"];
-                    [validConditionKeys addObject:name];
-                    [args addObject:value];
-                }
-            }
-        }];
+        [self configInfos:conditionKeysProInfos map:map model:model validKeysContainer:validConditionKeys argumentsContaienr:args appendingString:@" = ?"];
     } else if (conditionMap.allKeys.count) {
         [conditionMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
             NSString * name = [key stringByAppendingString:@" = ?"];
@@ -1564,9 +1515,10 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     ///组装数组
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
     BOOL stop = NO;
+    BOOL returnNil = NO;
     while ([set next]) {
         if (handler) {
-            handler(cls,set,queryKeysProInfos,conditionKeysProInfos,map,ret,&stop,error);
+            handler(cls,set,queryKeysProInfos,conditionKeysProInfos,map,ret,&stop,&returnNil,error);
         }
         if (stop) {
             break;
@@ -1574,8 +1526,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     }
     [set close];
     
-    ///此处10016错误是类名不合法，由于改造后在Block里所以此处单独判断进行返回
-    if (error && (*error).code == 10016) {
+    if (returnNil) {
         return nil;
     }
     
@@ -1588,12 +1539,13 @@ static NSString * const kDwIdKey = @"kDwIdKey";
 
 #pragma mark ------ 其他 ------
 -(NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys queryKeys:(NSArray *)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error {
-    return [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop, NSError *__autoreleasing * error) {
+    return [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop,BOOL * returnNil, NSError *__autoreleasing * error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10016);
             safeLinkError(error, err);
             *stop = YES;
+            *returnNil = YES;
             return;
         }
         __block BOOL validValue = NO;
@@ -1612,9 +1564,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
             [conditionKeysProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
                 if (obj.name.length) {
                     id value = modelValueWithPropertyInfo(model, obj);
-                    if (value) {
-                        modelSetValueWithPropertyInfo(tmp, obj, value);
-                    }
+                    modelSetValueWithPropertyInfo(tmp, obj, value);
                 }
             }];
             NSNumber * Dw_id = [set objectForColumn:kUniqueID];
@@ -1627,7 +1577,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
 }
 
 -(NSInteger)queryTableForCountWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys queryKeys:(NSArray *)queryKeys inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error {
-    NSArray * ret = [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, NSError *__autoreleasing *error) {
+    NSArray * ret = [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop,BOOL *returnNilss, NSError *__autoreleasing *error) {
         [resultArr addObject:@1];
     }];
     if (!ret) {
@@ -1778,6 +1728,40 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     NSString * keyString = [keys componentsJoinedByString:@"-"];
     keyString = [NSString stringWithFormat:@"%@-%@-%@",prefix,NSStringFromClass(cls),keyString];
     return keyString;
+}
+
+-(void)configInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args appendingString:(NSString *)appending {
+    void (^ab)(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) = nil;
+    if (args) {
+        ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+            if (obj.name) {
+                id value = modelValueWithPropertyInfo(model, obj);
+                if (value) {
+                    NSString * name = propertyInfoTblName(obj, map);
+                    if (name.length) {
+                        if (appending.length) {
+                            name = [name stringByAppendingString:appending];
+                        }
+                        [validKeys addObject:name];
+                        [args addObject:value];
+                    }
+                }
+            }
+        };
+    } else {
+        ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+            if (obj.name.length) {
+                NSString * name = propertyInfoTblName(obj, map);
+                if (name.length) {
+                    if (appending.length) {
+                        name = [name stringByAppendingString:appending];
+                        [validKeys addObject:name];
+                    }
+                }
+            }
+        };
+    }
+    [props enumerateKeysAndObjectsUsingBlock:ab];
 }
 
 
