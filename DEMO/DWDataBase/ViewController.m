@@ -157,7 +157,7 @@
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
-        NSArray * ret = [db queryAllFieldInTableWithConfiguration:conf translateToPropertyName:NO class:Nil error:&error];
+        NSArray * ret = [db queryAllFieldInTable:NO class:Nil configuration:conf error:&error];
         if (ret) {
             NSLog(@"Query Field Success:%@",ret);
         } else {

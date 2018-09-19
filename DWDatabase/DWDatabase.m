@@ -423,6 +423,21 @@ NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
 @end
 #pragma mark --------- DWDatabaseConfiguration结束 ---------
 
+#pragma mark --------- DWDatabaseSQLFactory开始 ---------
+@interface DWDatabaseSQLFactory : NSObject
+
+@property (nonatomic ,strong) NSArray * args;
+
+@property (nonatomic ,copy) NSString * sql;
+
+@property (nonatomic ,strong) NSObject * model;
+
+@end
+
+@implementation DWDatabaseSQLFactory
+
+@end
+#pragma mark --------- DWDatabaseSQLFactory结束 ---------
 
 #pragma mark --------- DWDatabase开始 ---------
 
@@ -814,7 +829,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     return ret;
 }
 
--(NSArray<NSString *> *)queryAllFieldInTableWithConfiguration:(DWDatabaseConfiguration *)conf translateToPropertyName:(BOOL)translate class:(Class)cls error:(NSError *__autoreleasing  _Nullable *)error {
+-(NSArray<NSString *> *)queryAllFieldInTable:(BOOL)translateToPropertyName class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
     BOOL valid = [self validateConfiguration:conf considerTableName:YES error:error];
     if (!valid) {
         return nil;
@@ -833,10 +848,10 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     if ([fields containsObject:kUniqueID]) {
         [fields removeObject:kUniqueID];
     }
-    if (!translate) {
+    if (!translateToPropertyName) {
         return fields;
     }
-    if (translate && cls == Nil) {
+    if (translateToPropertyName && cls == Nil) {
         NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10016);
         safeLinkError(error, err);
         return nil;
@@ -899,6 +914,55 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     return [self insertTableWithModel:model tableName:conf.tableName keys:keys inQueue:conf.dbQueue error:error];
 }
 
+-(NSArray<NSObject *> *)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys  rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
+    
+    NSMutableArray * failures = [NSMutableArray arrayWithCapacity:0];
+    NSMutableArray * factorys = [NSMutableArray arrayWithCapacity:0];
+    [models enumerateObjectsUsingBlock:^(NSObject * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        DWDatabaseSQLFactory * fac = [self insertSQLFactoryWithModel:obj tableName:conf.tableName keys:keys error:error];
+        if (!fac) {
+            [failures addObject:obj];
+            ///如果失败就回滚的话，则此处无需再生成其他sql
+            if (rollback) {
+                *stop = YES;
+            }
+        } else {
+            [factorys addObject:fac];
+        }
+    }];
+    
+    ///如果失败就回滚的话，此处无需再做插入操作，直接返回失败的模型
+    if (rollback && failures.count > 0) {
+        NSUInteger idx = [models indexOfObject:failures.lastObject];
+        return [models subarrayWithRange:NSMakeRange(idx, models.count - idx)];
+    }
+    
+    __block BOOL hasFailure = NO;
+    
+    [conf.dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollbackP) {
+        [factorys enumerateObjectsUsingBlock:^(DWDatabaseSQLFactory * obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            ///如果还没失败过则执行插入操作
+            if (!hasFailure) {
+                ///如果插入失败则记录失败状态并将模型加入失败数组
+                if (![self insertIntoDBWithDatabase:db factory:obj error:error]) {
+                    hasFailure = YES;
+                    [failures addObject:obj.model];
+                }
+            } else {
+                ///如果失败过，直接将模型加入数组即可
+                [failures addObject:obj.model];
+            }
+        }];
+        
+        ///如果失败了，按需回滚
+        if (hasFailure) {
+            *rollbackP = rollback;
+        }
+    }];
+    
+    return failures.count?failures:nil;
+}
+
 -(BOOL)deleteTableWithModel:(NSObject *)model byDw_id:(BOOL)byID keys:(NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
     BOOL valid = [self validateConfiguration:conf considerTableName:YES error:error];
     if (!valid) {
@@ -923,7 +987,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     return [self queryTableWithModel:model tableName:conf.tableName conditionKeys:conditionKeys queryKeys:queryKeys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue error:error];
 }
 
--(NSArray<NSObject *> *)queryTableWithSql:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
+-(NSArray<NSObject *> *)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
     if (!sql.length) {
         NSError * err = errorWithMessage(@"Invalid sql whose length is 0.", 10007);
         safeLinkError(error, err);
@@ -1117,76 +1181,16 @@ static NSString * const kDwIdKey = @"kDwIdKey";
         safeLinkError(error, err);
         return NO;
     }
-    if (!tblName.length) {
-        NSError * err = errorWithMessage(@"Invalid tblName whose length is 0.", 10005);
-        safeLinkError(error, err);
-        return NO;
-    }
-    if (!model) {
-        NSError * err = errorWithMessage(@"Invalid model who is nil.", 10015);
-        safeLinkError(error, err);
-        return NO;
-    }
-    NSDictionary * infos = nil;
-    Class cls = [model class];
-    if (keys.count) {
-        infos = [self propertyInfosWithClass:cls keys:keys];
-    } else {
-        infos = [self propertyInfosForSaveKeysWithClass:cls];
-    }
-    if (!infos.allKeys.count) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid model(%@) who have no valid key.",model];
-        NSError * err = errorWithMessage(msg, 10012);
-        safeLinkError(error, err);
-        return NO;
-    }
     
-    ///先看有效插入值，根据有效插入值确定sql
-    NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
-    NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
-    NSDictionary * map = databaseMapFromClass(cls);
-    
-    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:nil];
-    
-    ///无有效插入值
-    if (!args.count) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid model(%@) who have no valid value to insert.",model];
-        NSError * err = errorWithMessage(msg, 10009);
-        safeLinkError(error, err);
+    DWDatabaseSQLFactory * factory = [self insertSQLFactoryWithModel:model tableName:tblName keys:keys error:error];
+    if (!factory) {
         return NO;
-    }
-    
-    NSString * sql = nil;
-    ///先尝试取缓存的sql
-    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kInsertPrefix class:cls keys:validKeys];
-    if (cacheSqlKey.length) {
-        sql = [self.sqlsCache valueForKey:cacheSqlKey];
-    }
-    ///如果没有缓存的sql则拼装sql
-    if (!sql) {
-        ///先配置更新值得sql
-        sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) VALUES (",tblName,[validKeys componentsJoinedByString:@","]];
-        ///再配置值
-        NSString * doubt = @"";
-        for (int i = 0,max = (int)args.count; i < max; i++) {
-            doubt = [doubt stringByAppendingString:@"?,"];
-        }
-        doubt = [doubt substringToIndex:doubt.length - 1];
-        sql = [sql stringByAppendingString:[NSString stringWithFormat:@"%@)",doubt]];
-        ///计算完缓存sql
-        if (cacheSqlKey.length) {
-            [self.sqlsCache setValue:sql forKey:cacheSqlKey];
-        }
     }
     
     ///至此已取到合法sql
     __block BOOL success = NO;
     [queue inDatabase:^(FMDatabase * _Nonnull db) {
-        success = [db executeUpdate:sql withArgumentsInArray:args];
-        if (success) {
-            SetDw_idForModel(model, @(db.lastInsertRowId));
-        }
-        safeLinkError(error, db.lastError);
+        success = [self insertIntoDBWithDatabase:db factory:factory error:error];
     }];
     
     return success;
@@ -1548,6 +1552,85 @@ static NSString * const kDwIdKey = @"kDwIdKey";
 }
 
 #pragma mark ------ 其他 ------
+
+-(DWDatabaseSQLFactory *)insertSQLFactoryWithModel:(NSObject *)model tableName:(NSString *)tblName keys:(NSArray<NSString *> *)keys  error:(NSError *__autoreleasing *)error {
+    Class cls = [model class];
+    if (!tblName.length) {
+        NSError * err = errorWithMessage(@"Invalid tblName whose length is 0.", 10005);
+        safeLinkError(error, err);
+        return nil;
+    }
+    if (!model) {
+        NSError * err = errorWithMessage(@"Invalid model who is nil.", 10015);
+        safeLinkError(error, err);
+        return nil;
+    }
+    NSDictionary * infos = nil;
+    if (keys.count) {
+        infos = [self propertyInfosWithClass:cls keys:keys];
+    } else {
+        infos = [self propertyInfosForSaveKeysWithClass:cls];
+    }
+    if (!infos.allKeys.count) {
+        NSString * msg = [NSString stringWithFormat:@"Invalid model(%@) who have no valid key.",model];
+        NSError * err = errorWithMessage(msg, 10012);
+        safeLinkError(error, err);
+        return nil;
+    }
+    
+    ///先看有效插入值，根据有效插入值确定sql
+    NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
+    NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
+    NSDictionary * map = databaseMapFromClass(cls);
+    
+    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:nil];
+    
+    ///无有效插入值
+    if (!args.count) {
+        NSString * msg = [NSString stringWithFormat:@"Invalid model(%@) who have no valid value to insert.",model];
+        NSError * err = errorWithMessage(msg, 10009);
+        safeLinkError(error, err);
+        return nil;
+    }
+    
+    NSString * sql = nil;
+    ///先尝试取缓存的sql
+    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kInsertPrefix class:cls keys:validKeys];
+    if (cacheSqlKey.length) {
+        sql = [self.sqlsCache valueForKey:cacheSqlKey];
+    }
+    ///如果没有缓存的sql则拼装sql
+    if (!sql) {
+        ///先配置更新值得sql
+        sql = [NSString stringWithFormat:@"INSERT INTO %@ (%@) VALUES (",tblName,[validKeys componentsJoinedByString:@","]];
+        ///再配置值
+        NSString * doubt = @"";
+        for (int i = 0,max = (int)args.count; i < max; i++) {
+            doubt = [doubt stringByAppendingString:@"?,"];
+        }
+        doubt = [doubt substringToIndex:doubt.length - 1];
+        sql = [sql stringByAppendingString:[NSString stringWithFormat:@"%@)",doubt]];
+        ///计算完缓存sql
+        if (cacheSqlKey.length) {
+            [self.sqlsCache setValue:sql forKey:cacheSqlKey];
+        }
+    }
+    DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
+    fac.sql = sql;
+    fac.args = args;
+    fac.model = model;
+    return fac;
+}
+
+-(BOOL)insertIntoDBWithDatabase:(FMDatabase *)db factory:(DWDatabaseSQLFactory *)fac error:(NSError *__autoreleasing *)error {
+    BOOL success = [db executeUpdate:fac.sql withArgumentsInArray:fac.args];
+    if (success) {
+        SetDw_idForModel(fac.model, @(db.lastInsertRowId));
+    }
+    safeLinkError(error, db.lastError);
+    return success;
+}
+
 -(NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionKeys:(NSArray *)conditionKeys queryKeys:(NSArray *)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error {
     return [self queryTableWithModel:model tableName:tblName conditionKeys:conditionKeys conditionMap:nil queryKeys:queryKeys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *queryKeysProInfos, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *conditionKeysProInfos, NSDictionary *map, NSMutableArray *ret, BOOL *stop,BOOL * returnNil, NSError *__autoreleasing * error) {
         id tmp = [cls new];

@@ -21,6 +21,10 @@
  version 1.0.1
  添加默认排序条件为Dw_id
  数据库句柄中添加数据库文件路径
+ 
+ version 1.0.2
+ 规范方法命名
+ 提供批量插入接口
  */
 
 #import <Foundation/Foundation.h>
@@ -264,16 +268,16 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  获取指定表所有字段
 
- @param conf 数据库句柄
- @param translate 是否转换成对应类的属性名
+ @param translateToPropertyName 是否转换成对应类的属性名
  @param cls 转换模型的类
+ @param conf 数据库句柄
  @param error 查询错误
  @return 所有字段名
  
  @disc 1.此处应传表名数据库句柄
        2.若数据表名不能一一映射到模型中将给出错误信息
  */
--(nullable NSArray <NSString *>*)queryAllFieldInTableWithConfiguration:(DWDatabaseConfiguration *)conf translateToPropertyName:(BOOL)translate class:(nullable Class)cls error:(NSError * _Nullable __autoreleasing *)error;
+-(nullable NSArray <NSString *>*)queryAllFieldInTable:(BOOL)translateToPropertyName class:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
 /**
@@ -319,6 +323,23 @@ NS_ASSUME_NONNULL_BEGIN
        2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
  */
 -(BOOL)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+
+
+/**
+ 批量插入模型
+
+ @param models 模型数组
+ @param keys 指定属性数组
+ @param rollback 插入失败时是否回滚
+ @param conf 数据库句柄
+ @param error 插入数据错误信息
+ @return 插入失败的模型
+ 
+ @disc 1.此处传入表名数据库句柄
+       2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
+       3.一旦出现错误立即停止操作，不再进行后续插入操作
+ */
+-(NSArray <NSObject *>*)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
 /**
@@ -395,7 +416,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 此处传入表名数据库句柄
  */
--(nullable NSArray <__kindof NSObject *>*)queryTableWithSql:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(nullable NSArray <__kindof NSObject *>*)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
 /**
