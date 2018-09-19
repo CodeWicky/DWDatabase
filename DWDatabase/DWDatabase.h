@@ -17,6 +17,10 @@
  增删改查完成，回归测试完成
  添加类型容错，可实现部分类型间的容错转换（NSDate与NSString间的容错仅适用于格式为 yyyy-MM-dd HH:mm:ss.SSS 的数据）
  添加查询个数API及按ID查询API
+ 
+ version 1.0.1
+ 添加默认排序条件为Dw_id
+ 数据库句柄中添加数据库文件路径
  */
 
 #import <Foundation/Foundation.h>
