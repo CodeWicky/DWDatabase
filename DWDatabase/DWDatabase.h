@@ -370,7 +370,7 @@ NS_ASSUME_NONNULL_BEGIN
        5.将从数据表中查询queryKeys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        6.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
        7.当offset为大于0的数是将作为查询的步长，即每隔多少条查询一次，为0时逐条查询
-       8.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序
+       8.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
        9.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
        10.返回的数组中将以传入的model同类的实例作为数据载体
  */

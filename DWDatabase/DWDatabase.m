@@ -1459,16 +1459,22 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     ///有排序添加排序
     NSString * orderField = nil;
     if (orderKey.length && [saveKeys containsObject:orderKey]) {
-        
         DWPrefix_YYClassPropertyInfo * prop = [[self propertyInfosWithClass:cls keys:@[orderKey]] valueForKey:orderKey];
         if (prop) {
             NSString * field = propertyInfoTblName(prop, map);
             if (field.length) {
                 orderField = field;
-                cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-%@-%@",orderField,ascending?@"ASC":@"DESC"]];
+                
             }
         }
     }
+    
+    ///如果排序键不合法，则以Dw_id为排序键
+    if (!orderField.length) {
+        orderField = kUniqueID;
+    }
+    cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-%@-%@",orderField,ascending?@"ASC":@"DESC"]];
+    
     if (limit > 0) {
         cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-L%lu",limit]];
     }
