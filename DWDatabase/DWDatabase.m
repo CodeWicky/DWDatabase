@@ -938,13 +938,14 @@ static NSString * const kDwIdKey = @"kDwIdKey";
     }
     
     __block BOOL hasFailure = NO;
-    
+    ///使用一个临时的Error，防止由于原生error已经被释放后野指针调用崩溃问题
+    __block NSError * errorRetain;
     [conf.dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollbackP) {
         [factorys enumerateObjectsUsingBlock:^(DWDatabaseSQLFactory * obj, NSUInteger idx, BOOL * _Nonnull stop) {
             ///如果还没失败过则执行插入操作
             if (!hasFailure) {
                 ///如果插入失败则记录失败状态并将模型加入失败数组
-                if (![self insertIntoDBWithDatabase:db factory:obj error:error]) {
+                if (![self insertIntoDBWithDatabase:db factory:obj error:&errorRetain]) {
                     hasFailure = YES;
                     [failures addObject:obj.model];
                 }
@@ -959,7 +960,7 @@ static NSString * const kDwIdKey = @"kDwIdKey";
             *rollbackP = rollback;
         }
     }];
-    
+    safeLinkError(error, errorRetain);
     return failures.count?failures:nil;
 }
 

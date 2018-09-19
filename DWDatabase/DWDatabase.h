@@ -25,6 +25,9 @@
  version 1.0.2
  规范方法命名
  提供批量插入接口
+ 
+ version 1.0.2.1
+ 修复批量插入时由于error已经释放引起的野指针问题
  */
 
 #import <Foundation/Foundation.h>
