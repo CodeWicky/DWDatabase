@@ -29,6 +29,8 @@
     } else {
         NSLog(@"%@",err);
     }
+    
+    NSLog(@"%@",defaultSavePath());
 }
 - (IBAction)insert:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
@@ -124,6 +126,16 @@
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
+        
+        
+        [db queryTableWithModel:v conditionKeys:@[keyPathString(v, intNum)] queryKeys:nil limit:0 offset:0 orderKey:nil ascending:YES configuration:conf completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
+            if (results.count) {
+                NSLog(@"Async Query Success:%@",results);
+            } else {
+                NSLog(@"Async %@",error);
+            }
+        }];
+        
         NSArray <V *>* ret = [db queryTableWithModel:v conditionKeys:@[keyPathString(v, intNum)] queryKeys:nil configuration:conf error:&error];
         if (ret.count) {
             NSLog(@"Query Success:%@",ret);

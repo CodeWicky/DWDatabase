@@ -28,6 +28,12 @@
  
  version 1.0.2.1
  修复批量插入时由于error已经释放引起的野指针问题
+ 
+ version 1.0.2.2
+ 添加异步插入、查询接口
+ 规范方法命名
+ 对外暴露默认存储主路径
+ 添加操作队列，防止多线程下同时访问崩溃情况
  */
 
 #import <Foundation/Foundation.h>
@@ -37,6 +43,9 @@
  
  无论模型是否遵循协议均可实现自动落库，若遵循协议可通过协议方法自定义模型与数据表的对应关系。若实现白名单方法则仅将model中在白名单中的属性进行落库。若实现黑名单方法则仅将model中不在黑名单中的属性进行落库。若实现白名单方法将忽略黑名单方法。若实现‘键-字段’转化方法将会将模型的对应属性名与数据表中指定的字段名建立对应关系
  */
+
+///获取默认存储主路径
+OBJC_EXTERN  NSString * _Nonnull defaultSavePath(void);
 
 NS_ASSUME_NONNULL_BEGIN
 @protocol DWDatabaseSaveProtocol
@@ -264,7 +273,7 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 此处应传表名数据库句柄
  */
 -(BOOL)updateTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
--(BOOL)updateTableWithSQLs:(NSArray <NSString *>*)sqls rollbackOnFail:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError **)error;
+-(BOOL)updateTableWithSQLs:(NSArray <NSString *>*)sqls rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError **)error;
 -(FMResultSet *)queryTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
@@ -343,7 +352,7 @@ NS_ASSUME_NONNULL_BEGIN
        3.一旦出现错误立即停止操作，不再进行后续插入操作
  */
 -(NSArray <NSObject *>*)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
-
+-(void)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <NSObject *>*failureModels,NSError * error))completion;
 
 /**
  删除当前库指定表中对应的模型信息
@@ -406,7 +415,7 @@ NS_ASSUME_NONNULL_BEGIN
        10.返回的数组中将以传入的model同类的实例作为数据载体
  */
 -(nullable NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model conditionKeys:(nullable NSArray <NSString *>*)conditionKeys queryKeys:(nullable NSArray <NSString *>*)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
-
+-(void)queryTableWithModel:(NSObject *)model conditionKeys:(nullable NSArray <NSString *>*)conditionKeys queryKeys:(nullable NSArray <NSString *>*)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型
@@ -420,6 +429,7 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 此处传入表名数据库句柄
  */
 -(nullable NSArray <__kindof NSObject *>*)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(void)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 
 /**
