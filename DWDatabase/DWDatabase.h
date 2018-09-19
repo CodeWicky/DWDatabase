@@ -57,6 +57,9 @@ NS_ASSUME_NONNULL_BEGIN
 ///当前使用的表名
 @property (nonatomic ,copy ,readonly) NSString * tableName;
 
+///当前数据库文件路径
+@property (nonatomic ,copy ,readonly) NSString * dbPath;
+
 -(instancetype)init NS_UNAVAILABLE;
 
 @end

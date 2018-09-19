@@ -416,6 +416,10 @@ NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
     return self;
 }
 
+-(NSString *)dbPath {
+    return self.dbQueue.path;
+}
+
 @end
 #pragma mark --------- DWDatabaseConfiguration结束 ---------
 
