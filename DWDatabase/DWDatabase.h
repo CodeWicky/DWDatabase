@@ -28,6 +28,9 @@
  
  version 1.0.2.1
  修复批量插入时由于error已经释放引起的野指针问题
+ 
+ version 1.0.3
+ 添加当模型增加字段时，自动为表添加字段功能
  */
 
 #import <Foundation/Foundation.h>

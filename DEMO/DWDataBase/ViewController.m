@@ -33,7 +33,7 @@
 - (IBAction)insert:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
     if (conf) {
         V * v = [V new];
         v.shortNum = -1;
