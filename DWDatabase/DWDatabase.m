@@ -253,6 +253,7 @@ NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
 @property (nullable, nonatomic, assign, readonly) Class cls;      ///< class object
 @property (nonatomic, strong, readonly) NSString *name; ///< class name
 @property (nullable, nonatomic, strong, readonly) DWMetaClassInfo *superClassInfo; ///< super class's class info
+@property (nonatomic ,strong) NSMutableSet * fieldSupplyValidedSet;
 
 +(instancetype)classInfoFromClass:(Class)cls;
 
@@ -276,6 +277,22 @@ NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
         [infoCollection setValue:info forKey:NSStringFromClass(cls)];
     }
     return info;
+}
+
++(BOOL)hasValidFieldSupplyForClass:(Class)cls withValidKey:(NSString *)validKey {
+    if (validKey.length == 0) {
+        return NO;
+    }
+    DWMetaClassInfo * classInfo = [self classInfoFromClass:cls];
+    return [classInfo.fieldSupplyValidedSet containsObject:validKey];
+}
+
++(void)validedFieldSupplyForClass:(Class)cls withValidKey:(NSString *)validKey {
+    if (validKey.length == 0) {
+        return ;
+    }
+    DWMetaClassInfo * classInfo = [self classInfoFromClass:cls];
+    [classInfo.fieldSupplyValidedSet addObject:validKey];
 }
 
 -(void)setupInfoWithClass:(Class)cls {
@@ -322,6 +339,14 @@ NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
         }
     }
     return allPropertysInfo;
+}
+
+#pragma mark --- setter/getter ---
+-(NSMutableSet *)fieldSupplyValidedSet {
+    if (!_fieldSupplyValidedSet) {
+        _fieldSupplyValidedSet = [NSMutableSet set];
+    }
+    return _fieldSupplyValidedSet;
 }
 
 @end
@@ -557,6 +582,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!conf) {
         return NO;
     }
+    [self supplyFieldIfNeededWithModel:model configuration:conf error:error];
     return [self insertTableWithModel:model tableName:tblName keys:keys inQueue:conf.dbQueue error:error];
 }
 
@@ -573,6 +599,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!conf) {
         return NO;
     }
+    [self supplyFieldIfNeededWithModel:model configuration:conf error:error];
     return [self updateTableWithModel:model tableName:tblName keys:keys inQueue:conf.dbQueue error:error];
 }
 
@@ -932,6 +959,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!valid) {
         return NO;
     }
+    [self supplyFieldIfNeededWithModel:model configuration:conf error:error];
     return [self insertTableWithModel:model tableName:conf.tableName keys:keys inQueue:conf.dbQueue error:error];
 }
 
@@ -967,6 +995,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
                 ///如果还没失败过则执行插入操作
                 if (!hasFailure) {
                     ///如果插入失败则记录失败状态并将模型加入失败数组
+                    [self supplyFieldIfNeededWithModel:obj.model configuration:conf error:error];
                     if (![self insertIntoDBWithDatabase:db factory:obj error:&errorRetain]) {
                         hasFailure = YES;
                         [failures addObject:obj.model];
@@ -1011,6 +1040,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!valid) {
         return NO;
     }
+    [self supplyFieldIfNeededWithModel:model configuration:conf error:error];
     return [self updateTableWithModel:model tableName:conf.tableName keys:keys inQueue:conf.dbQueue error:error];
 }
 
@@ -1953,6 +1983,41 @@ static void* dbOpQKey = "dbOperationQueueKey";
         };
     }
     [props enumerateKeysAndObjectsUsingBlock:ab];
+}
+
+-(BOOL)supplyFieldIfNeededWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
+    Class clazz = [model class];
+    NSString * validKey = [NSString stringWithFormat:@"%@%@",conf.dbName,conf.tableName];
+    if ([DWMetaClassInfo hasValidFieldSupplyForClass:clazz withValidKey:validKey]) {
+        return YES;
+    }
+    NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:[model class] configuration:conf error:error];
+    NSArray * propertyToSaveKey = [self propertysToSaveWithClass:clazz];
+    NSMutableSet * saveProSet = [NSMutableSet setWithArray:propertyToSaveKey];
+    [saveProSet minusSet:[NSSet setWithArray:allKeysInTbl]];
+    if (saveProSet.count == 0) {
+        [DWMetaClassInfo validedFieldSupplyForClass:clazz withValidKey:validKey];
+        return YES;
+    } else {
+        __block BOOL success = YES;
+        NSDictionary * map = databaseMapFromClass(clazz);
+        NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [self propertyInfosWithClass:clazz keys:saveProSet.allObjects];
+        [propertys enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+            ///转化完成的键名及数据类型
+            NSString * field = tblFieldStringFromPropertyInfo(obj,map);
+            if (field.length) {
+                NSString * sql = [NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@",conf.tableName,field];
+                [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+                    success = [db executeUpdate:sql] && success;
+                    safeLinkError(error, db.lastError);
+                }];
+            } else {
+                success = NO;
+                *stop = YES;
+            }
+        }];
+        return success;
+    }
 }
 
 
