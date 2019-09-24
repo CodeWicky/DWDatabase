@@ -388,7 +388,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 -(BOOL)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
-
+// TODO:此处应该考虑添加起始查询点的支持
 /**
  根据指定条件在当前库指定表中查询指定条数数据
 
