@@ -392,7 +392,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 -(BOOL)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
-// TODO:此处应该考虑添加起始查询点的支持
+
 /**
  根据指定条件在当前库指定表中查询指定条数数据
 
@@ -400,7 +400,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param conditionKeys 作为查询条件的键值
  @param queryKeys 想要查询的键值
  @param limit 查询的最大条数
- @param offset 查询的步长
+ @param offset 查询的起始点
  @param orderKey 指定的排序的key
  @param ascending 是否正序
  @param conf 数据库句柄
@@ -413,7 +413,7 @@ NS_ASSUME_NONNULL_BEGIN
        4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
        5.将从数据表中查询queryKeys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        6.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
-       7.当offset为大于0的数是将作为查询的步长，即每隔多少条查询一次，为0时逐条查询
+       7.当offset为大于0的数是将作为查询的起始点，即从第几条开始查询数据
        8.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
        9.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
        10.返回的数组中将以传入的model同类的实例作为数据载体
