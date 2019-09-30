@@ -12,16 +12,27 @@
 #import "V.h"
 #import "C.h"
 
+#import <DWDatabase/DWDatabaseHeader.h>
+
 @interface ViewController ()
 
 @end
 
 @implementation ViewController
 
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    maker.loadClass(V);
+    maker.conditionWith(aSet).equalTo(1);
+    maker.conditionWith(floatNum).equalTo(3.14);
+    maker.conditionWith(unsignedIntNum).conditionWith(intNum).equalTo(100);
 
+    [maker test];
+    return;
+    
     DWDatabase * db = [DWDatabase shareDB];
     NSError * err;
     if ([db initializeDBWithError:nil]) {
