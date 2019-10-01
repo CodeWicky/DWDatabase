@@ -13,7 +13,7 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
-
+#import <DWDatabaseMacro.h>
 @interface ViewController ()
 
 @end
@@ -26,9 +26,8 @@
     
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     maker.loadClass(V);
-    maker.conditionWith(aSet).equalTo(1);
-    maker.conditionWith(floatNum).equalTo(3.14);
-    maker.conditionWith(unsignedIntNum).conditionWith(intNum).equalTo(100);
+    maker.conditionWith(intNum).equalTo(10).or.conditionWith(unsignedIntNum).greaterThan(20).combine().and.conditionWith(floatNum).equalTo(20).or.conditionWith(shortNum).equalTo(2).combine().combine();
+    //.or.conditionWith(longlongNum).conditionWith(floatNum).lessThanOrEqualTo(10).and.conditionWith(mDictionary).lessThan(11);
 
     [maker test];
     return;
