@@ -27,10 +27,16 @@
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     maker.loadClass(V);
     maker.conditionWith(intNum).equalTo(10).or.conditionWith(unsignedIntNum).greaterThan(20).combine().and.conditionWith(floatNum).equalTo(20).or.conditionWith(shortNum).equalTo(2).combine().combine();
+    maker.conditionWith(intNum).inValues(@1);
+    NSArray * values = @[@1,@2];
+    maker.conditionWith(floatNum).notInValues(values);
+    maker.conditionWith(string).like(@"a");
+    maker.conditionWith(floatNum).between(NSMakeRange(0, 20));
+
     //.or.conditionWith(longlongNum).conditionWith(floatNum).lessThanOrEqualTo(10).and.conditionWith(mDictionary).lessThan(11);
 
     [maker test];
-    return;
+//    return;
     
     DWDatabase * db = [DWDatabase shareDB];
     NSError * err;
