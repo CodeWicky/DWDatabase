@@ -24,20 +24,6 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-    maker.loadClass(V);
-    maker.conditionWith(intNum).equalTo(10).or.conditionWith(unsignedIntNum).greaterThan(20).combine().and.conditionWith(floatNum).equalTo(20).or.conditionWith(shortNum).equalTo(2).combine().combine();
-    maker.conditionWith(intNum).inValues(@1);
-    NSArray * values = @[@1,@2];
-    maker.conditionWith(floatNum).notInValues(values);
-    maker.conditionWith(string).like(@"a");
-    maker.conditionWith(floatNum).between(NSMakeRange(0, 20));
-
-    //.or.conditionWith(longlongNum).conditionWith(floatNum).lessThanOrEqualTo(10).and.conditionWith(mDictionary).lessThan(11);
-
-    [maker test];
-//    return;
-    
     DWDatabase * db = [DWDatabase shareDB];
     NSError * err;
     if ([db initializeDBWithError:nil]) {
@@ -84,7 +70,7 @@
         
         BOOL success = [db insertTableWithModel:v keys:nil configuration:conf error:&error];
         if (success) {
-            NSLog(@"Insert Success:%@",[db queryTableWithModel:v conditionKeys:nil queryKeys:nil configuration:conf error:&error]);
+            NSLog(@"Insert Success:%@",[db queryTableWithClass:[v class] queryKeys:nil configuration:conf error:&error condition:nil]);
         } else {
             NSLog(@"%@",error);
         }
@@ -101,7 +87,7 @@
     v.intNum = -100;
     BOOL success = [db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" byDw_id:NO keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
     if (success) {
-        NSLog(@"Delete Success:%@",[db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" conditionKeys:nil queryKeys:nil error:&error]);
+        NSLog(@"Delete Success:%@",[db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" queryKeys:nil error:&error condition:nil]);
     } else {
         NSLog(@"%@",error);
     }
@@ -115,14 +101,23 @@
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
-        NSArray <V *>* ret = [db queryTableWithModel:v conditionKeys:@[keyPathString(v, unsignedLongLongNum),keyPathString(v,intNum)] queryKeys:nil configuration:conf error:&error];
+        NSArray <V *>* ret = [db queryTableWithClass:nil queryKeys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.loadClass(V);
+            maker.conditionWith(unsignedLongLongNum).equalTo(20020200202);
+            maker.conditionWith(intNum).equalTo(-100);
+        }];
+        
         if (ret.count) {
             V * newV = ret.lastObject;
             newV.intNum = 256;
             newV.floatNum = 3.14;
             BOOL success = [db updateTableWithModel:newV keys:@[keyPathString(v, intNum),keyPathString(v, floatNum)] configuration:conf error:&error];
             if (success) {
-                NSLog(@"Update Success:%@",[db queryTableWithModel:newV conditionKeys:@[keyPathString(newV, intNum),keyPathString(newV, unsignedLongLongNum)] queryKeys:nil configuration:conf error:&error]);
+                NSLog(@"Update Success:%@",[db queryTableWithClass:nil queryKeys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                    maker.loadClass(V);
+                    maker.conditionWith(intNum).equalTo(256);
+                    maker.conditionWith(unsignedLongLongNum).equalTo(3.14);
+                }]);
             } else {
                 NSLog(@"%@",error);
             }
@@ -142,9 +137,12 @@
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
+        v.array = @[@1,@2];
         
-        
-        [db queryTableWithModel:v conditionKeys:@[keyPathString(v, intNum)] queryKeys:nil limit:0 offset:0 orderKey:nil ascending:YES configuration:conf completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
+        [db queryTableWithClass:nil queryKeys:@[keyPathString(v, intNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.loadClass(V);
+            maker.conditionWith(array).equalTo(v.array);
+        } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
             if (results.count) {
                 NSLog(@"Async Query Success:%@",results);
             } else {
@@ -152,7 +150,11 @@
             }
         }];
         
-        NSArray <V *>* ret = [db queryTableWithModel:v conditionKeys:@[keyPathString(v, intNum)] queryKeys:nil configuration:conf error:&error];
+        
+        NSArray <V *>* ret = [db queryTableWithClass:nil queryKeys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.loadClass(V);
+            maker.conditionWith(intNum).greaterThan(0);
+        }];
         if (ret.count) {
             NSLog(@"Query Success:%@",ret);
         } else {
@@ -170,7 +172,10 @@
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
-        NSInteger count = [db queryTableForCountWithModel:v conditionKeys:@[keyPathString(v, intNum)] configuration:conf error:&error];
+        NSInteger count = [db queryTableForCountWithClass:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.loadClass(V);
+            maker.conditionWith(intNum).equalTo(-100);
+        }];
         if (count >= 0) {
             NSLog(@"Query Count Success:%ld",count);
         } else {
@@ -216,7 +221,7 @@
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         if ([db clearTableWithConfiguration:conf error:&error]) {
-            NSLog(@"Clear Success:%@",[db queryTableWithModel:[V new] conditionKeys:nil queryKeys:nil configuration:conf error:&error]);
+            NSLog(@"Clear Success:%@",[db queryTableWithClass:[V class] queryKeys:nil configuration:conf error:&error condition:nil]);
         } else {
             NSLog(@"%@",error);
         }
