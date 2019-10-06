@@ -101,9 +101,9 @@
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
     if (conf) {
         NSArray <V *>* ret = [db queryTableWithClass:nil keys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.loadClass(V);
-            maker.conditionWith(unsignedLongLongNum).equalTo(20020200202);
-            maker.conditionWith(floatNum).between(DWBetweenMakeIntegerValue(3.09999, 4));
+            maker.dw_loadClass(V);
+            maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
+            maker.dw_conditionWith(floatNum).between(DWBetweenMakeIntegerValue(3.09999, 4));
         }];
         
         if (ret.count) {
@@ -113,9 +113,9 @@
             BOOL success = [db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:conf error:&error];
             if (success) {
                 NSLog(@"Update Success:%@",[db queryTableWithClass:nil keys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-                    maker.loadClass(V);
-                    maker.conditionWith(intNum).equalTo(256);
-                    maker.conditionWith(floatNum).between(DWApproximateFloatValue(3.1));
+                    maker.loadClass([V class]);
+                    maker.conditionWith(@"intNum").equalTo(256);
+                    maker.conditionWith(@"floatNum").between(DWApproximateFloatValue(3.1));
                 }]);
             } else {
                 NSLog(@"%@",error);
@@ -139,8 +139,8 @@
         v.array = @[@1,@2,@3];
         
         [db queryTableWithClass:nil keys:@[keyPathString(v, intNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.loadClass(V);
-            maker.conditionWith(array).equalTo(v.array);
+            maker.dw_loadClass(V);
+            maker.dw_conditionWith(array).equalTo(v.array);
         } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
             if (results.count) {
                 NSLog(@"Async Query Success:%@",results);
@@ -151,8 +151,8 @@
         
         
         NSArray <V *>* ret = [db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.loadClass(V);
-            maker.conditionWith(intNum).greaterThan(0);
+            maker.dw_loadClass(V);
+            maker.dw_conditionWith(intNum).greaterThan(0);
         }];
         if (ret.count) {
             NSLog(@"Query Success:%@",ret);
@@ -172,8 +172,8 @@
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
         NSInteger count = [db queryTableForCountWithClass:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.loadClass(V);
-            maker.conditionWith(intNum).equalTo(-100);
+            maker.dw_loadClass(V);
+            maker.dw_conditionWith(intNum).equalTo(-100);
         }];
         if (count >= 0) {
             NSLog(@"Query Count Success:%ld",count);

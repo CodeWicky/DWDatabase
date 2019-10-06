@@ -41,11 +41,15 @@
  version 1.0.4
  修改query系列方法为conditionMaker模式，即通过Maker链式生成查询条件，扩展条件类型包括等于、大于、小于、大于等于、小于等于、取值集合、取值补集、模糊查询、取值范围等几种查询方式。
  修复sql缓存时未考虑表名的bug
+ 
+ version 1.0.4.1
+ 修改部分警告
+ 修改condition宏使用方式（提供便捷宏及普通用法）
 
  */
 
 #import <Foundation/Foundation.h>
-#import <FMDB/FMDB.h>
+#import <fmdb/FMDB.h>
 #import "DWDatabaseConditionMaker.h"
 
 /**

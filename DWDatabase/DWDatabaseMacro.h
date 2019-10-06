@@ -106,13 +106,13 @@ static inline id _DWDataBaseBoxValue(const char *type, ...) {
 #define keyPathString(objc, keyPath) @(((void)objc.keyPath, #keyPath))
 
 ///快速装载一个Class至接下来要创建的条件
-#define loadClass(T) \
+#define dw_loadClass(T) \
 loadClass([T class]);\
 T * loadClass = [T new];\
 loadClass = nil
 
-///快速为创建条件选择一个key（调用此宏之前务必调用loadClass）
-#define conditionWith(key) conditionWith(keyPathString(loadClass,key))
+///快速为创建条件选择一个key（调用此宏之前务必调用dw_loadClass，配合使用时，此处会自动提示属性值）
+#define dw_conditionWith(key) conditionWith(keyPathString(loadClass,key))
 
 ///快速为创建的条件添加一个要相等的值（可以为任意类型数据，内部自动转换为对象）
 #define equalTo(value) equalTo(DWDataBaseBoxValue(value))

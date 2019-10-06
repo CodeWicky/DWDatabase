@@ -510,53 +510,6 @@ static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NS
 
 #pragma mark --- interface method ---
 
--(void)configWithPropertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(nonnull NSDictionary *)databaseMap {
-    _propertyInfos = [propertyInfos copy];
-    _databaseMap = [databaseMap copy];
-}
-
--(void)make {
-    self.validKeys = nil;
-    self.arguments = nil;
-    self.conditionStrings = nil;
-    __block BOOL initialized = NO;
-    [self.conditions enumerateObjectsUsingBlock:^(DWDatabaseCondition * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        [obj make];
-        if (obj.conditionString.length) {
-            if (!initialized) {
-                initialized = YES;
-                self.validKeys = @[].mutableCopy;
-                self.arguments = @[].mutableCopy;
-                self.conditionStrings = @[].mutableCopy;
-            }
-            [self.conditionStrings addObject:obj.conditionString];
-            [self.arguments addObjectsFromArray:obj.arguments];
-            [self.validKeys addObjectsFromArray:obj.validKeys];
-        }
-    }];
-    
-    ///转一手，保证顺序为系统默认顺序（相当于排序了）
-    if (self.validKeys) {
-        self.validKeys = [[NSSet setWithArray:self.validKeys].allObjects mutableCopy];
-    }
-}
-
--(NSArray *)fetchValidKeys {
-    return [self.validKeys copy];
-}
-
--(NSArray *)fetchConditions {
-    return [self.conditionStrings copy];
-}
-
--(NSArray *)fetchArguments {
-    return [self.arguments copy];
-}
-
--(Class)fetchQueryClass {
-    return self.clazz;
-}
-
 -(DWDatabaseConditionClass)loadClass {
     return ^(Class class) {
         NSLog(@"Initialize maker with class:%@",NSStringFromClass(class));
@@ -686,5 +639,61 @@ NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * make
     }
     return _currentCondition;
 }
+
+@end
+
+@implementation DWDatabaseConditionMaker (Private)
+
+-(void)configWithPropertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(nonnull NSDictionary *)databaseMap {
+    _propertyInfos = [propertyInfos copy];
+    _databaseMap = [databaseMap copy];
+}
+
+-(void)make {
+    self.validKeys = nil;
+    self.arguments = nil;
+    self.conditionStrings = nil;
+    __block BOOL initialized = NO;
+    [self.conditions enumerateObjectsUsingBlock:^(DWDatabaseCondition * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [obj make];
+        if (obj.conditionString.length) {
+            if (!initialized) {
+                initialized = YES;
+                self.validKeys = @[].mutableCopy;
+                self.arguments = @[].mutableCopy;
+                self.conditionStrings = @[].mutableCopy;
+            }
+            [self.conditionStrings addObject:obj.conditionString];
+            [self.arguments addObjectsFromArray:obj.arguments];
+            [self.validKeys addObjectsFromArray:obj.validKeys];
+        }
+    }];
+    
+    ///转一手，保证顺序为系统默认顺序（相当于排序了）
+    if (self.validKeys) {
+        self.validKeys = [[NSSet setWithArray:self.validKeys].allObjects mutableCopy];
+    }
+}
+
+-(NSArray *)fetchValidKeys {
+    return [self.validKeys copy];
+}
+
+-(NSArray *)fetchConditions {
+    return [self.conditionStrings copy];
+}
+
+-(NSArray *)fetchArguments {
+    return [self.arguments copy];
+}
+
+-(Class)fetchQueryClass {
+    return self.clazz;
+}
+
+@end
+
+@implementation DWDatabaseConditionMaker (AutoTip)
+@dynamic dw_loadClass,dw_conditionWith;
 
 @end

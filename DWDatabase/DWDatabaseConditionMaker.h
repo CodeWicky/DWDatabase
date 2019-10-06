@@ -76,6 +76,10 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 ///指定当前条件为在指定值范围中的条件（接收值为DWBetweenFloatValue及DWBetweenIntegerValue）
 @property (nonatomic ,copy) DWDatabaseConditionValue between;
 
+@end
+
+@interface DWDatabaseConditionMaker (Private)
+
 -(void)configWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)propertyInfos databaseMap:(NSDictionary *)databaseMap;
 
 -(void)make;
@@ -87,6 +91,15 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 -(NSArray *)fetchConditions;
 
 -(Class)fetchQueryClass;
+
+@end
+
+///没后实际意义，只为了提供自动提示
+@interface DWDatabaseConditionMaker (AutoTip)
+
+@property (nonatomic ,copy) DWDatabaseConditionClass dw_loadClass;
+
+@property (nonatomic ,copy) DWDatabaseConditionKey dw_conditionWith;
 
 @end
 
