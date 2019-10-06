@@ -37,11 +37,17 @@
 
  version 1.0.3
  添加当模型增加字段时，自动为表添加字段功能
+ 
+ version 1.0.4
+ 修改query系列方法为conditionMaker模式，即通过Maker链式生成查询条件，扩展条件类型包括等于、大于、小于、大于等于、小于等于、取值集合、取值补集、模糊查询、取值范围等几种查询方式。
+ 修复sql缓存时未考虑表名的bug
 
  */
 
 #import <Foundation/Foundation.h>
 #import <FMDB/FMDB.h>
+#import "DWDatabaseConditionMaker.h"
+
 /**
  模型数据表转换协议
  
@@ -89,7 +95,7 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 ///快速选取模型属性宏（第一个参数传入模型实例，第二个参数敲出所选属性的首字母后自动列出符合条件的属性列表，并将其转为字符串，可配合query方法快速正确的选出属性，且效率与直接写字符串相同）
-#define keyPathString(objc, keyPath) @(((void)objc.keyPath, #keyPath))
+//#define keyPathString(objc, keyPath) @(((void)objc.keyPath, #keyPath))
 
 @interface DWDatabase : NSObject
 
@@ -166,7 +172,7 @@ NS_ASSUME_NONNULL_BEGIN
 -(BOOL)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(BOOL)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path byDw_id:(BOOL)byID keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(BOOL)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
--(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path conditionKeys:(nullable NSArray *)conditionKeys queryKeys:(nullable NSArray *)queryKeys error:(NSError * _Nullable __autoreleasing *)error;
+-(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 #pragma mark --- 数据库操作方法 ---
 /**
@@ -396,30 +402,30 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  根据指定条件在当前库指定表中查询指定条数数据
 
- @param model 作为条件的数据模型
- @param conditionKeys 作为查询条件的键值
- @param queryKeys 想要查询的键值
+ @param clazz 作为数据承载的模型类
+ @param keys 想要查询的键值
  @param limit 查询的最大条数
  @param offset 查询的起始点
  @param orderKey 指定的排序的key
  @param ascending 是否正序
  @param conf 数据库句柄
  @param error 查询错误信息
+ @param condition 指定查询条件的构造器
  @return 返回查询结果
  
  @disc 1.此处传入表名数据库句柄
-       2.model将作为数据承载的载体
-       3.conditionKeys和queryKeys中均应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
-       4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
-       5.将从数据表中查询queryKeys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
-       6.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
-       7.当offset为大于0的数是将作为查询的起始点，即从第几条开始查询数据
-       8.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
-       9.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
-       10.返回的数组中将以传入的model同类的实例作为数据载体
+       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
+       3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
+       4.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
+       5.当offset为大于0的数是将作为查询的起始点，即从第几条开始查询数据
+       6.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
+       7.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
+       8.condition为构造查询条件的构造器，condition与clazz不能同时为空
+       10.返回的数组中将以传入的clazz的实例作为数据载体
  */
--(nullable NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model conditionKeys:(nullable NSArray <NSString *>*)conditionKeys queryKeys:(nullable NSArray <NSString *>*)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
--(void)queryTableWithModel:(NSObject *)model conditionKeys:(nullable NSArray <NSString *>*)conditionKeys queryKeys:(nullable NSArray <NSString *>*)queryKeys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
+
+-(nullable NSArray <__kindof NSObject *>*)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition;
+-(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(void(^)(DWDatabaseConditionMaker * maker))condition completion:(void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型
@@ -439,30 +445,28 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  根据指定条件在当前库指定表中查询数据
 
- @param model 作为条件的数据模型
- @param conditionKeys 作为查询条件的键值
- @param queryKeys 想要查询的键值
+ @param clazz 作为数据承载的模型类
+ @param keys 想要查询的键值
  @param conf 数据库句柄
  @param error 查询错误信息
+ @param condition 指定查询条件的构造器
  @return 返回查询结果
  
  @disc 1.此处传入表名数据库句柄
-       2.model将作为数据承载的载体
-       3.conditionKeys和queryKeys中均应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
-       4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
-       5.将从数据表中查询queryKeys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
-       6.返回的数组中将以传入的model同类的实例作为数据载体
+       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
+       3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
+       4.返回的数组中将以传入的clazz的实例作为数据载体
  */
--(nullable NSArray <__kindof NSObject *>*)queryTableWithModel:(NSObject *)model conditionKeys:(nullable NSArray <NSString *>*)conditionKeys queryKeys:(nullable NSArray <NSString *>*)queryKeys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(nullable NSArray <__kindof NSObject *>*)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void (^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
  查询表中符合条件的数据条数，仅查询个数时请调用此API，会避免很多赋值计算
 
- @param model 作为条件的数据模型
- @param conditionKeys 作为查询条件的键值
+ @param clazz 作为数据承载的模型类
  @param conf 数据库句柄
  @param error 查询错误信息
+ @param condition 指定查询条件的构造器
  @return 返回是否查询成功
  
  @disc 1.此处传入表名数据库句柄
@@ -471,7 +475,7 @@ NS_ASSUME_NONNULL_BEGIN
        4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
        5.若查询失败将返回-1
  */
--(NSInteger)queryTableForCountWithModel:(NSObject *)model conditionKeys:(nullable NSArray <NSString *>*)conditionKeys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(NSInteger)queryTableForCountWithClass:(nullable Class)clazz configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
@@ -479,14 +483,14 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param cls 承载数据的模型类
  @param Dw_id 指定ID
- @param queryKeys 查询的键值
+ @param keys 查询的键值
  @param conf 数据库句柄
  @param error 查询错误信息
  @return 返回对应数据的模型
  
  @disc 此处应传入表名数据库，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）
  */
--(__kindof NSObject *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id queryKeys:(nullable NSArray <NSString *>*)queryKeys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(__kindof NSObject *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
 #pragma mark ------ 其他 ------
@@ -500,5 +504,9 @@ NS_ASSUME_NONNULL_BEGIN
        2.具有Dw_id的模型从表中删除后会移除模型的Dw_id
  */
 -(NSNumber *)fetchDw_idForModel:(NSObject *)model;
+
+-(NSArray *)propertysToSaveWithClass:(Class)cls;
+
+-(NSDictionary *)propertyInfosWithClass:(Class)cls keys:(NSArray *)keys;
 @end
 NS_ASSUME_NONNULL_END

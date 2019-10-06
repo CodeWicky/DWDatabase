@@ -8,5 +8,7 @@
 #ifndef DWDatabaseHeader_h
 #define DWDatabaseHeader_h
 
+#import "DWDatabaseMacro.h"   
+#import "DWDatabase.h"
 
 #endif /* DWDatabaseHeader_h */
