@@ -441,7 +441,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		073ACDD69079F6A340ACCD5C5A71AE46 /* Debug */ = {
+		2CAC3810F1BB3E3F3088979F18387EDB /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D1421D4285BEADECA21BA4A8DFBED4EA /* DWDatabase.xcconfig */;
 			buildSettings = {
@@ -450,7 +450,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
 				GCC_PREFIX_HEADER = "Target Support Files/DWDatabase/DWDatabase-prefix.pch";
-				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				OTHER_LDFLAGS = "";
 				OTHER_LIBTOOLFLAGS = "";
 				PRIVATE_HEADERS_FOLDER_PATH = "";
@@ -461,8 +461,9 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
-			name = Debug;
+			name = Release;
 		};
 		4B1F13D49B97FF90469FE040925F8D8C /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -521,30 +522,6 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 				SYMROOT = "${SRCROOT}/../build";
-			};
-			name = Release;
-		};
-		53E3BF4BFC2C7287955DB5FCE58AD0EF /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = D1421D4285BEADECA21BA4A8DFBED4EA /* DWDatabase.xcconfig */;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
-				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
-				GCC_PREFIX_HEADER = "Target Support Files/DWDatabase/DWDatabase-prefix.pch";
-				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
-				OTHER_LDFLAGS = "";
-				OTHER_LIBTOOLFLAGS = "";
-				PRIVATE_HEADERS_FOLDER_PATH = "";
-				PRODUCT_MODULE_NAME = DWDatabase;
-				PRODUCT_NAME = DWDatabase;
-				PUBLIC_HEADERS_FOLDER_PATH = "";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -657,6 +634,29 @@
 			};
 			name = Debug;
 		};
+		BE211C6E25040526ED1388C4CE6C1EA4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D1421D4285BEADECA21BA4A8DFBED4EA /* DWDatabase.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
+				"CODE_SIGN_IDENTITY[sdk=watchos*]" = "";
+				GCC_PREFIX_HEADER = "Target Support Files/DWDatabase/DWDatabase-prefix.pch";
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				OTHER_LDFLAGS = "";
+				OTHER_LIBTOOLFLAGS = "";
+				PRIVATE_HEADERS_FOLDER_PATH = "";
+				PRODUCT_MODULE_NAME = DWDatabase;
+				PRODUCT_NAME = DWDatabase;
+				PUBLIC_HEADERS_FOLDER_PATH = "";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) ";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		E1B7F5DB3BDA75F2D383755C52E14204 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EF7C8504890B6BA06DF61EE6AA96D619 /* FMDB.xcconfig */;
@@ -730,8 +730,8 @@
 		908D42646191A1A27C0E2D06D6B0C54E /* Build configuration list for PBXNativeTarget "DWDatabase" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				073ACDD69079F6A340ACCD5C5A71AE46 /* Debug */,
-				53E3BF4BFC2C7287955DB5FCE58AD0EF /* Release */,
+				BE211C6E25040526ED1388C4CE6C1EA4 /* Debug */,
+				2CAC3810F1BB3E3F3088979F18387EDB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

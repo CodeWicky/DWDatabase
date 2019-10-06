@@ -88,8 +88,6 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 
 -(Class)fetchQueryClass;
 
--(void)test;
-
 @end
 
 NS_ASSUME_NONNULL_END

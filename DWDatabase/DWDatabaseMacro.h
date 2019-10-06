@@ -7,6 +7,7 @@
 
 #ifndef DWDatabaseMacro_h
 #define DWDatabaseMacro_h
+#import <UIKit/UIKit.h>
 
 typedef struct {
     CGFloat start;

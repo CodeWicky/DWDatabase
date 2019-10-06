@@ -7,7 +7,7 @@
 //
 
 #import "A.h"
-#import "DWDatabase.h"
+#import <DWDatabase/DWDatabaseHeader.h>
 
 @interface B : A<DWDatabaseSaveProtocol>
 {

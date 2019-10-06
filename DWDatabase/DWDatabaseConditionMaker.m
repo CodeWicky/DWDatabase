@@ -508,14 +508,6 @@ static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NS
 
 @implementation DWDatabaseConditionMaker
 
-#pragma mark --- test ---
--(void)test {
-    [self make];
-    NSLog(@"vk = %@",[self fetchValidKeys]);
-    NSLog(@"a = %@",[self fetchArguments]);
-    NSLog(@"c = %@",[self fetchConditions]);
-}
-
 #pragma mark --- interface method ---
 
 -(void)configWithPropertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(nonnull NSDictionary *)databaseMap {

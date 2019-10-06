@@ -16,7 +16,7 @@
   },
   "requires_arc": true,
   "platforms": {
-    "ios": "7.0"
+    "ios": "8.0"
   },
   "source_files": "DWDatabase/**/*.{h,m}",
   "frameworks": "UIKit",

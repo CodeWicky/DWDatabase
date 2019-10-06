@@ -7,7 +7,7 @@ s.homepage = 'https://github.com/CodeWicky/DWDatabase'
 s.authors = { 'codeWicky' => 'codewicky@163.com' }
 s.source = { :git => 'https://github.com/CodeWicky/DWDatabase.git', :tag => s.version.to_s }
 s.requires_arc = true
-s.ios.deployment_target = '7.0'
+s.ios.deployment_target = '8.0'
 s.source_files = 'DWDatabase/**/*.{h,m}'
 s.frameworks = 'UIKit'
 
