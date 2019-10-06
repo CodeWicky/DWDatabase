@@ -13,7 +13,9 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
-#import <DWDatabaseMacro.h>
+
+#define dbPath @"/Users/momo/Desktop/a.sqlite3"
+//#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
 @interface ViewController ()
 
 @end
@@ -101,19 +103,19 @@
         NSArray <V *>* ret = [db queryTableWithClass:nil keys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.loadClass(V);
             maker.conditionWith(unsignedLongLongNum).equalTo(20020200202);
-            maker.conditionWith(intNum).equalTo(-100);
+            maker.conditionWith(floatNum).between(DWBetweenMakeIntegerValue(3.09999, 4));
         }];
         
         if (ret.count) {
             V * newV = ret.lastObject;
             newV.intNum = 256;
-            newV.floatNum = 3.14;
+            newV.floatNum = 3.1f;
             BOOL success = [db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:conf error:&error];
             if (success) {
                 NSLog(@"Update Success:%@",[db queryTableWithClass:nil keys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
                     maker.loadClass(V);
                     maker.conditionWith(intNum).equalTo(256);
-                    maker.conditionWith(unsignedLongLongNum).equalTo(3.14);
+                    maker.conditionWith(floatNum).between(DWApproximateFloatValue(3.1));
                 }]);
             } else {
                 NSLog(@"%@",error);
