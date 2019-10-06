@@ -1069,6 +1069,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
         DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
         condition(maker);
         cls = [maker fetchQueryClass];
+        if (!cls) {
+            cls = [model class];
+        }
         saveKeys = [self propertysToSaveWithClass:cls];
         map = databaseMapFromClass(cls);
         NSDictionary * propertyInfos = [self propertyInfosWithClass:cls keys:saveKeys];
