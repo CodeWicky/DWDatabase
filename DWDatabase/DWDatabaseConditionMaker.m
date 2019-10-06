@@ -440,7 +440,7 @@ static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NS
 #pragma mark --- override ---
 -(NSString *)description {
     NSString * superDes = [super description];
-    return [NSString stringWithFormat:@"%@ Keys:%@ Relation:%ld Value:%@",superDes,self.conditionKeys,self.relation,self.value];
+    return [NSString stringWithFormat:@"%@ Keys:%@ Relation:%ld Value:%@",superDes,self.conditionKeys,(unsigned long)self.relation,self.value];
 }
 
 #pragma mark --- setter/getteer ---

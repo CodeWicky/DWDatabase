@@ -164,7 +164,7 @@ NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
 }
 
 -(NSString *)description {
-    return [NSString stringWithFormat:@"<PropertyName:%@ Type:%02lx>",self.name,self.type & DWPrefix_YYEncodingTypeMask];
+    return [NSString stringWithFormat:@"<PropertyName:%@ Type:%02lx>",self.name,(unsigned long)self.type & DWPrefix_YYEncodingTypeMask];
 }
 
 @end

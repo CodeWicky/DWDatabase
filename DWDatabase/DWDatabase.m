@@ -1175,10 +1175,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-%@-%@",orderField,ascending?@"ASC":@"DESC"]];
 
     if (limit > 0) {
-        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-L%lu",limit]];
+        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-L%lu",(unsigned long)limit]];
     }
     if (offset > 0) {
-        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-O%lu",offset]];
+        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-O%lu",(unsigned long)offset]];
     }
     if (cacheSqlKey.length) {
         sql = [self.sqlsCache valueForKey:cacheSqlKey];
@@ -1205,10 +1205,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
             sql = [sql stringByAppendingString:[NSString stringWithFormat:@" ORDER BY %@ %@",orderField,ascending?@"ASC":@"DESC"]];
         }
         if (limit > 0) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" LIMIT %lu",limit]];
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" LIMIT %lu",(unsigned long)limit]];
         }
         if (offset > 0) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" OFFSET %lu",offset]];
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" OFFSET %lu",(unsigned long)offset]];
         }
 
         ///计算完缓存sql
