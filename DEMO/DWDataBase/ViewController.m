@@ -151,8 +151,8 @@
         
         
         NSArray <V *>* ret = [db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.dw_loadClass(V);
-            maker.dw_conditionWith(intNum).greaterThan(0);
+            maker.loadClass([V class]);
+            maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
         }];
         if (ret.count) {
             NSLog(@"Query Success:%@",ret);

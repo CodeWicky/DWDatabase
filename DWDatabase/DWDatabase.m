@@ -10,6 +10,7 @@
 #import <Foundation/NSZone.h>
 #import "NSObject+PropertyInfo.h"
 #import "DWDatabaseConditionMaker.h"
+#import "DWDatabaseMacro.h"
 
 
 #pragma mark --------- 数据库管理模型部分开始 ---------
@@ -126,7 +127,6 @@
 
 #pragma mark --------- DWDatabase开始 ---------
 
-#define kUniqueID (@"Dw_id")
 #define kSqlSetTblName (@"sql_set")
 #define kCreatePrefix (@"c")
 #define kInsertPrefix (@"i")

@@ -45,6 +45,12 @@
  version 1.0.4.1
  修改部分警告
  修改condition宏使用方式（提供便捷宏及普通用法）
+ 
+ version 1.0.4.2
+ 增加如果没有LoadClass使用Model class做备选的辅助功能
+ 
+ version 1.0.4.3
+ 增加搜索条件时对Dw_id为搜索条件的支持
 
  */
 

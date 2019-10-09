@@ -99,6 +99,9 @@ static inline id _DWDataBaseBoxValue(const char *type, ...) {
     return obj;
 }
 
+///数据存表的唯一键值
+#define kUniqueID (@"Dw_id")
+
 ///将所有值包装成对象
 #define DWDataBaseBoxValue(value) _DWDataBaseBoxValue(@encode(__typeof__((value))), (value))
 

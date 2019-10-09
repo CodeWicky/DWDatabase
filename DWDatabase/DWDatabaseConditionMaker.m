@@ -96,8 +96,14 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
     [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         NSString * conditionString = [self conditioinStringWithKey:obj];
         NSArray * values = [self conditionValuesWithKey:obj];
-        DWPrefix_YYClassPropertyInfo * property = self.maker.propertyInfos[obj];
-        NSString * tblName = propertyInfoTblName(property, self.maker.databaseMap);
+        NSString * tblName = nil;
+        if ([obj isEqualToString:kUniqueID]) {
+            tblName = kUniqueID;
+        } else {
+            DWPrefix_YYClassPropertyInfo * property = self.maker.propertyInfos[obj];
+            tblName = propertyInfoTblName(property, self.maker.databaseMap);
+        }
+        
         if (conditionString && values.count && tblName.length) {
             [self.validKeys addObject:tblName];
             [self.arguments addObjectsFromArray:values];
@@ -156,7 +162,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 
 #pragma mark --- tool method ---
 -(NSString *)conditioinStringWithKey:(NSString *)key {
-    if (![self.maker.propertyInfos.allKeys containsObject:key]) {
+    ///如果在属性列表中或者是dw_id都视为合法
+    if (![self.maker.propertyInfos.allKeys containsObject:key] && ![key isEqualToString:kUniqueID]) {
         return nil;
     }
     switch (self.relation) {
@@ -215,9 +222,16 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
         }
         default:
         {
-            ///尝试做自动类型转换
-            DWPrefix_YYClassPropertyInfo * propertyInfo = self.maker.propertyInfos[key];
-            id value = transformValueWithPropertyInfo(self.value, propertyInfo);
+            id value = nil;
+            ///转换成number
+            if ([key isEqualToString:kUniqueID]) {
+                value = transformValueWithType(self.value, DWPrefix_YYEncodingTypeObject, DWPrefix_YYEncodingTypeNSNumber);
+            } else {
+                ///尝试做自动类型转换
+                DWPrefix_YYClassPropertyInfo * propertyInfo = self.maker.propertyInfos[key];
+                value = transformValueWithPropertyInfo(self.value, propertyInfo);
+            }
+            
             if (value) {
                 return @[value];
             }
@@ -229,7 +243,11 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 
 #pragma mark --- tool func ---
 NS_INLINE id transformValueWithPropertyInfo(id value,DWPrefix_YYClassPropertyInfo * property) {
-    switch (property.type & DWPrefix_YYEncodingTypeMask) {
+    return transformValueWithType(value, property.type, property.nsType);
+}
+
+NS_INLINE id transformValueWithType(id value,DWPrefix_YYEncodingType encodingType,DWPrefix_YYEncodingNSType nsType) {
+    switch (encodingType & DWPrefix_YYEncodingTypeMask) {
         case DWPrefix_YYEncodingTypeBool:
         case DWPrefix_YYEncodingTypeInt8:
         case DWPrefix_YYEncodingTypeUInt8:
@@ -275,7 +293,7 @@ NS_INLINE id transformValueWithPropertyInfo(id value,DWPrefix_YYClassPropertyInf
         }
         case DWPrefix_YYEncodingTypeObject:
         {
-            switch (property.nsType) {
+            switch (nsType) {
                 case DWPrefix_YYEncodingTypeNSString:
                 case DWPrefix_YYEncodingTypeNSMutableString:
                 {
