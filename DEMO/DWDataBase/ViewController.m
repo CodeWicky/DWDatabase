@@ -33,7 +33,6 @@
     } else {
         NSLog(@"%@",err);
     }
-    
     NSLog(@"%@",defaultSavePath());
 }
 - (IBAction)insert:(id)sender {

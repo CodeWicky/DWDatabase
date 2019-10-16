@@ -1327,7 +1327,11 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }
     NSDictionary * infos = nil;
     if (keys.count) {
-        infos = [self propertyInfosWithClass:cls keys:keys];
+        ///此处要按支持的key做sql
+        keys = [self validKeysIn:keys forClass:cls];
+        if (keys.count) {
+            infos = [self propertyInfosWithClass:cls keys:keys];
+        }
     } else {
         infos = [self propertyInfosForSaveKeysWithClass:cls];
     }
@@ -1386,7 +1390,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     NSDictionary * infos = nil;
     Class cls = [model class];
     if (keys.count) {
-        infos = [self propertyInfosWithClass:cls keys:keys];
+        keys = [self validKeysIn:keys forClass:cls];
+        if (keys.count) {
+            infos = [self propertyInfosWithClass:cls keys:keys];
+        }
     } else {
         infos = [self propertyInfosForSaveKeysWithClass:cls];
     }
@@ -1439,7 +1446,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     Class cls = [model class];
     ///如果指定更新key则取更新key的infos信息
     if (keys.count) {
-        infos = [self propertyInfosWithClass:cls keys:keys];
+        keys = [self validKeysIn:keys forClass:cls];
+        if (keys.count) {
+            infos = [self propertyInfosWithClass:cls keys:keys];
+        }
     } else {
         infos = [self propertyInfosForSaveKeysWithClass:cls];
     }
@@ -1623,25 +1633,11 @@ static void* dbOpQKey = "dbOperationQueueKey";
     } else if ([cls respondsToSelector:@selector(dw_DataBaseWhiteList)]){
         NSArray * whiteProps = [cls dw_DataBaseWhiteList];
         ///如果白名单不为空，返回白名单交集，为空则代表没有属性要存返回空
-        if (whiteProps.count) {
-            NSMutableSet * all = [NSMutableSet setWithArray:allProps];
-            NSSet * white = [NSSet setWithArray:whiteProps];
-            [all intersectSet:white];
-            tmp = [all allObjects];
-        } else {
-            tmp = nil;
-        }
+        tmp = intersectionOfArray(allProps, whiteProps);
     } else if ([cls respondsToSelector:@selector(dw_DataBaseBlackList)]) {
         NSArray * blackProps = [cls dw_DataBaseBlackList];
         ///如果黑名单不为空，则返回排除黑名单的集合，为空则返回全部属性
-        if (blackProps.count) {
-            NSMutableSet * all = [NSMutableSet setWithArray:allProps];
-            NSSet * black = [NSSet setWithArray:blackProps];
-            [all minusSet:black];
-            tmp = [all allObjects];
-        } else {
-            tmp = allProps;
-        }
+        tmp = minusArray(allProps, blackProps);
     } else {
         tmp = allProps;
     }
@@ -1733,15 +1729,14 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }
     NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:[model class] configuration:conf error:error];
     NSArray * propertyToSaveKey = [self propertysToSaveWithClass:clazz];
-    NSMutableSet * saveProSet = [NSMutableSet setWithArray:propertyToSaveKey];
-    [saveProSet minusSet:[NSSet setWithArray:allKeysInTbl]];
-    if (saveProSet.count == 0) {
+    NSArray * saveProArray = minusArray(propertyToSaveKey, allKeysInTbl);
+    if (saveProArray.count == 0) {
         [DWMetaClassInfo validedFieldSupplyForClass:clazz withValidKey:validKey];
         return YES;
     } else {
         __block BOOL success = YES;
         NSDictionary * map = databaseMapFromClass(clazz);
-        NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [self propertyInfosWithClass:clazz keys:saveProSet.allObjects];
+        NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [self propertyInfosWithClass:clazz keys:saveProArray];
         [propertys enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             ///转化完成的键名及数据类型
             NSString * field = tblFieldStringFromPropertyInfo(obj,map);
@@ -1758,6 +1753,15 @@ static void* dbOpQKey = "dbOperationQueueKey";
         }];
         return success;
     }
+}
+
+-(NSArray <NSString *>*)validKeysIn:(NSArray <NSString *>*)keys forClass:(Class)clazz {
+    if (!keys.count) {
+        return nil;
+    }
+    NSArray * saveKeys = [self propertysToSaveWithClass:clazz];
+    
+    return intersectionOfArray(keys,saveKeys);
 }
 
 
@@ -2421,7 +2425,26 @@ NS_INLINE NSArray * intersectionOfArray(NSArray * arr1,NSArray * arr2) {
         NSMutableSet * set1 = [NSMutableSet setWithArray:arr1];
         NSSet * set2 = [NSSet setWithArray:arr2];
         [set1 intersectSet:set2];
+        if (!set1.count) {
+            return nil;
+        }
         return [set1 allObjects];
+    }
+}
+
+NS_INLINE NSArray * minusArray(NSArray * arr1,NSArray * arr2) {
+    if (!arr1.count) {
+        return nil;
+    } else if (!arr2.count) {
+        return arr1;
+    } else {
+        NSMutableSet * all = [NSMutableSet setWithArray:arr1];
+        NSSet * black = [NSSet setWithArray:arr2];
+        [all minusSet:black];
+        if (!all.count) {
+            return nil;
+        }
+        return [all allObjects];
     }
 }
 
