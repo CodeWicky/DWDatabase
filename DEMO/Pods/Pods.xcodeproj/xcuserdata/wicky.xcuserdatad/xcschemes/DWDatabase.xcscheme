@@ -14,9 +14,9 @@
             buildForArchiving = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "7ECEED503832EE23B10837185670B707"
-               BuildableName = "libPods-DWDataBase.a"
-               BlueprintName = "Pods-DWDataBase"
+               BlueprintIdentifier = "8C8E08F6BC82AEEC23FEB5DA7EC76320"
+               BuildableName = "libDWDatabase.a"
+               BlueprintName = "DWDatabase"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>

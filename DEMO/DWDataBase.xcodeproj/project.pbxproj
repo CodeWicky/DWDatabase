@@ -16,7 +16,6 @@
 		9B45AEF720CC02330013DB18 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B45AEF620CC02330013DB18 /* main.m */; };
 		9B45AF0220CC071D0013DB18 /* A.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B45AF0120CC071D0013DB18 /* A.m */; };
 		9B45AF0520CC07290013DB18 /* B.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B45AF0420CC07290013DB18 /* B.m */; };
-		9B7E2AEA20F8BE0D00344C23 /* DWDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B7E2AE820F8BE0D00344C23 /* DWDatabase.m */; };
 		9BD1325820F4EDF7003AFD34 /* V.m in Sources */ = {isa = PBXBuildFile; fileRef = 9BD1325720F4EDF7003AFD34 /* V.m */; };
 		9BD1325B20F5D86B003AFD34 /* C.m in Sources */ = {isa = PBXBuildFile; fileRef = 9BD1325A20F5D86B003AFD34 /* C.m */; };
 /* End PBXBuildFile section */
@@ -39,8 +38,6 @@
 		9B45AF0120CC071D0013DB18 /* A.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = A.m; sourceTree = "<group>"; };
 		9B45AF0320CC07290013DB18 /* B.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = B.h; sourceTree = "<group>"; };
 		9B45AF0420CC07290013DB18 /* B.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = B.m; sourceTree = "<group>"; };
-		9B7E2AE820F8BE0D00344C23 /* DWDatabase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DWDatabase.m; sourceTree = "<group>"; };
-		9B7E2AE920F8BE0D00344C23 /* DWDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DWDatabase.h; sourceTree = "<group>"; };
 		9BD1325620F4EDF7003AFD34 /* V.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = V.h; sourceTree = "<group>"; };
 		9BD1325720F4EDF7003AFD34 /* V.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = V.m; sourceTree = "<group>"; };
 		9BD1325920F5D86B003AFD34 /* C.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = C.h; sourceTree = "<group>"; };
@@ -97,7 +94,6 @@
 		9B45AEE620CC02320013DB18 /* DWDataBase */ = {
 			isa = PBXGroup;
 			children = (
-				9B7E2AE720F8BE0D00344C23 /* DWDatabase */,
 				9B45AEE720CC02320013DB18 /* AppDelegate.h */,
 				9B45AEE820CC02320013DB18 /* AppDelegate.m */,
 				9B45AEEA20CC02320013DB18 /* ViewController.h */,
@@ -117,16 +113,6 @@
 				9B45AEF620CC02330013DB18 /* main.m */,
 			);
 			path = DWDataBase;
-			sourceTree = "<group>";
-		};
-		9B7E2AE720F8BE0D00344C23 /* DWDatabase */ = {
-			isa = PBXGroup;
-			children = (
-				9B7E2AE820F8BE0D00344C23 /* DWDatabase.m */,
-				9B7E2AE920F8BE0D00344C23 /* DWDatabase.h */,
-			);
-			name = DWDatabase;
-			path = ../../DWDatabase;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -228,7 +214,6 @@
 				9B45AEEC20CC02320013DB18 /* ViewController.m in Sources */,
 				9B45AEF720CC02330013DB18 /* main.m in Sources */,
 				9B45AEE920CC02320013DB18 /* AppDelegate.m in Sources */,
-				9B7E2AEA20F8BE0D00344C23 /* DWDatabase.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
