@@ -393,15 +393,18 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return nil;
     }
     
-    FMResultSet * set = [self queryTableWithSQL:@"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name" configuration:conf error:error];
     NSMutableArray * arr = [NSMutableArray arrayWithCapacity:0];
-    while ([set next]) {
-        NSString * tblName = [set stringForColumn:@"name"];
-        if (tblName.length) {
-            [arr addObject:tblName];
+    [self queryTableWithSQL:@"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name" configuration:conf completion:^(FMResultSet * _Nullable set, NSError * _Nullable err) {
+        safeLinkError(error, err);
+        if (set) {
+            while ([set next]) {
+                NSString * tblName = [set stringForColumn:@"name"];
+                if (tblName.length) {
+                    [arr addObject:tblName];
+                }
+            }
         }
-    }
-    [set close];
+    }];
     
     if ([arr containsObject:@"sqlite_sequence"]) {
         [arr removeObject:@"sqlite_sequence"];
@@ -513,27 +516,33 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return success;
 }
 
--(FMResultSet *)queryTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
+-(void)queryTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(FMResultSet * _Nullable, NSError * _Nullable))completion {
     
     if (!sql.length) {
         NSError * err = errorWithMessage(@"Invalid sql whose length is 0.", 10007);
-        safeLinkError(error, err);
-        return nil;
+        if (completion) {
+            completion(nil,err);
+        }
+        return;
     }
-    
-    BOOL valid = [self validateConfiguration:conf considerTableName:NO error:error];
+    NSError * error;
+    BOOL valid = [self validateConfiguration:conf considerTableName:NO error:&error];
     if (!valid) {
-        return nil;
+        if (completion) {
+            completion(nil,error);
+        }
+        return;
     }
     
-    __block FMResultSet * ret = nil;
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            ret = [db executeQuery:sql];
-            safeLinkError(error, db.lastError);
+            FMResultSet * ret = [db executeQuery:sql];
+            if (completion) {
+                completion(ret,db.lastError);
+            }
+            [ret close];
         }];
     });
-    return ret;
 }
 
 -(NSArray<NSString *> *)queryAllFieldInTable:(BOOL)translateToPropertyName class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
@@ -541,18 +550,18 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!valid) {
         return nil;
     }
-    __block FMResultSet * set = nil;
+    
+    NSMutableArray * fields = [NSMutableArray arrayWithCapacity:0];
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            set = [db getTableSchema:conf.tableName];
+            FMResultSet * set = [db getTableSchema:conf.tableName];
+            while ([set next]) {
+                [fields addObject:[set stringForColumn:@"name"]];
+            }
+            [set close];
         }];
     });
     
-    NSMutableArray * fields = [NSMutableArray arrayWithCapacity:0];
-    while ([set next]) {
-        [fields addObject:[set stringForColumn:@"name"]];
-    }
-    [set close];
     
     ///去除ID
     if ([fields containsObject:kUniqueID]) {
@@ -761,36 +770,47 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return nil;
     }
     
-    FMResultSet * set = [self queryTableWithSQL:sql configuration:conf error:error];
     NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* props = [self propertyInfosForSaveKeysWithClass:cls];
     NSDictionary * map = databaseMapFromClass(cls);
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
-    while ([set next]) {
-        id tmp = [cls new];
-        if (!tmp) {
-            NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-            safeLinkError(error, err);
-            return nil;
-        }
-        __block BOOL validValue = NO;
-        [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            if (obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    id value = [set objectForColumn:name];
-                    modelSetValueWithPropertyInfo(tmp, obj, value);
-                    validValue = YES;
+    __block BOOL returnNil = NO;
+    [self queryTableWithSQL:sql configuration:conf completion:^(FMResultSet * _Nullable set, NSError * _Nullable err) {
+        safeLinkError(error, err);
+        if (set) {
+            while ([set next]) {
+                id tmp = [cls new];
+                if (!tmp) {
+                    NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
+                    safeLinkError(error, err);
+                    returnNil = YES;
+                    break;
+                }
+                __block BOOL validValue = NO;
+                [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+                    if (obj.name.length) {
+                        NSString * name = propertyInfoTblName(obj, map);
+                        if (name.length) {
+                            id value = [set objectForColumn:name];
+                            modelSetValueWithPropertyInfo(tmp, obj, value);
+                            validValue = YES;
+                        }
+                    }
+                }];
+                if (validValue) {
+                    NSNumber * Dw_id = [set objectForColumn:kUniqueID];
+                    if (Dw_id) {
+                        SetDw_idForModel(tmp, Dw_id);
+                    }
+                    [ret addObject:tmp];
                 }
             }
-        }];
-        if (validValue) {
-            NSNumber * Dw_id = [set objectForColumn:kUniqueID];
-            if (Dw_id) {
-                SetDw_idForModel(tmp, Dw_id);
-            }
-            [ret addObject:tmp];
         }
+    }];
+    
+    if (returnNil) {
+        return nil;
     }
+
     return ret;
 }
 
@@ -1220,36 +1240,34 @@ static void* dbOpQKey = "dbOperationQueueKey";
         }
     }
 
-    ///得到结果
-    __block FMResultSet * set = nil;
-    excuteOnDBOperationQueue(self, ^{
-        [queue inDatabase:^(FMDatabase * _Nonnull db) {
-            set = [db executeQuery:sql withArgumentsInArray:args];
-            safeLinkError(error, db.lastError);
-        }];
-    });
-
-    ///获取带转换的属性
-    NSDictionary * validPropertyInfo = nil;
-    if (queryAll) {
-        validPropertyInfo = [self propertyInfosWithClass:cls keys:saveKeys];
-    } else {
-        validPropertyInfo = [self propertyInfosWithClass:cls keys:validKeys];
-    }
-    
     ///组装数组
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
-    BOOL stop = NO;
-    BOOL returnNil = NO;
-    while ([set next]) {
-        if (handler) {
-            handler(cls,set,validPropertyInfo,map,ret,&stop,&returnNil,error);
-        }
-        if (stop) {
-            break;
-        }
-    }
-    [set close];
+    __block BOOL returnNil = NO;
+    excuteOnDBOperationQueue(self, ^{
+        [queue inDatabase:^(FMDatabase * _Nonnull db) {
+            FMResultSet * set = [db executeQuery:sql withArgumentsInArray:args];
+            safeLinkError(error, db.lastError);
+            ///获取带转换的属性
+            NSDictionary * validPropertyInfo = nil;
+            if (queryAll) {
+                validPropertyInfo = [self propertyInfosWithClass:cls keys:saveKeys];
+            } else {
+                validPropertyInfo = [self propertyInfosWithClass:cls keys:validKeys];
+            }
+            
+            BOOL stop = NO;
+            
+            while ([set next]) {
+                if (handler) {
+                    handler(cls,set,validPropertyInfo,map,ret,&stop,&returnNil,error);
+                }
+                if (stop) {
+                    break;
+                }
+            }
+            [set close];
+        }];
+    });
 
     if (returnNil) {
         return nil;

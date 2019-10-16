@@ -294,8 +294,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 -(BOOL)updateTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 -(BOOL)updateTableWithSQLs:(NSArray <NSString *>*)sqls rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError **)error;
--(FMResultSet *)queryTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
-
+-(void)queryTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf completion:(nullable void(^)(FMResultSet * _Nullable set, NSError * _Nullable error))completion;
 
 /**
  获取指定表所有字段
@@ -435,7 +434,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 -(nullable NSArray <__kindof NSObject *>*)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
--(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition completion:(void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
+-(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型
@@ -449,7 +448,7 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 此处传入表名数据库句柄
  */
 -(nullable NSArray <__kindof NSObject *>*)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
--(void)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
+-(void)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 
 /**
