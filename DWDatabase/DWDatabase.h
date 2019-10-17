@@ -51,6 +51,12 @@
  
  version 1.0.4.3
  增加搜索条件时对Dw_id为搜索条件的支持
+ 
+ version 1.0.4.4
+ 修复cacheBug
+ 
+ version 1.0.4.5
+ 去除FMResultSet接口，改用Block接口，解除警告
 
  */
 
