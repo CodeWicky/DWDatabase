@@ -13,7 +13,6 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
-
 #define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
 @interface ViewController ()
@@ -38,7 +37,7 @@
 - (IBAction)insert:(id)sender {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/momo/Desktop/a.sqlite3" error:&error];
+    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath error:&error];
     if (conf) {
         V * v = [V new];
         v.shortNum = -1;
@@ -68,6 +67,8 @@
         v.mSet = [NSMutableSet setWithObjects:@10,@11,@12, nil];
         v.cls = [v class];
         v.sel = @selector(viewDidLoad);
+        
+        NSLog(@"%@",[v dw_transformToDictionary]);
         
         BOOL success = [db insertTableWithModel:v keys:nil configuration:conf error:&error];
         if (success) {

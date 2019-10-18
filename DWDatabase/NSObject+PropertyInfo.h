@@ -100,5 +100,27 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 @end
 
 
+@interface NSObject (DWDatabaseTransform)
 
+-(NSDictionary *)dw_transformToDictionary;
+
+-(NSDictionary *)dw_transformToDictionaryForKeys:(NSArray <NSString *>*)keys;
+
++(instancetype)dw_modelFromDictionary:(NSDictionary *)dictionary;
+
++(instancetype)dw_modelFromDictionary:(NSDictionary *)dictionary withKeys:(NSArray <NSString *>*)keys;
+
+@end
+
+@interface NSObject (DWDatabasePropertyInfos)
+
+-(id)dw_valueForPropertyInfo:(DWPrefix_YYClassPropertyInfo *)info;
+
+-(void)dw_setValue:(id)value forPropertyInfo:(DWPrefix_YYClassPropertyInfo *)info;
+
++(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)dw_allPropertyInfos;
+
++(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)dw_propertyInfosForKeys:(NSArray <NSString *>*)keys;
+
+@end
 NS_ASSUME_NONNULL_END
