@@ -70,6 +70,8 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 
 @property (nonatomic ,assign, readonly) DWPrefix_YYEncodingNSType nsType; ///< property's foundation type
 
+@property (nonatomic ,assign, readonly) BOOL isCNumber;///< whether property is c number
+
 @property (nullable, nonatomic, assign, readonly) Class cls;      ///< may be nil
 @property (nonatomic, assign, readonly) SEL getter;               ///< getter (nonnull)
 @property (nonatomic, assign, readonly) SEL setter;               ///< setter (nonnull)
@@ -101,6 +103,8 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 
 
 @interface NSObject (DWDatabaseTransform)
+
+-(id)dw_jsonObject;
 
 -(NSDictionary *)dw_transformToDictionary;
 
