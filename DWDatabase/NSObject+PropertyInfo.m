@@ -294,12 +294,12 @@ NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
     }
     NSMutableDictionary * ret = [NSMutableDictionary dictionaryWithCapacity:0];
     [allPropertyInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-        if (obj.name && [keys containsObject:obj.name]) {
+        if (obj.name.length && [keys containsObject:obj.name]) {
             id value = [self dw_valueForPropertyInfo:obj];
             if (value) {
-                NSString * name = obj.name;
-                if (name.length) {
-                    ret[name] = value;
+                value = [value dw_transformToDictionary];
+                if (value) {
+                    ret[obj.name] = value;
                 }
             }
         }

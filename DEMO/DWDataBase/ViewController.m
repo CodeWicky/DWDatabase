@@ -68,8 +68,6 @@
         v.cls = [v class];
         v.sel = @selector(viewDidLoad);
         
-        NSLog(@"%@",[v dw_transformToDictionary]);
-        
         BOOL success = [db insertTableWithModel:v keys:nil configuration:conf error:&error];
         if (success) {
             NSLog(@"Insert Success:%@",[db queryTableWithClass:[v class] keys:nil configuration:conf error:&error condition:nil]);
