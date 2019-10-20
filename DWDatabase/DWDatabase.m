@@ -1645,9 +1645,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     
     ///没有则计算
     NSArray * allProps = [[cls dw_allPropertyInfos] allKeys];
-    if (![cls conformsToProtocol:@protocol(DWDatabaseSaveProtocol)]) {
-        tmp = allProps;
-    } else if ([cls respondsToSelector:@selector(dw_DataBaseWhiteList)]){
+    if ([cls respondsToSelector:@selector(dw_DataBaseWhiteList)]){
         NSArray * whiteProps = [cls dw_DataBaseWhiteList];
         ///如果白名单不为空，返回白名单交集，为空则代表没有属性要存返回空
         tmp = intersectionOfArray(allProps, whiteProps);
@@ -1827,7 +1825,7 @@ NS_INLINE void safeLinkError(NSError * __autoreleasing * error ,NSError * error2
 ///获取键值转换表
 NS_INLINE NSDictionary * databaseMapFromClass(Class cls) {
     NSDictionary * map = nil;
-    if ([cls conformsToProtocol:@protocol(DWDatabaseSaveProtocol)] && [cls respondsToSelector:@selector(dw_ModelKeyToDataBaseMap)]) {
+    if ([cls respondsToSelector:@selector(dw_ModelKeyToDataBaseMap)]) {
         map = [cls dw_ModelKeyToDataBaseMap];
     }
     return map;

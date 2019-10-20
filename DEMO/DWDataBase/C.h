@@ -7,9 +7,14 @@
 //
 
 #import <Foundation/Foundation.h>
-
+#import "B.h"
 @interface C : NSObject
 @property (nonatomic ,strong) NSString * a;
 
 @property (nonatomic ,assign) float aNum;
+
+@property (nonatomic ,strong) B * classB;
+
+@property (nonatomic ,strong) NSArray <A *>* array;
+
 @end

@@ -7,7 +7,16 @@
 //
 
 #import "C.h"
+#import <DWDatabase/NSObject+PropertyInfo.h>
 
 @implementation C
+
+
+
++(NSDictionary *)dw_containerPropertyGenericClassMap {
+    return @{
+        @"array":[A class],
+    };
+}
 
 @end

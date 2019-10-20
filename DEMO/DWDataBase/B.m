@@ -17,13 +17,4 @@
     });
     return map;
 }
-
-+(NSArray *)dw_DataBaseBlackList {
-    static NSArray * list = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        list = @[@"a"];
-    });
-    return list;
-}
 @end

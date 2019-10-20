@@ -9,7 +9,7 @@
 #import "A.h"
 #import <DWDatabase/DWDatabaseHeader.h>
 
-@interface B : A<DWDatabaseSaveProtocol>
+@interface B : NSObject<DWDatabaseSaveProtocol>
 {
     float d;
 }
@@ -17,5 +17,7 @@
 @property (nonatomic ,assign) int b;
 
 @property (nonatomic ,assign) Class str;
+
+@property (nonatomic ,strong) A * classA;
 
 @end

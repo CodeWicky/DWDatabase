@@ -7,7 +7,6 @@
 //
 
 #import "ViewController.h"
-#import "B.h"
 #import "DWDatabase.h"
 #import "V.h"
 #import "C.h"
@@ -21,6 +20,10 @@
 
 @property (nonatomic ,strong) NSMutableArray * dataArr;
 
+@property (nonatomic ,strong) DWDatabaseConfiguration * tblConf;
+
+@property (nonatomic ,strong) DWDatabase * db;
+
 @end
 
 @implementation ViewController
@@ -32,10 +35,9 @@
     [self configDB];
 }
 - (void)insert {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath error:&error];
-    if (conf) {
+    
+    if (self.tblConf) {
+        NSError * error;
         V * v = [V new];
         v.shortNum = -1;
         v.unsignedShortNum = 1;
@@ -65,37 +67,33 @@
         v.cls = [v class];
         v.sel = @selector(viewDidLoad);
         
-        BOOL success = [db insertTableWithModel:v keys:nil configuration:conf error:&error];
+        BOOL success = [self.db insertTableWithModel:v keys:nil configuration:self.tblConf error:&error];
         if (success) {
-            NSLog(@"Insert Success:%@",[db queryTableWithClass:[v class] keys:nil configuration:conf error:&error condition:nil]);
+            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:[v class] keys:nil configuration:self.tblConf error:&error condition:nil]);
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
 }
 
 - (void)delete {
-    DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     V * v = [V new];
     v.unsignedLongLongNum = 20020200202;
     v.intNum = -100;
-    BOOL success = [db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" byDw_id:NO keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
+    BOOL success = [self.db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" byDw_id:NO keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
     if (success) {
-        NSLog(@"Delete Success:%@",[db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" keys:nil error:&error condition:nil]);
+        NSLog(@"Delete Success:%@",[self.db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" keys:nil error:&error condition:nil]);
     } else {
         NSLog(@"%@",error);
     }
 }
 
 - (void)update {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
-    if (conf) {
-        NSArray <V *>* ret = [db queryTableWithClass:nil keys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    
+    if (self.tblConf) {
+        NSError * error;
+        NSArray <V *>* ret = [self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
             maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
             maker.dw_conditionWith(floatNum).between(DWBetweenMakeIntegerValue(3.09999, 4));
@@ -105,9 +103,9 @@
             V * newV = ret.lastObject;
             newV.intNum = 256;
             newV.floatNum = 3.1f;
-            BOOL success = [db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:conf error:&error];
+            BOOL success = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:self.tblConf error:&error];
             if (success) {
-                NSLog(@"Update Success:%@",[db queryTableWithClass:nil keys:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                NSLog(@"Update Success:%@",[self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
                     maker.loadClass([V class]);
                     maker.conditionWith(@"intNum").equalTo(256);
                     maker.conditionWith(@"floatNum").between(DWApproximateFloatValue(3.1));
@@ -118,22 +116,18 @@
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
 }
 
 - (void)query {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
-    if (conf) {
+    if (self.tblConf) {
+        NSError * error;
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
         v.array = @[@1,@2,@3];
         
-        [db queryTableWithClass:nil keys:@[keyPathString(v, intNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        [self.db queryTableWithClass:nil keys:@[keyPathString(v, intNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
             maker.dw_conditionWith(array).equalTo(v.array);
         } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
@@ -145,7 +139,7 @@
         }];
         
         
-        NSArray <V *>* ret = [db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        NSArray <V *>* ret = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.loadClass([V class]);
             maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
         }];
@@ -154,19 +148,15 @@
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
 }
 - (void)queryCount {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
-    if (conf) {
+    if (self.tblConf) {
+        NSError * error;
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
-        NSInteger count = [db queryTableForCountWithClass:nil configuration:conf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        NSInteger count = [self.db queryTableForCountWithClass:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
             maker.dw_conditionWith(intNum).equalTo(-100);
         }];
@@ -175,68 +165,71 @@
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
 }
 - (void)queryField {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
-    if (conf) {
-        NSArray * ret = [db queryAllFieldInTable:NO class:Nil configuration:conf error:&error];
+    if (self.tblConf) {
+        NSError * error;
+        NSArray * ret = [self.db queryAllFieldInTable:NO class:Nil configuration:self.tblConf error:&error];
         if (ret) {
             NSLog(@"Query Field Success:%@",ret);
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
 }
 - (void)queryID {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
-    if (conf) {
-        V * ret = [db queryTableWithClass:[V class] Dw_id:@(7) keys:nil configuration:conf error:&error];
+    if (self.tblConf) {
+        NSError * error;
+        V * ret = [self.db queryTableWithClass:[V class] Dw_id:@(7) keys:nil configuration:self.tblConf error:&error];
         if (ret) {
-            NSLog(@"Query ID Success:%@",[db fetchDw_idForModel:ret]);
+            NSLog(@"Query ID Success:%@",[self.db fetchDw_idForModel:ret]);
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
 }
 - (void)clear {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
-    if (conf) {
-        if ([db clearTableWithConfiguration:conf error:&error]) {
-            NSLog(@"Clear Success:%@",[db queryTableWithClass:[V class] keys:nil configuration:conf error:&error condition:nil]);
+    if (self.tblConf) {
+        NSError * error;
+        if ([self.db clearTableWithConfiguration:self.tblConf error:&error]) {
+            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil configuration:self.tblConf error:&error condition:nil]);
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
 }
 - (void)drop {
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * error;
-    ///此处使用表名数据库句柄
-    DWDatabaseConfiguration * conf = [db fetchDBConfigurationWithName:@"V_SQL" tabelName:@"V_tbl" error:&error];
-    if (conf) {
-        if ([db deleteTableWithConfiguration:conf error:&error]) {
-            NSLog(@"Drop success:%d",[db isTableExistWithTableName:@"V_SQL" configuration:conf error:&error]);
+    if (self.tblConf) {
+        NSError * error;
+        if ([self.db deleteTableWithConfiguration:self.tblConf error:&error]) {
+            NSLog(@"Drop success:%d",[self.db isTableExistWithTableName:@"V_SQL" configuration:self.tblConf error:&error]);
         } else {
             NSLog(@"%@",error);
         }
-    } else {
-        NSLog(@"%@",error);
     }
+}
+
+-(void)transformToDictionary {
+    C * classC = [C new];
+    classC.a = @"hello";
+    classC.aNum = 1.f;
+    B * classB = [B new];
+    classB.b = 100;
+    classB.str = [B class];
+    classC.classB = classB;
+    A * classA = [A new];
+    classA.a = @[@1,@2,@3];
+    classB.classA = classA;
+    
+    
+    NSDictionary * dic = [classC dw_transformToDictionaryForKeys:@[@"a",@"classB"]];
+    NSLog(@"%@",dic);
+}
+
+-(void)transformToModel {
+    C * model = [C dw_modelFromDictionary:@{@"a":@"hello",@"aNum":@(1.f),@"classB":@{@"b":@"100",@"str":@"B",@"classA":@{@"a":@[@1,@2,@3]}},@"array":@[@{@"a":@[@1,@2,@3]},@{@"a":@[@1,@2,@3,@4]}]}];
+    NSLog(@"%@",model);
 }
 
 #pragma mark --- tool method ---
@@ -246,14 +239,18 @@
 }
 
 -(void)configDB {
-    DWDatabase * db = [DWDatabase shareDB];
     NSError * err;
-    if ([db initializeDBWithError:nil]) {
-        NSLog(@"%@",db.allDBs);
+    if ([self.db initializeDBWithError:nil]) {
+        NSLog(@"%@",self.db.allDBs);
     } else {
         NSLog(@"%@",err);
     }
     NSLog(@"%@",defaultSavePath());
+    
+    self.tblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath error:&err];
+    if (!self.tblConf) {
+        NSLog(@"%@",err);
+    }
 }
 
 #pragma mark --- tableView delegate ---
@@ -315,6 +312,16 @@
             [self drop];
         }
             break;
+        case 9:
+        {
+            [self transformToDictionary];
+        }
+            break;
+        case 10:
+        {
+            [self transformToModel];
+        }
+            break;
         default:
             break;
     }
@@ -344,12 +351,19 @@
             @"查ID",
             @"清表",
             @"删表",
-                     
-                     
+            @"模型转字典",
+            @"字典转模型",
                      
         ].mutableCopy;
     }
     return _dataArr;
+}
+
+-(DWDatabase *)db {
+    if (!_db) {
+        _db = [DWDatabase shareDB];
+    }
+    return _db;
 }
 
 @end

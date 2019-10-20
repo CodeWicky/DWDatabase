@@ -72,9 +72,13 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 
 @property (nonatomic ,assign, readonly) BOOL isCNumber;///< whether property is c number
 
+@property (nonatomic ,assign, readonly) BOOL isContainerProperty;///< wheter property is container property like NSArray/NSMutableArray/NSSet/NSMutableSet
+
 @property (nullable, nonatomic, assign, readonly) Class cls;      ///< may be nil
 @property (nonatomic, assign, readonly) SEL getter;               ///< getter (nonnull)
 @property (nonatomic, assign, readonly) SEL setter;               ///< setter (nonnull)
+
+@property (nullable, nonatomic ,assign ,readonly) Class genericClass;///< indicates the container property's generic Class if you have set.
 
 @property (nonatomic ,copy) NSString * tblName;                   ///<property name in table
 
@@ -101,6 +105,11 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 
 @end
 
+@protocol DWDatabaseTransformProtocol <NSObject>
+
++(NSDictionary *)dw_containerPropertyGenericClassMap;
+
+@end
 
 @interface NSObject (DWDatabaseTransform)
 
