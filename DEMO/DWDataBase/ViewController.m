@@ -15,7 +15,11 @@
 #import <DWDatabase/DWDatabaseHeader.h>
 #define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
-@interface ViewController ()
+@interface ViewController ()<UITableViewDataSource,UITableViewDelegate>
+
+@property (nonatomic ,strong) UITableView * mainTab;
+
+@property (nonatomic ,strong) NSMutableArray * dataArr;
 
 @end
 
@@ -24,17 +28,10 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    DWDatabase * db = [DWDatabase shareDB];
-    NSError * err;
-    if ([db initializeDBWithError:nil]) {
-        NSLog(@"%@",db.allDBs);
-    } else {
-        NSLog(@"%@",err);
-    }
-    NSLog(@"%@",defaultSavePath());
+    [self setupUI];
+    [self configDB];
 }
-- (IBAction)insert:(id)sender {
+- (void)insert {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath error:&error];
@@ -79,7 +76,7 @@
     }
 }
 
-- (IBAction)delete:(id)sender {
+- (void)delete {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     V * v = [V new];
@@ -93,7 +90,7 @@
     }
 }
 
-- (IBAction)update:(id)sender {
+- (void)update {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
@@ -126,7 +123,7 @@
     }
 }
 
-- (IBAction)query:(id)sender {
+- (void)query {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
@@ -161,7 +158,7 @@
         NSLog(@"%@",error);
     }
 }
-- (IBAction)queryCount:(id)sender {
+- (void)queryCount {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
@@ -182,7 +179,7 @@
         NSLog(@"%@",error);
     }
 }
-- (IBAction)queryField:(id)sender {
+- (void)queryField {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
@@ -197,7 +194,7 @@
         NSLog(@"%@",error);
     }
 }
-- (IBAction)queryID:(id)sender {
+- (void)queryID {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
@@ -212,7 +209,7 @@
         NSLog(@"%@",error);
     }
 }
-- (IBAction)clear:(id)sender {
+- (void)clear {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     DWDatabaseConfiguration * conf = [db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" error:&error];
@@ -226,7 +223,7 @@
         NSLog(@"%@",error);
     }
 }
-- (IBAction)drop:(id)sender {
+- (void)drop {
     DWDatabase * db = [DWDatabase shareDB];
     NSError * error;
     ///此处使用表名数据库句柄
@@ -242,11 +239,117 @@
     }
 }
 
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+#pragma mark --- tool method ---
+-(void)setupUI {
+    self.view.backgroundColor = [UIColor lightGrayColor];
+    [self.view addSubview:self.mainTab];
 }
 
+-(void)configDB {
+    DWDatabase * db = [DWDatabase shareDB];
+    NSError * err;
+    if ([db initializeDBWithError:nil]) {
+        NSLog(@"%@",db.allDBs);
+    } else {
+        NSLog(@"%@",err);
+    }
+    NSLog(@"%@",defaultSavePath());
+}
+
+#pragma mark --- tableView delegate ---
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell * cell = [tableView dequeueReusableCellWithIdentifier:@"cell" forIndexPath:indexPath];
+    NSString * title = self.dataArr[indexPath.row];
+    cell.textLabel.text = title;
+    return cell;
+}
+
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return self.dataArr.count;
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    switch (indexPath.row) {
+        case 0:
+        {
+            [self insert];
+        }
+            break;
+        case 1:
+        {
+            [self delete];
+        }
+            break;
+        case 2:
+        {
+            [self update];
+        }
+            break;
+        case 3:
+        {
+            [self query];
+        }
+            break;
+        case 4:
+        {
+            [self queryCount];
+        }
+            break;
+        case 5:
+        {
+            [self queryField];
+        }
+            break;
+        case 6:
+        {
+            [self queryID];
+        }
+            break;
+        case 7:
+        {
+            [self clear];
+        }
+            break;
+        case 8:
+        {
+            [self drop];
+        }
+            break;
+        default:
+            break;
+    }
+}
+
+
+#pragma mark --- setter/getter ---
+-(UITableView *)mainTab {
+    if (!_mainTab) {
+        _mainTab = [[UITableView alloc] initWithFrame:self.view.bounds style:(UITableViewStylePlain)];
+        _mainTab.delegate = self;
+        _mainTab.dataSource = self;
+        [_mainTab registerClass:[UITableViewCell class] forCellReuseIdentifier:@"cell"];
+    }
+    return _mainTab;
+}
+
+-(NSMutableArray *)dataArr {
+    if (!_dataArr) {
+        _dataArr = @[
+            @"增",
+            @"删",
+            @"改",
+            @"查",
+            @"查个数",
+            @"查字段",
+            @"查ID",
+            @"清表",
+            @"删表",
+                     
+                     
+                     
+        ].mutableCopy;
+    }
+    return _dataArr;
+}
 
 @end
