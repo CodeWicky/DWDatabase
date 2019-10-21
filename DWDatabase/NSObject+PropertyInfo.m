@@ -126,8 +126,8 @@ NS_INLINE NSDateFormatter *dateFormatter(){
 }
 
 ///根据属性信息将输入值转换为container Value
-NS_INLINE id transformValueToContainerValue(id value,DWPrefix_YYClassPropertyInfo * property) {
-    if (!value || !property || [value isEqual:[NSNull null]]) {
+NS_INLINE id transformValueToContainerValue(id value,DWPrefix_YYEncodingNSType containerType) {
+    if (!value || [value isEqual:[NSNull null]]) {
         return nil;
     }
     id aV = value;
@@ -140,42 +140,77 @@ NS_INLINE id transformValueToContainerValue(id value,DWPrefix_YYClassPropertyInf
     if (!aV) {
         return nil;
     }
-    if (property.nsType == DWPrefix_YYEncodingTypeNSArray || property.nsType == DWPrefix_YYEncodingTypeNSMutableArray) {
-        if ([aV isKindOfClass:[NSDictionary class]]) {
-            aV = [aV allValues];
-        } else if ([aV isKindOfClass:[NSSet class]]) {
-            aV = [aV allObjects];
-        }
-        
-        if ([aV isKindOfClass:[NSArray class]]) {
-            if (property.nsType == DWPrefix_YYEncodingTypeNSArray) {
-                return aV;
-            } else {
-                return [aV mutableCopy];
+    
+    switch (containerType) {
+        case DWPrefix_YYEncodingTypeNSArray:
+        case DWPrefix_YYEncodingTypeNSMutableArray:
+        {
+            if ([aV isKindOfClass:[NSDictionary class]]) {
+                aV = [aV allValues];
+            } else if ([aV isKindOfClass:[NSSet class]]) {
+                aV = [aV allObjects];
+            }
+            
+            if ([aV isKindOfClass:[NSArray class]]) {
+                if (containerType == DWPrefix_YYEncodingTypeNSArray) {
+                    return aV;
+                } else {
+                    return [aV mutableCopy];
+                }
             }
         }
-    } else if (property.nsType == DWPrefix_YYEncodingTypeNSDictionary || property.nsType == DWPrefix_YYEncodingTypeNSMutableDictionary) {
-        if ([aV isKindOfClass:[NSSet class]]) {
-            if (property.nsType == DWPrefix_YYEncodingTypeNSDictionary) {
-                return aV;
-            } else {
-                return [aV mutableCopy];
+            break;
+        case DWPrefix_YYEncodingTypeNSDictionary:
+        case DWPrefix_YYEncodingTypeNSMutableDictionary:
+        {
+            if ([aV isKindOfClass:[NSSet class]]) {
+                if ([aV count]) {
+                    aV = [aV allObjects];
+                } else {
+                    aV = nil;
+                }
+            }
+            
+            if ([aV isKindOfClass:[NSArray class]]) {
+                if ([aV count]) {
+                    NSMutableDictionary * tmp = [NSMutableDictionary dictionaryWithCapacity:0];
+                    [aV enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                        tmp[[@(idx) stringValue]] = obj;
+                    }];
+                    aV = [tmp copy];
+                } else {
+                    aV = nil;
+                }
+            }
+            
+            if ([aV isKindOfClass:[NSDictionary class]]) {
+                if (containerType == DWPrefix_YYEncodingTypeNSDictionary) {
+                    return aV;
+                } else {
+                    return [aV mutableCopy];
+                }
             }
         }
-    } else if (property.nsType == DWPrefix_YYEncodingTypeNSSet || property.nsType == DWPrefix_YYEncodingTypeNSMutableSet) {
-        if ([aV isKindOfClass:[NSArray class]]) {
-            aV = [NSSet setWithArray:aV];
-        } else if ([aV isKindOfClass:[NSDictionary class]]) {
-            aV = [NSSet setWithArray:[aV allValues]];
-        }
-        
-        if ([aV isKindOfClass:[NSSet class]]) {
-            if (property.nsType == DWPrefix_YYEncodingTypeNSSet) {
-                return aV;
-            } else {
-                return [aV mutableCopy];
+            break;
+        case DWPrefix_YYEncodingTypeNSSet:
+        case DWPrefix_YYEncodingTypeNSMutableSet:
+        {
+            if ([aV isKindOfClass:[NSArray class]]) {
+                aV = [NSSet setWithArray:aV];
+            } else if ([aV isKindOfClass:[NSDictionary class]]) {
+                aV = [NSSet setWithArray:[aV allValues]];
+            }
+            
+            if ([aV isKindOfClass:[NSSet class]]) {
+                if (containerType == DWPrefix_YYEncodingTypeNSSet) {
+                    return aV;
+                } else {
+                    return [aV mutableCopy];
+                }
             }
         }
+        default:
+            break;
     }
     return nil;
 }
@@ -550,7 +585,7 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
                 case DWPrefix_YYEncodingTypeNSSet:
                 case DWPrefix_YYEncodingTypeNSMutableSet:
                 {
-                    id aV = transformValueToContainerValue(value, property);
+                    id aV = transformValueToContainerValue(value, property.nsType);
                     if (value) {
                         [model setValue:aV forKey:property.name];
                     }
@@ -661,6 +696,8 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
             case DWPrefix_YYEncodingTypeNSMutableArray:
             case DWPrefix_YYEncodingTypeNSSet:
             case DWPrefix_YYEncodingTypeNSMutableSet:
+            case DWPrefix_YYEncodingTypeNSDictionary:
+            case DWPrefix_YYEncodingTypeNSMutableDictionary:
             {
                 _isContainerProperty = YES;
             }
@@ -750,7 +787,7 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
                     if (valueClazz) {
                         if (class_isMetaClass(valueClazz)) {
                             [info configGenericClass:mapperValue];
-                        } else if ([[NSString class] isEqual:valueClazz]) {
+                        } else if ([NSClassFromString(@"__NSCFConstantString") isEqual:valueClazz]) {
                             valueClazz = NSClassFromString(mapperValue);
                             if (valueClazz) {
                                 [info configGenericClass:valueClazz];
@@ -848,8 +885,11 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
 }
 
 +(instancetype)dw_modelFromDictionary:(NSDictionary *)dictionary {
+    if (![dictionary isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
     NSObject * ret = [self new];
-    if (![dictionary isKindOfClass:[NSDictionary class]]|| !dictionary.allKeys.count) {
+    if (!dictionary.allKeys.count) {
         return ret;
     }
     
@@ -1000,55 +1040,128 @@ NS_INLINE void modelSetValueWithPropertyInfoRecursive(id model,id value,DWPrefix
             }
         }
     } else if (info.type == DWPrefix_YYEncodingTypeObject && info.isContainerProperty && info.genericClass) {
-        ///value 是一个字典，且属性是带泛型的容器属性，尝试做包装
-        value = transformValueToContainerValue(value, info);
+        ///value 可转换为容器类型，且属性是带泛型的容器属性，尝试做包装
+        ///尝试按属性类型取出容器值
+        value = transformValueToContainerValue(value, info.nsType);
         if (value) {
-            NSMutableArray * container = [NSMutableArray arrayWithCapacity:0];
-            void(^transformBlock)(id obj) = ^(id obj) {
-                if ([obj isKindOfClass:[NSDictionary class]]) {
-                    Class cls = info.genericClass;
-                    if (class_isMetaClass(cls)) {
-                        NSLog(@"meta!!!!!");
+            switch (info.nsType) {
+                case DWPrefix_YYEncodingTypeNSDictionary:
+                case DWPrefix_YYEncodingTypeNSMutableDictionary:
+                {
+                    NSMutableDictionary * container = [NSMutableDictionary dictionaryWithCapacity:0];
+                    NSDictionary * aV = value;
+                    [aV enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
+                        if ([obj isKindOfClass:[NSDictionary class]]) {
+                            id modelValue = [info.genericClass dw_modelFromDictionary:obj];
+                            if (modelValue) {
+                                [container setValue:modelValue forKey:key];
+                            } else {
+                                [container setValue:obj forKey:key];
+                            }
+                        } else if ([obj isKindOfClass:[NSArray class]] || [obj isKindOfClass:[NSSet class]]) {
+                            if ([obj count]) {
+                                NSMutableArray * tmpContainer = [NSMutableArray arrayWithCapacity:[obj count]];
+                                
+                                void(^transformBlock)(id subObj) = ^(id subObj) {
+                                    id modelValue = [info.genericClass dw_modelFromDictionary:subObj];
+                                    if (modelValue) {
+                                        [tmpContainer addObject:modelValue];
+                                    } else {
+                                        [tmpContainer addObject:subObj];
+                                    }
+                                };
+                                
+                                if ([obj isKindOfClass:[NSArray class]]) {
+                                    [obj enumerateObjectsUsingBlock:^(id  _Nonnull subObj, NSUInteger idx, BOOL * _Nonnull stop) {
+                                        transformBlock(subObj);
+                                    }];
+                                } else {
+                                    [obj enumerateObjectsUsingBlock:^(id  _Nonnull subObj, BOOL * _Nonnull stop) {
+                                        transformBlock(subObj);
+                                    }];
+                                }
+                                
+                                
+                                if ([obj isKindOfClass:[NSSet class]]) {
+                                    tmpContainer = (NSMutableArray *)[NSMutableSet setWithArray:tmpContainer];
+                                }
+                                
+                                if (![obj isKindOfClass:[NSMutableArray class]] && ![obj isKindOfClass:[NSMutableSet class]]) {
+                                    tmpContainer = [tmpContainer copy];
+                                }
+                                
+                                [container setValue:tmpContainer forKey:key];
+                                
+                            }
+                        } else {
+                            [container setValue:obj forKey:key];
+                        }
+                    }];
+                    
+                    if (!container.allKeys.count) {
+                        container = nil;
                     }
-                    id modelValue = [info.genericClass dw_modelFromDictionary:obj];
-                    if (modelValue) {
-                        [container addObject:modelValue];
-                    } else {
-                        [container addObject:obj];
+                    
+                    if (container) {
+                        if (info.nsType == DWPrefix_YYEncodingTypeNSDictionary) {
+                            container = [container copy];
+                        }
+                        [model setValue:container forKey:info.name];
                     }
-                } else {
-                    [container addObject:obj];
                 }
-            };
-            
-            if (info.nsType == DWPrefix_YYEncodingTypeNSArray || info.nsType == DWPrefix_YYEncodingTypeNSMutableArray) {
-                NSArray * aV = value;
-                [aV enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                    transformBlock(obj);
-                }];
-                
-                if (!container.count) {
-                    container = nil;
+                    break;
+                case DWPrefix_YYEncodingTypeNSArray:
+                case DWPrefix_YYEncodingTypeNSMutableArray:
+                case DWPrefix_YYEncodingTypeNSSet:
+                case DWPrefix_YYEncodingTypeNSMutableSet:
+                {
+                    NSMutableArray * container = [NSMutableArray arrayWithCapacity:0];
+                    void(^transformBlock)(id obj) = ^(id obj) {
+                        if ([obj isKindOfClass:[NSDictionary class]]) {
+                            id modelValue = [info.genericClass dw_modelFromDictionary:obj];
+                            if (modelValue) {
+                                [container addObject:modelValue];
+                            } else {
+                                [container addObject:obj];
+                            }
+                        } else {
+                            [container addObject:obj];
+                        }
+                    };
+                    
+                    if (info.nsType == DWPrefix_YYEncodingTypeNSArray || info.nsType == DWPrefix_YYEncodingTypeNSMutableArray) {
+                        NSArray * aV = value;
+                        [aV enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                            transformBlock(obj);
+                        }];
+                        
+                        if (!container.count) {
+                            container = nil;
+                        }
+                        
+                    } else if (info.nsType == DWPrefix_YYEncodingTypeNSSet || info.nsType == DWPrefix_YYEncodingTypeNSMutableSet) {
+                        NSSet * aV = value;
+                        [aV enumerateObjectsUsingBlock:^(id  _Nonnull obj, BOOL * _Nonnull stop) {
+                            transformBlock(obj);
+                        }];
+                        
+                        if (!container.count) {
+                            container = nil;
+                        } else {
+                            container = (NSMutableArray *)[NSMutableSet setWithArray:container];
+                        }
+                    }
+                    
+                    if (container) {
+                        if (info.nsType == DWPrefix_YYEncodingTypeNSArray || info.nsType == DWPrefix_YYEncodingTypeNSSet) {
+                            container = [container copy];
+                        }
+                        [model setValue:container forKey:info.name];
+                    }
                 }
-                
-            } else if (info.nsType == DWPrefix_YYEncodingTypeNSSet || info.nsType == DWPrefix_YYEncodingTypeNSMutableSet) {
-                NSSet * aV = value;
-                [aV enumerateObjectsUsingBlock:^(id  _Nonnull obj, BOOL * _Nonnull stop) {
-                    transformBlock(obj);
-                }];
-                
-                if (!container.count) {
-                    container = nil;
-                } else {
-                    container = (NSMutableArray *)[NSMutableSet setWithArray:container];
-                }
-            }
-            
-            if (container) {
-                if (info.nsType == DWPrefix_YYEncodingTypeNSArray || info.nsType == DWPrefix_YYEncodingTypeNSSet) {
-                    container = [container copy];
-                }
-                [model setValue:container forKey:info.name];
+                    break;
+                default:
+                    break;
             }
         }
     } else {

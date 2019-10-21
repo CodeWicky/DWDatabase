@@ -17,4 +17,10 @@
 
 @property (nonatomic ,strong) NSArray <A *>* array;
 
+@property (nonatomic ,strong) NSDictionary * dic;
+
+@property (nonatomic ,strong) NSDictionary * modelDic;
+
+@property (nonatomic ,strong) NSDictionary * dicFromArray;
+
 @end

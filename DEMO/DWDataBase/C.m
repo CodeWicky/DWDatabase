@@ -16,6 +16,8 @@
 +(NSDictionary *)dw_containerPropertyGenericClassMap {
     return @{
         @"array":[A class],
+        @"modelDic":[A class],
+        @"dicFromArray":@"A",
     };
 }
 
