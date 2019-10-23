@@ -12,8 +12,9 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
-#define dbPath @"/Users/momo/Desktop/a.sqlite3"
+//#define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
+#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
 @interface ViewController ()<UITableViewDataSource,UITableViewDelegate>
 
 @property (nonatomic ,strong) UITableView * mainTab;
@@ -229,6 +230,14 @@
 
 -(void)transformToModel {
     C * model = [C dw_modelFromDictionary:@{@"a":@"hello",@"aNum":@(1.f),@"classB":@{@"b":@"100",@"str":@"B",@"classA":@{@"a":@[@1,@2,@3]}},@"array":@[@{@"a":@[@1,@2,@3]},@{@"a":@[@1,@2,@3,@4]}],@"dic":@{@"a":@[@1]},@"modelDic":@{@"a":@{@"a":@[@1,@2,@3,@4]},@"b":@1,@"c":@[@{@"a":@[@1,@2,@3,@4]},@2,@{@"a":@[@1,@2,@3,@4]}]},@"dicFromArray":@[@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]}]}];
+    
+    DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath error:nil];
+    if (CTblConf) {
+        BOOL success = [self.db insertTableWithModel:model keys:nil configuration:CTblConf error:nil];
+        NSLog(@"Insert Success:%d",success);
+    }
+    
+    
     NSLog(@"%@",model);
 }
 

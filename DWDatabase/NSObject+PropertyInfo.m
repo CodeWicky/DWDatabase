@@ -364,7 +364,11 @@ static id modelValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo * pro
                         if ([value isKindOfClass:[NSSet class]]) {
                             value = [value allObjects];
                         }
-                        return [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
+                        
+                        if ([NSJSONSerialization isValidJSONObject:value]) {
+                            return [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
+                        }
+                        return nil;
                     } else if ([value isKindOfClass:[NSData class]] || [value isKindOfClass:[NSString class]]) {
                         id tmp = value;
                         if ([tmp isKindOfClass:[NSString class]]) {
