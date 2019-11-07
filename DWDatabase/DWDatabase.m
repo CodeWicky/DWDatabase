@@ -878,7 +878,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return nil;
     }
     
-    return [self dw_queryTableWithModel:[cls new] tableName:conf.tableName conditionMap:@{kUniqueID:Dw_id} keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error condition:nil resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    return [self dw_queryTableWithClass:cls tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error condition:^(DWDatabaseConditionMaker *maker) {
+        maker.loadClass(cls);
+        maker.conditionWith(kUniqueID).equalTo(Dw_id);
+    } resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
@@ -1061,7 +1064,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 #pragma mark ------ 查询表 ------
 
--(NSArray <__kindof NSObject *>*)dw_queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionMap:(NSDictionary *)conditionMap keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil,NSError * __autoreleasing * error))handler {
+-(NSArray <__kindof NSObject *>*)dw_queryTableWithClass:(Class)clazz tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil,NSError * __autoreleasing * error))handler {
     if (!queue) {
         NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
         safeLinkError(error, err);
@@ -1072,7 +1075,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         safeLinkError(error, err);
         return nil;
     }
-    if (!model && !condition) {
+    if (!clazz && !condition) {
         NSError * err = errorWithMessage(@"Invalid query without any condition.", 10010);
         safeLinkError(error, err);
         return nil;
@@ -1090,7 +1093,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         condition(maker);
         cls = [maker fetchQueryClass];
         if (!cls) {
-            cls = [model class];
+            cls = clazz;
         }
         saveKeys = [self propertysToSaveWithClass:cls];
         map = databaseMapFromClass(cls);
@@ -1101,16 +1104,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
         [conditionStrings addObjectsFromArray:[maker fetchConditions]];
         [validConditionKeys addObjectsFromArray:[maker fetchValidKeys]];
     } else {
-        cls = [model class];
+        cls = clazz;
         saveKeys = [self propertysToSaveWithClass:cls];
         map = databaseMapFromClass(cls);
-        if (conditionMap.allKeys.count) {
-            [conditionMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
-                [args addObject:obj];
-                [conditionStrings addObject:[key stringByAppendingString:@" = ?"]];
-                [validConditionKeys addObject:[key stringByAppendingString:@"0"]];
-            }];
-        }
     }
     
     if (!saveKeys.count) {
@@ -1175,8 +1171,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     [validKeys addObjectsFromArray:validConditionKeys];
 
     NSString * sql = nil;
-    ///先尝试取缓存的sql
-    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kQueryPrefix class:cls tblName:tblName keys:validKeys];
+    ///先尝试取缓存的sql(这里要考虑数组顺序的影响，由于validQueryKeys是由字典遍历后过滤得来的，所以顺序可以保证。conditionStrings为查询条件字段，由于目前只能从maker中获取，故顺序收maker中编写顺序影响，故应对conditionStrings做排序后再行拼装)
+    ///获取sql拼装数组
+    NSArray * sqlCombineArray = [self combineArrayWith:validQueryKeys extraToSort:conditionStrings];
+    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kQueryPrefix class:cls tblName:tblName keys:sqlCombineArray];
 
     ///有排序添加排序
     NSString * orderField = nil;
@@ -1531,7 +1529,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(NSArray <__kindof NSObject *>*)dw_queryTableWithTableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
 
-    return [self dw_queryTableWithModel:nil tableName:tblName conditionMap:nil keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    return [self dw_queryTableWithClass:nil tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
@@ -1566,7 +1564,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!condition) {
         return -1;
     }
-    NSArray * ret = [self dw_queryTableWithModel:nil tableName:tblName conditionMap:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    NSArray * ret = [self dw_queryTableWithClass:nil tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
         [resultArr addObject:@1];
     }];
     
@@ -1693,6 +1691,26 @@ static void* dbOpQKey = "dbOperationQueueKey";
     NSString * keyString = [keys componentsJoinedByString:@"-"];
     keyString = [NSString stringWithFormat:@"%@-%@-%@-%@",prefix,NSStringFromClass(cls),tblName,keyString];
     return keyString;
+}
+
+-(NSArray *)combineArrayWith:(NSArray <NSString *>*)array extraToSort:(NSArray <NSString *>*)extra {
+    ///这里因为使用场景中，第一个数组为不关心排序的数组，故第一个数组直接添加，第二个数组排序后添加
+    if (array.count + extra.count == 0) {
+        return nil;
+    }
+    NSMutableArray * ctn = [NSMutableArray arrayWithCapacity:array.count + extra.count];
+    if (array.count) {
+        [ctn addObjectsFromArray:array];
+    }
+    
+    if (extra.count) {
+        extra = [extra sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
+            return [obj1 compare:obj2 options:0] == NSOrderedAscending;
+        }];
+        [ctn addObjectsFromArray:extra];
+    }
+    
+    return [ctn copy];
 }
 
 -(void)configInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args appendingString:(NSString *)appending {
