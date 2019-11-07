@@ -10,6 +10,7 @@
 
 typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
     DWDatabaseValueRelationEqual,
+    DWDatabaseValueRelationNotEqual,
     DWDatabaseValueRelationGreater,
     DWDatabaseValueRelationLess,
     DWDatabaseValueRelationGreaterOrEqual,
@@ -169,6 +170,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
     switch (self.relation) {
         case DWDatabaseValueRelationEqual:
             return [NSString stringWithFormat:@"%@ = ?",key];
+        case DWDatabaseValueRelationNotEqual:
+            return [NSString stringWithFormat:@"%@ != ?",key];
         case DWDatabaseValueRelationGreater:
             return [NSString stringWithFormat:@"%@ > ?",key];
         case DWDatabaseValueRelationLess:
@@ -548,6 +551,13 @@ static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NS
     return ^(id value) {
         NSLog(@"Setup condition with an equal value:%@",value);
         return installCondition(self, value, DWDatabaseValueRelationEqual);
+    };
+}
+
+-(DWDatabaseConditionValue)notEqualTo {
+    return ^(id value) {
+        NSLog(@"Setup condition with an not equal value:%@",value);
+        return installCondition(self, value, DWDatabaseValueRelationNotEqual);
     };
 }
 

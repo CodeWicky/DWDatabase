@@ -120,6 +120,9 @@ loadClass = nil
 ///快速为创建的条件添加一个要相等的值（可以为任意类型数据，内部自动转换为对象）
 #define equalTo(value) equalTo(DWDataBaseBoxValue(value))
 
+///快速为创建的条件添加一个不相等的值
+#define notEqualTo(value) notEqualTo(DWDataBaseBoxValue(value))
+
 ///快速为创建的条件添加一个要大于的值
 #define greaterThan(value) greaterThan(DWDataBaseBoxValue(value))
 

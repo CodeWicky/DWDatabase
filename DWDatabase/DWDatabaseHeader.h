@@ -10,5 +10,6 @@
 
 #import "DWDatabaseMacro.h"   
 #import "DWDatabase.h"
+#import "NSObject+PropertyInfo.h"
 
 #endif /* DWDatabaseHeader_h */

@@ -52,6 +52,9 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 ///指定当前条件为等于指定值的条件
 @property (nonatomic ,copy) DWDatabaseConditionValue equalTo;
 
+///指定当前条件为不等于指定值得条件
+@property (nonatomic ,copy) DWDatabaseConditionValue notEqualTo;
+
 ///指定当前条件为大于指定值的条件
 @property (nonatomic ,copy) DWDatabaseConditionValue greaterThan;
 

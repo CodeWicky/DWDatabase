@@ -791,7 +791,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
                         NSString * name = propertyInfoTblName(obj, map);
                         if (name.length) {
                             id value = [set objectForColumn:name];
-                            modelSetValueWithPropertyInfo(tmp, obj, value);
+                            [tmp dw_setValue:value forPropertyInfo:obj];
                             validValue = YES;
                         }
                     }
@@ -878,7 +878,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return nil;
     }
     
-    return [self dw_queryTableWithModel:[cls new] tableName:conf.tableName conditionMap:@{kUniqueID:Dw_id} keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error condition:nil resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    return [self dw_queryTableWithClass:cls tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error condition:^(DWDatabaseConditionMaker *maker) {
+        maker.loadClass(cls);
+        maker.conditionWith(kUniqueID).equalTo(Dw_id);
+    } resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
@@ -893,7 +896,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
                 NSString * name = propertyInfoTblName(obj, databaseMap);
                 if (name.length) {
                     id value = [set objectForColumn:name];
-                    modelSetValueWithPropertyInfo(tmp, obj, value);
+                    [tmp dw_setValue:value forPropertyInfo:obj];
                     validValue = YES;
                 }
             }
@@ -1061,7 +1064,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 #pragma mark ------ 查询表 ------
 
--(NSArray <__kindof NSObject *>*)dw_queryTableWithModel:(NSObject *)model tableName:(NSString *)tblName conditionMap:(NSDictionary *)conditionMap keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil,NSError * __autoreleasing * error))handler {
+-(NSArray <__kindof NSObject *>*)dw_queryTableWithClass:(Class)clazz tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil,NSError * __autoreleasing * error))handler {
     if (!queue) {
         NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
         safeLinkError(error, err);
@@ -1072,7 +1075,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         safeLinkError(error, err);
         return nil;
     }
-    if (!model && !condition) {
+    if (!clazz && !condition) {
         NSError * err = errorWithMessage(@"Invalid query without any condition.", 10010);
         safeLinkError(error, err);
         return nil;
@@ -1090,7 +1093,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         condition(maker);
         cls = [maker fetchQueryClass];
         if (!cls) {
-            cls = [model class];
+            cls = clazz;
         }
         saveKeys = [self propertysToSaveWithClass:cls];
         map = databaseMapFromClass(cls);
@@ -1101,16 +1104,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
         [conditionStrings addObjectsFromArray:[maker fetchConditions]];
         [validConditionKeys addObjectsFromArray:[maker fetchValidKeys]];
     } else {
-        cls = [model class];
+        cls = clazz;
         saveKeys = [self propertysToSaveWithClass:cls];
         map = databaseMapFromClass(cls);
-        if (conditionMap.allKeys.count) {
-            [conditionMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
-                [args addObject:obj];
-                [conditionStrings addObject:[key stringByAppendingString:@" = ?"]];
-                [validConditionKeys addObject:[key stringByAppendingString:@"0"]];
-            }];
-        }
     }
     
     if (!saveKeys.count) {
@@ -1175,8 +1171,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     [validKeys addObjectsFromArray:validConditionKeys];
 
     NSString * sql = nil;
-    ///先尝试取缓存的sql
-    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kQueryPrefix class:cls tblName:tblName keys:validKeys];
+    ///先尝试取缓存的sql(这里要考虑数组顺序的影响，由于validQueryKeys是由字典遍历后过滤得来的，所以顺序可以保证。conditionStrings为查询条件字段，由于目前只能从maker中获取，故顺序收maker中编写顺序影响，故应对conditionStrings做排序后再行拼装)
+    ///获取sql拼装数组
+    NSArray * sqlCombineArray = [self combineArrayWith:validQueryKeys extraToSort:conditionStrings];
+    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kQueryPrefix class:cls tblName:tblName keys:sqlCombineArray];
 
     ///有排序添加排序
     NSString * orderField = nil;
@@ -1531,7 +1529,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(NSArray <__kindof NSObject *>*)dw_queryTableWithTableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
 
-    return [self dw_queryTableWithModel:nil tableName:tblName conditionMap:nil keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    return [self dw_queryTableWithClass:nil tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
@@ -1546,7 +1544,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
                 NSString * name = propertyInfoTblName(obj, databaseMap);
                 if (name.length) {
                     id value = [set objectForColumn:name];
-                    modelSetValueWithPropertyInfo(tmp, obj, value);
+                    [tmp dw_setValue:value forPropertyInfo:obj];
                     validValue = YES;
                 }
             }
@@ -1566,7 +1564,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!condition) {
         return -1;
     }
-    NSArray * ret = [self dw_queryTableWithModel:nil tableName:tblName conditionMap:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    NSArray * ret = [self dw_queryTableWithClass:nil tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
         [resultArr addObject:@1];
     }];
     
@@ -1644,11 +1642,8 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }
     
     ///没有则计算
-    DWMetaClassInfo * info = [DWMetaClassInfo classInfoFromClass:cls];
-    NSArray * allProps = [[info allPropertyInfos] allKeys];
-    if (![cls conformsToProtocol:@protocol(DWDatabaseSaveProtocol)]) {
-        tmp = allProps;
-    } else if ([cls respondsToSelector:@selector(dw_DataBaseWhiteList)]){
+    NSArray * allProps = [[cls dw_allPropertyInfos] allKeys];
+    if ([cls respondsToSelector:@selector(dw_DataBaseWhiteList)]){
         NSArray * whiteProps = [cls dw_DataBaseWhiteList];
         ///如果白名单不为空，返回白名单交集，为空则代表没有属性要存返回空
         tmp = intersectionOfArray(allProps, whiteProps);
@@ -1668,17 +1663,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 ///获取类指定键值的propertyInfo
 -(NSDictionary *)propertyInfosWithClass:(Class)cls keys:(NSArray *)keys {
-    if (!keys.count || !cls) {
+    if (!cls) {
         return nil;
     }
-    NSMutableDictionary * dic = [NSMutableDictionary dictionaryWithCapacity:0];
-    NSDictionary * all = [[DWMetaClassInfo classInfoFromClass:cls] allPropertyInfos];
-    [keys enumerateObjectsUsingBlock:^(NSString * obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        if ([all.allKeys containsObject:obj] && obj.length) {
-            [dic setValue:[all valueForKey:obj] forKey:obj];
-        }
-    }];
-    return [dic copy];
+    return [cls dw_propertyInfosForKeys:keys];
 }
 
 ///类存表的所有属性信息
@@ -1705,12 +1693,32 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return keyString;
 }
 
+-(NSArray *)combineArrayWith:(NSArray <NSString *>*)array extraToSort:(NSArray <NSString *>*)extra {
+    ///这里因为使用场景中，第一个数组为不关心排序的数组，故第一个数组直接添加，第二个数组排序后添加
+    if (array.count + extra.count == 0) {
+        return nil;
+    }
+    NSMutableArray * ctn = [NSMutableArray arrayWithCapacity:array.count + extra.count];
+    if (array.count) {
+        [ctn addObjectsFromArray:array];
+    }
+    
+    if (extra.count) {
+        extra = [extra sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
+            return [obj1 compare:obj2 options:0] == NSOrderedAscending;
+        }];
+        [ctn addObjectsFromArray:extra];
+    }
+    
+    return [ctn copy];
+}
+
 -(void)configInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args appendingString:(NSString *)appending {
     void (^ab)(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) = nil;
     if (args) {
         ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             if (obj.name) {
-                id value = modelValueWithPropertyInfo(model, obj);
+                id value = [model dw_valueForPropertyInfo:obj];
                 if (value) {
                     NSString * name = propertyInfoTblName(obj, map);
                     if (name.length) {
@@ -1835,7 +1843,7 @@ NS_INLINE void safeLinkError(NSError * __autoreleasing * error ,NSError * error2
 ///获取键值转换表
 NS_INLINE NSDictionary * databaseMapFromClass(Class cls) {
     NSDictionary * map = nil;
-    if ([cls conformsToProtocol:@protocol(DWDatabaseSaveProtocol)] && [cls respondsToSelector:@selector(dw_ModelKeyToDataBaseMap)]) {
+    if ([cls respondsToSelector:@selector(dw_ModelKeyToDataBaseMap)]) {
         map = [cls dw_ModelKeyToDataBaseMap];
     }
     return map;
@@ -1959,460 +1967,6 @@ static BOOL supportSavingWithPropertyInfo(DWPrefix_YYClassPropertyInfo * propert
                       @(DWPrefix_YYEncodingTypeCString),nil];
     });
     return [supportSet containsObject:@(property.type)];
-}
-
-///模型根据propertyInfo取值（用于给FMDB让其落库，故均为FMDB支持的对象类型）
-static id modelValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo * property) {
-    switch (property.type & DWPrefix_YYEncodingTypeMask) {
-        case DWPrefix_YYEncodingTypeBool:
-        case DWPrefix_YYEncodingTypeInt8:
-        case DWPrefix_YYEncodingTypeUInt8:
-        case DWPrefix_YYEncodingTypeInt16:
-        case DWPrefix_YYEncodingTypeUInt16:
-        case DWPrefix_YYEncodingTypeInt32:
-        case DWPrefix_YYEncodingTypeUInt32:
-        case DWPrefix_YYEncodingTypeFloat:
-        case DWPrefix_YYEncodingTypeDouble:
-        {
-            id value = [model valueForKey:property.name];
-            if ([value isEqual:[NSNull null]]) {
-                return @(NAN);
-            } else if ([value isKindOfClass:[NSNumber class]]) {
-                return value;
-            } else if ([value isKindOfClass:[NSString class]]) {
-                if ([value containsString:@"."]) {
-                    return @([value floatValue]);
-                } else {
-                    return @([value integerValue]);
-                }
-            } else {
-                return nil;
-            }
-        }
-        ///不支持NAN
-        case DWPrefix_YYEncodingTypeInt64:
-        case DWPrefix_YYEncodingTypeUInt64:
-        {
-            id value = [model valueForKey:property.name];
-            if ([value isEqual:[NSNull null]]) {
-                return @(0);
-            } else if ([value isKindOfClass:[NSNumber class]]) {
-                return value;
-            } else if ([value isKindOfClass:[NSString class]]) {
-                if ([value containsString:@"."]) {
-                    return @([value floatValue]);
-                } else {
-                    return @([value integerValue]);
-                }
-            } else {
-                return nil;
-            }
-        }
-        case DWPrefix_YYEncodingTypeLongDouble:
-        {
-            long double num = ((long double (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter);
-            return [NSNumber numberWithDouble:num];
-        }
-        case DWPrefix_YYEncodingTypeObject:
-        {
-            id value = [model valueForKey:property.name];
-            switch (property.nsType) {
-                case DWPrefix_YYEncodingTypeNSString:
-                case DWPrefix_YYEncodingTypeNSMutableString:
-                {
-                    if ([value isKindOfClass:[NSString class]]) {
-                        return [value copy];
-                    } else if ([value isKindOfClass:[NSNumber class]]) {
-                        return [NSString stringWithFormat:@"%f",[value floatValue]];
-                    } else if ([value isKindOfClass:[NSData class]]) {
-                        return [[NSString alloc] initWithData:value encoding:NSUTF8StringEncoding];
-                    } else if ([value isKindOfClass:[NSDate class]]) {
-                        return [dateFormatter() stringFromDate:value];
-                    } else if ([value isKindOfClass:[NSURL class]]) {
-                        return [value absoluteString];
-                    } else if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSDictionary class]]) {
-                        NSData * dV = [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
-                        if (!dV) {
-                            return nil;
-                        }
-                        return [[NSString alloc] initWithData:dV encoding:NSUTF8StringEncoding];
-                    } else if ([value isKindOfClass:[NSSet class]]) {
-                        NSData * dV = [NSJSONSerialization dataWithJSONObject:[value allObjects] options:0 error:nil];
-                        if (!dV) {
-                            return nil;
-                        }
-                        return [[NSString alloc] initWithData:dV encoding:NSUTF8StringEncoding];
-                    } else {
-                        return nil;
-                    }
-                }
-                case DWPrefix_YYEncodingTypeNSNumber:
-                {
-                    if ([value isEqual:[NSNull null]]) {
-                        return @(NAN);
-                    } else if ([value isKindOfClass:[NSNumber class]]) {
-                        return value;
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        if ([value containsString:@"."]) {
-                            return @([value floatValue]);
-                        } else {
-                            return @([value integerValue]);
-                        }
-                    } else {
-                        return nil;
-                    }
-                }
-                case DWPrefix_YYEncodingTypeNSData:
-                case DWPrefix_YYEncodingTypeNSMutableData:
-                {
-                    if ([value isKindOfClass:[NSData class]]) {
-                        return [value copy];
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        return [value dataUsingEncoding:NSUTF8StringEncoding];
-                    } else {
-                        return nil;
-                    }
-                }
-                case DWPrefix_YYEncodingTypeNSDate:
-                {
-                    if ([value isKindOfClass:[NSDate class]]) {
-                        return [dateFormatter() stringFromDate:value];
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        if ([dateFormatter() dateFromString:value]) {
-                            return value;
-                        } else {
-                            return nil;
-                        }
-                    } else {
-                        return nil;
-                    }
-                }
-                case DWPrefix_YYEncodingTypeNSURL:
-                {
-                    if ([value isKindOfClass:[NSURL class]]) {
-                        return [value absoluteString];
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        return value;
-                    } else {
-                        return nil;
-                    }
-                }
-                case DWPrefix_YYEncodingTypeNSArray:
-                case DWPrefix_YYEncodingTypeNSMutableArray:
-                case DWPrefix_YYEncodingTypeNSDictionary:
-                case DWPrefix_YYEncodingTypeNSMutableDictionary:
-                case DWPrefix_YYEncodingTypeNSSet:
-                case DWPrefix_YYEncodingTypeNSMutableSet:
-                {
-                    if ([value isEqual:[NSNull null]]) {
-                        return nil;
-                    } else if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSDictionary class]] || [value isKindOfClass:[NSSet class]]) {
-                        if ([value isKindOfClass:[NSSet class]]) {
-                            value = [value allObjects];
-                        }
-                        return [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
-                    } else if ([value isKindOfClass:[NSData class]] || [value isKindOfClass:[NSString class]]) {
-                        id tmp = value;
-                        if ([tmp isKindOfClass:[NSString class]]) {
-                            tmp = [tmp dataUsingEncoding:NSUTF8StringEncoding];
-                        }
-                        id obj = [NSJSONSerialization JSONObjectWithData:tmp options:0 error:nil];
-                        if (obj) {
-                            return tmp;
-                        } else {
-                            return nil;
-                        }
-                    } else {
-                        return nil;
-                    }
-                }
-                default:
-                    return nil;
-            }
-        }
-        case DWPrefix_YYEncodingTypeClass:
-        {
-            id value = ((Class (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter);
-            if ([value isEqual:[NSNull null]]) {
-                return nil;
-            } else if ([value isKindOfClass:[NSString class]]) {
-                return value;
-            } else {
-                if (value != Nil) {
-                    return NSStringFromClass(value);
-                } else {
-                    return nil;
-                }
-            }
-        }
-        case DWPrefix_YYEncodingTypeSEL:
-            return NSStringFromSelector(((SEL (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter));
-        case DWPrefix_YYEncodingTypeCString:
-            return [NSString stringWithUTF8String:((char * (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter)];
-        default:
-            return nil;
-    }
-}
-
-///根据propertyInfo给模型赋值（用于通过FMDB取出数据库中的值后赋值给模型，故需要将数据转化为模型对应属性的数据类型）
-static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo * property,id value) {
-    if (!value) {
-        return;
-    }
-    switch (property.type & DWPrefix_YYEncodingTypeMask) {
-        case DWPrefix_YYEncodingTypeBool:
-        case DWPrefix_YYEncodingTypeInt8:
-        case DWPrefix_YYEncodingTypeUInt8:
-        case DWPrefix_YYEncodingTypeInt16:
-        case DWPrefix_YYEncodingTypeUInt16:
-        case DWPrefix_YYEncodingTypeInt32:
-        case DWPrefix_YYEncodingTypeUInt32:
-        {
-            if ([value isEqual:[NSNull null]]) {
-                ///如果是NULL则赋NAN
-                [model setValue:@(NAN) forKey:property.name];
-            } else if ([value isKindOfClass:[NSNumber class]]) {
-                [model setValue:value forKey:property.name];
-            } else if ([value isKindOfClass:[NSString class]]) {
-                NSNumber * numV = @([value integerValue]);
-                if (numV) {
-                    [model setValue:numV forKey:property.name];
-                }
-            }
-            break;
-        }
-        case DWPrefix_YYEncodingTypeFloat:
-        case DWPrefix_YYEncodingTypeDouble:
-        {
-            if ([value isEqual:[NSNull null]]) {
-                ///如果是NULL则赋NAN
-                [model setValue:@(NAN) forKey:property.name];
-            } else if ([value isKindOfClass:[NSNumber class]]) {
-                [model setValue:value forKey:property.name];
-            } else if ([value isKindOfClass:[NSString class]]) {
-                NSNumber * numV = @(atof([value UTF8String]));
-                if (numV) {
-                    [model setValue:numV forKey:property.name];
-                }
-            }
-            break;
-        }
-        ///不支持NAN
-        case DWPrefix_YYEncodingTypeInt64:
-        case DWPrefix_YYEncodingTypeUInt64:
-        {
-            if ([value isEqual:[NSNull null]]) {
-                ///如果是NULL则赋NAN
-                [model setValue:@(0) forKey:property.name];
-            } else if ([value isKindOfClass:[NSNumber class]]) {
-                [model setValue:value forKey:property.name];
-            } else if ([value isKindOfClass:[NSString class]]) {
-                NSNumber * numV = @(atoll([value UTF8String]));
-                if (numV) {
-                    [model setValue:numV forKey:property.name];
-                }
-            }
-            break;
-        }
-        ///这个类型不支持KVC
-        case DWPrefix_YYEncodingTypeLongDouble:
-        {
-            long double numV = 0;
-            BOOL valid = YES;
-            if ([value isEqual:[NSNull null]]) {
-                numV = NAN;
-            } else if ([value isKindOfClass:[NSNumber class]]) {
-                numV = [value longLongValue];
-            } else if ([value isKindOfClass:[NSString class]]) {
-                numV = atof(([value UTF8String]));
-            } else {
-                valid = NO;
-            }
-            if (valid) {
-                ((void (*)(id, SEL, long double))(void *) objc_msgSend)((id)model, property.setter, numV);
-            }
-            break;
-        }
-        case DWPrefix_YYEncodingTypeObject:
-        {
-            ///FMDB中仅可能取出NSString/NSData/NSNumber/NSNull
-            switch (property.nsType) {
-                case DWPrefix_YYEncodingTypeNSString:
-                case DWPrefix_YYEncodingTypeNSMutableString:
-                {
-                    if ([value isKindOfClass:[NSString class]]) {
-                        if (property.nsType == DWPrefix_YYEncodingTypeNSString) {
-                            [model setValue:value forKey:property.name];
-                        } else {
-                            [model setValue:[value mutableCopy] forKey:property.name];
-                        }
-                    } else if ([value isKindOfClass:[NSNumber class]]) {
-                        NSString * strV = [((NSNumber *)value) stringValue];
-                        if (property.nsType == DWPrefix_YYEncodingTypeNSString) {
-                            [model setValue:strV forKey:property.name];
-                        } else {
-                            [model setValue:[strV mutableCopy] forKey:property.name];
-                        }
-                    } else if ([value isKindOfClass:[NSData class]]) {
-                        NSString * strV = [[NSString alloc] initWithData:value encoding:NSUTF8StringEncoding];
-                        if (strV) {
-                            if (property.nsType == DWPrefix_YYEncodingTypeNSString) {
-                                [model setValue:strV forKey:property.name];
-                            } else {
-                                [model setValue:[strV mutableCopy] forKey:property.name];
-                            }
-                        }
-                    }
-                    break;
-                }
-                case DWPrefix_YYEncodingTypeNSNumber:
-                {
-                    if ([value isEqual:[NSNull null]]) {
-                        [model setValue:@(NAN) forKey:property.name];
-                    } else if ([value isKindOfClass:[NSNumber class]]) {
-                        [model setValue:value forKey:property.name];
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        NSNumber * numV = @(atof([value UTF8String]));
-                        if (numV) {
-                            [model setValue:numV forKey:property.name];
-                        }
-                    }
-                    break;
-                }
-                case DWPrefix_YYEncodingTypeNSData:
-                case DWPrefix_YYEncodingTypeNSMutableData:
-                {
-                    if ([value isKindOfClass:[NSData class]]) {
-                        if (property.nsType == DWPrefix_YYEncodingTypeNSData) {
-                            [model setValue:value forKey:property.name];
-                        } else {
-                            [model setValue:[value mutableCopy] forKey:property.name];
-                        }
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        NSData *dataV = [(NSString *)value dataUsingEncoding:NSUTF8StringEncoding];
-                        if (dataV) {
-                            if (property.nsType == DWPrefix_YYEncodingTypeNSData) {
-                                [model setValue:dataV forKey:property.name];
-                            } else {
-                                [model setValue:[dataV mutableCopy] forKey:property.name];
-                            }
-                        }
-                    }
-                    break;
-                }
-                case DWPrefix_YYEncodingTypeNSDate:
-                {
-                    if ([value isKindOfClass:[NSDate class]]) {
-                        [model setValue:value forKey:property.name];
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        NSDate * dataStr = [dateFormatter() dateFromString:value];
-                        if (dataStr) {
-                            [model setValue:dataStr forKey:property.name];
-                        }
-                    }
-                    break;
-                }
-                case DWPrefix_YYEncodingTypeNSURL:
-                {
-                    if ([value isKindOfClass:[NSURL class]]) {
-                        [model setValue:value forKey:property.name];
-                    } else if ([value isKindOfClass:[NSString class]]) {
-                        NSURL * url = [NSURL URLWithString:value];
-                        if (url) {
-                            [model setValue:url forKey:property.name];
-                        }
-                    }
-                    break;
-                }
-                case DWPrefix_YYEncodingTypeNSArray:
-                case DWPrefix_YYEncodingTypeNSMutableArray:
-                case DWPrefix_YYEncodingTypeNSDictionary:
-                case DWPrefix_YYEncodingTypeNSMutableDictionary:
-                case DWPrefix_YYEncodingTypeNSSet:
-                case DWPrefix_YYEncodingTypeNSMutableSet:
-                {
-                    if ([value isEqual:[NSNull null]]) {
-                        break;
-                    }
-                    id aV = value;
-                    if ([aV isKindOfClass:[NSData class]]) {
-                        aV = [NSJSONSerialization JSONObjectWithData:aV options:(NSJSONReadingAllowFragments) error:nil];
-                    }
-                    if (!aV) {
-                        break;
-                    }
-                    if (property.nsType == DWPrefix_YYEncodingTypeNSArray || property.nsType == DWPrefix_YYEncodingTypeNSMutableArray) {
-                        if ([aV isKindOfClass:[NSArray class]]) {
-                            if (property.nsType == DWPrefix_YYEncodingTypeNSArray) {
-                                [model setValue:aV forKey:property.name];
-                            } else {
-                                [model setValue:[aV mutableCopy] forKey:property.name];
-                            }
-                        }
-                    } else if (property.nsType == DWPrefix_YYEncodingTypeNSDictionary || property.nsType == DWPrefix_YYEncodingTypeNSMutableDictionary) {
-                        if ([aV isKindOfClass:[NSDictionary class]]) {
-                            if (property.nsType == DWPrefix_YYEncodingTypeNSDictionary) {
-                                [model setValue:aV forKey:property.name];
-                            } else {
-                                [model setValue:[aV mutableCopy] forKey:property.name];
-                            }
-                        }
-                    } else {
-                        if ([aV isKindOfClass:[NSArray class]]) {
-                            aV = [NSSet setWithArray:aV];
-                            if ([aV isKindOfClass:[NSSet class]]) {
-                                if (property.nsType == DWPrefix_YYEncodingTypeNSSet) {
-                                    [model setValue:aV forKey:property.name];
-                                } else {
-                                    [model setValue:[aV mutableCopy] forKey:property.name];
-                                }
-                            }
-                        }
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-            break;
-        }
-        case DWPrefix_YYEncodingTypeClass:
-        {
-            if ([value isKindOfClass:[NSString class]]) {
-                ((void (*)(id, SEL, Class))(void *) objc_msgSend)((id)model, property.setter, (Class)NSClassFromString(value));
-            }
-            break;
-        }
-        case DWPrefix_YYEncodingTypeSEL:
-        {
-            if ([value isKindOfClass:[NSString class]]) {
-                ((void (*)(id, SEL, SEL))(void *) objc_msgSend)((id)model, property.setter, (SEL)NSSelectorFromString(value));
-            }
-            break;
-        }
-        case DWPrefix_YYEncodingTypeCString:
-        {
-            if ([value isKindOfClass:[NSString class]]) {
-                ((void (*)(id, SEL,const char *))(void *) objc_msgSend)((id)model, property.setter, [value UTF8String]);
-            }
-            break;
-        }
-        default:
-            break;
-    }
-}
-
-///时间转换格式化
-NS_INLINE NSDateFormatter *dateFormatter(){
-    static NSDateFormatter * formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
-        formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
-    });
-    return formatter;
 }
 
 ///获取额外配置字典
