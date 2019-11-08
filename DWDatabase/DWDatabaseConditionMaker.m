@@ -19,6 +19,10 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
     DWDatabaseValueRelationNotInValues,
     DWDatabaseValueRelationLike,
     DWDatabaseValueRelationBetween,
+    
+    ///以下类型为错误处理类型
+    DWDatabaseValueRelationErrorALL,///创建一个可以匹配所有的条件
+    DWDatabaseValueRelationErrorNone,///创建一个什么也匹配不到的条件
 };
 
 typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
@@ -95,8 +99,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
     [self.validKeys removeAllObjects];
     NSMutableArray * conditionStrings = @[].mutableCopy;
     [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSString * conditionString = [self conditioinStringWithKey:obj];
         NSArray * values = [self conditionValuesWithKey:obj];
+        NSString * conditionString = [self conditioinStringWithKey:obj valueCount:values.count];
         NSString * tblName = nil;
         if ([obj isEqualToString:kUniqueID]) {
             tblName = kUniqueID;
@@ -162,7 +166,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 }
 
 #pragma mark --- tool method ---
--(NSString *)conditioinStringWithKey:(NSString *)key {
+-(NSString *)conditioinStringWithKey:(NSString *)key valueCount:(NSInteger)valueCount {
     ///如果在属性列表中或者是dw_id都视为合法
     if (![self.maker.propertyInfos.allKeys containsObject:key] && ![key isEqualToString:kUniqueID]) {
         return nil;
@@ -181,9 +185,31 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
         case DWDatabaseValueRelationLessOrEqual:
             return [NSString stringWithFormat:@"%@ <= ?",key];
         case DWDatabaseValueRelationInValues:
-            return [NSString stringWithFormat:@"%@ IN ?",key];
+        {
+            if (valueCount > 0) {
+                NSString * tmp = [NSString stringWithFormat:@"%@ IN (",key];
+                for (int i = 0; i < valueCount; ++i) {
+                    tmp = [tmp stringByAppendingString:@"?,"];
+                }
+                tmp = [tmp substringToIndex:tmp.length - 1];
+                tmp = [tmp stringByAppendingString:@")"];
+                return tmp;
+            }
+            return nil;
+        }
         case DWDatabaseValueRelationNotInValues:
-            return [NSString stringWithFormat:@"%@ NOT IN ?",key];
+        {
+            if (valueCount > 0) {
+                NSString * tmp = [NSString stringWithFormat:@"%@ NOT IN (",key];
+                for (int i = 0; i < valueCount; ++i) {
+                    tmp = [tmp stringByAppendingString:@"?,"];
+                }
+                tmp = [tmp substringToIndex:tmp.length - 1];
+                tmp = [tmp stringByAppendingString:@")"];
+                return tmp;
+            }
+            return nil;
+        }
         case DWDatabaseValueRelationLike:
             return [NSString stringWithFormat:@"%@ LIKE ?",key];
         case DWDatabaseValueRelationBetween:
@@ -219,7 +245,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
         case DWDatabaseValueRelationNotInValues:
         {
             if ([self.value isKindOfClass:[NSArray class]] && [self.value count] > 0) {
-                return @[[NSString stringWithFormat:@"('%@')",[(NSArray *)self.value componentsJoinedByString:@"','"]]];
+                return self.value;
             }
             return nil;
         }
@@ -591,23 +617,47 @@ static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NS
 
 -(DWDatabaseConditionValue)inValues {
     return ^(id value) {
-        ///范围条件值为一个数组，如果不是数组则包装成一个数组
+        ///范围条件值为一个数组，如果不是转化成等于条件
         if (![value isKindOfClass:[NSArray class]]) {
-            value = @[value];
+            NSLog(@"Setup condition with a in values:%@,But the single value will be transform to equal value",value);
+            return installCondition(self, value, DWDatabaseValueRelationEqual);
+        } else {
+            ///如果是数组且无元素，转化成无结果的条件
+            NSArray * arrValue = value;
+            if (arrValue.count == 0) {
+                NSLog(@"Setup condition with a in values:%@,But the single value will be transform to error value with no result",value);
+                return installCondition(self, arrValue, DWDatabaseValueRelationErrorNone);
+            } else if (arrValue.count == 1) {
+                ///如果是数组仅一个元素，转换成等于条件
+                NSLog(@"Setup condition with a in values:%@,But the single value will be transform to equal value",value);
+                return installCondition(self, arrValue.lastObject, DWDatabaseValueRelationEqual);
+            } else {
+                NSLog(@"Setup condition with a in values:%@",value);
+                return installCondition(self, value, DWDatabaseValueRelationInValues);
+            }
         }
-        NSLog(@"Setup condition with a in values:%@",value);
-        return installCondition(self, value, DWDatabaseValueRelationInValues);
     };
 }
 
 -(DWDatabaseConditionValue)notInValues {
     return ^(id value) {
-        ///范围条件值为一个数组，如果不是数组则包装成一个数组
         if (![value isKindOfClass:[NSArray class]]) {
-            value = @[value];
+            NSLog(@"Setup condition with a not in values:%@,But the single value will be transform to not equal value",value);
+            return installCondition(self, value, DWDatabaseValueRelationNotEqual);
+        } else {
+            NSArray * arrValue = value;
+            if (arrValue.count == 0) {
+                ///如果是数组且无元素，转化成匹配所有结果的条件
+                NSLog(@"Setup condition with a not in values:%@,But the empty value will be transform to error value which lead to all data",value);
+                return installCondition(self, arrValue, DWDatabaseValueRelationErrorALL);
+            } else if (arrValue.count == 1) {
+                NSLog(@"Setup condition with a not in values:%@,But the single value will be transform to not equal value",value);
+                return installCondition(self, arrValue.lastObject, DWDatabaseValueRelationNotEqual);
+            } else {
+                NSLog(@"Setup condition with a not in values:%@",value);
+                return installCondition(self, value, DWDatabaseValueRelationNotInValues);
+            }
         }
-        NSLog(@"Setup condition with a not in values:%@",value);
-        return installCondition(self, value, DWDatabaseValueRelationNotInValues);
     };
 }
 
@@ -633,9 +683,39 @@ NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * make
     }
     
     DWDatabaseCondition * conf = maker.currentCondition;
-    conf.value = value;
-    conf.relation = relation;
-    conf.maker = maker;
+    switch (relation) {
+        case DWDatabaseValueRelationErrorALL:
+        {
+            NSMutableArray * fixKeys = [NSMutableArray arrayWithCapacity:conf.conditionKeys.count];
+            while (fixKeys.count < conf.conditionKeys.count) {
+                [fixKeys addObject:@"1"];
+            }
+            conf.conditionKeys = fixKeys;
+            conf.value = @"1";
+            conf.relation = DWDatabaseValueRelationEqual;
+            conf.maker = maker;
+        }
+            break;
+        case DWDatabaseValueRelationErrorNone:
+        {
+            NSMutableArray * fixKeys = [NSMutableArray arrayWithCapacity:conf.conditionKeys.count];
+            while (fixKeys.count < conf.conditionKeys.count) {
+                [fixKeys addObject:kUniqueID];
+            }
+            conf.conditionKeys = fixKeys;
+            conf.value = @"0";
+            conf.relation = DWDatabaseValueRelationEqual;
+            conf.maker = maker;
+        }
+            break;
+        default:
+        {
+            conf.value = value;
+            conf.relation = relation;
+            conf.maker = maker;
+        }
+            break;
+    }
     [maker.conditions addObject:conf];
     maker.currentCondition = nil;
     ///如果当前maker包含逻辑运算状态，代表当前条件是与上一个条件存在逻辑关系，则将逻辑关系及上一个条件保存在当前条件中，当调用combine时根据就近原则组合最后两个具有逻辑关系的条件
