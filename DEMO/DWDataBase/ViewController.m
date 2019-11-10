@@ -222,9 +222,9 @@
     A * classA = [A new];
     classA.a = @[@1,@2,@3];
     classB.classA = classA;
+    classC.obj = [NSObject new];
     
-    
-    NSDictionary * dic = [classC dw_transformToDictionaryForKeys:@[@"a",@"classB"]];
+    NSDictionary * dic = [classC dw_transformToDictionary];
     NSLog(@"%@",dic);
 }
 

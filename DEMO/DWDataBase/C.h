@@ -23,4 +23,6 @@
 
 @property (nonatomic ,strong) NSDictionary * dicFromArray;
 
+@property (nonatomic ,strong) NSObject * obj;
+
 @end
