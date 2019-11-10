@@ -39,40 +39,38 @@
     
     if (self.tblConf) {
         NSError * error;
-//        V * v = [V new];
-//        v.shortNum = -1;
-//        v.unsignedShortNum = 1;
-//        v.intNum = -100;
-//        v.floatNum = 0.5;
-//        v.doubleNum = -2002020200202;
-//        v.longlongNum = 1111;
-//        v.unsignedIntNum = 100;
-//        v.longDoubleNum = -1010004001001;
-//        v.unsignedLongLongNum = 20020200202;
-//        v.chr = -'a';
-//        v.uChr = 'a';
-//        v.charString = "hello\0";
-//        v.nsNum = @"1";
-//        v.string = @[@1];
-//        v.mString = [@"hello" mutableCopy];
-//        v.data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
-//        v.mData = [v.data mutableCopy];
-//        v.date = @"1";
-//        v.url = [NSURL URLWithString:@"www.baidu.com"];
-//        v.array = @"[1,2,3]";
-//        v.mArray = @[@4,@5,@6].mutableCopy;
-//        v.dictionary = @{@"a":@"b"};
-//        v.mDictionary = @{@"c":v.array}.mutableCopy;
-//        v.aSet = [NSSet setWithObjects:@7,@8,@9, nil];
-//        v.mSet = [NSMutableSet setWithObjects:@10,@11,@12, nil];
-//        v.cls = [v class];
-//        v.sel = @selector(viewDidLoad);
-        A * a = [A new];
-        a.a = @[@1];
+        V * v = [V new];
+        v.shortNum = -1;
+        v.unsignedShortNum = 1;
+        v.intNum = -100;
+        v.floatNum = 0.5;
+        v.doubleNum = -2002020200202;
+        v.longlongNum = 1111;
+        v.unsignedIntNum = 100;
+        v.longDoubleNum = -1010004001001;
+        v.unsignedLongLongNum = 20020200202;
+        v.chr = -'a';
+        v.uChr = 'a';
+        v.charString = "hello\0";
+        v.nsNum = @"1";
+        v.string = @[@1];
+        v.mString = [@"hello" mutableCopy];
+        v.data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
+        v.mData = [v.data mutableCopy];
+        v.date = @"1";
+        v.url = [NSURL URLWithString:@"www.baidu.com"];
+        v.array = @"[1,2,3]";
+        v.mArray = @[@4,@5,@6].mutableCopy;
+        v.dictionary = @{@"a":@"b"};
+        v.mDictionary = @{@"c":v.array}.mutableCopy;
+        v.aSet = [NSSet setWithObjects:@7,@8,@9, nil];
+        v.mSet = [NSMutableSet setWithObjects:@10,@11,@12, nil];
+        v.cls = [v class];
+        v.sel = @selector(viewDidLoad);
         
-        BOOL success = [self.db insertTableWithModel:a keys:nil configuration:self.tblConf error:&error];
+        BOOL success = [self.db insertTableWithModel:v keys:nil configuration:self.tblConf error:&error];
         if (success) {
-            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:[a class] keys:nil configuration:self.tblConf error:&error condition:nil]);
+            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:[v class] keys:nil configuration:self.tblConf error:&error condition:nil]);
         } else {
             NSLog(@"%@",error);
         }
@@ -97,20 +95,21 @@
     if (self.tblConf) {
         NSError * error;
         NSArray <V *>* ret = [self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.dw_loadClass(A);
-//            maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
-//            maker.dw_conditionWith(floatNum).between(DWBetweenMakeIntegerValue(3.09999, 4));
+            maker.dw_loadClass(V);
+            maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
+            maker.dw_conditionWith(floatNum).between(DWBetweenMakeIntegerValue(3.09999, 4));
         }];
         
         if (ret.count) {
-            A * newV = ret.lastObject;
-            newV.a = nil;
-            BOOL success = [self.db updateTableWithModel:newV keys:nil configuration:self.tblConf error:&error];
+            V * newV = ret.lastObject;
+            newV.intNum = 256;
+            newV.floatNum = 3.1f;
+            BOOL success = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:self.tblConf error:&error];
             if (success) {
                 NSLog(@"Update Success:%@",[self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-                    maker.loadClass([A class]);
-//                    maker.conditionWith(@"intNum").equalTo(256);
-//                    maker.conditionWith(@"floatNum").between(DWApproximateFloatValue(3.1));
+                    maker.loadClass([V class]);
+                    maker.conditionWith(@"intNum").equalTo(256);
+                    maker.conditionWith(@"floatNum").between(DWApproximateFloatValue(3.1));
                 }]);
             } else {
                 NSLog(@"%@",error);
@@ -129,13 +128,10 @@
         v.intNum = -100;
         v.array = @[@1,@2,@3];
         
-        [self.db queryTableWithClass:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        [self.db queryTableWithClass:nil keys:@[keyPathString(v, intNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
-//            maker.dw_conditionWith(array).equalTo(v.array);
+            maker.dw_conditionWith(array).equalTo(v.array);
         } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
-            [results enumerateObjectsUsingBlock:^(__kindof V * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                NSLog(@"%d",isnan(obj.longDoubleNum));
-            }];
             if (results.count) {
                 NSLog(@"Async Query Success:%@",results);
             } else {
