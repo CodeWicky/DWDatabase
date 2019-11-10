@@ -118,6 +118,12 @@
 
 @property (nonatomic ,strong) NSObject * model;
 
+@property (nonatomic ,assign) Class clazz;
+
+@property (nonatomic ,strong) NSDictionary * validPropertyInfos;
+
+@property (nonatomic ,strong) NSDictionary * dbTransformMap;
+
 @end
 
 @implementation DWDatabaseSQLFactory
@@ -1081,183 +1087,28 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return nil;
     }
     
-    ///获取条件字段组并获取本次的class
-    NSMutableArray * args = @[].mutableCopy;
-    NSMutableArray * conditionStrings = @[].mutableCopy;
-    NSMutableArray * validConditionKeys = @[].mutableCopy;
-    Class cls;
-    NSArray * saveKeys = nil;
-    NSDictionary * map = nil;
-    if (condition) {
-        DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-        condition(maker);
-        cls = [maker fetchQueryClass];
-        if (!cls) {
-            cls = clazz;
-        }
-        saveKeys = [self propertysToSaveWithClass:cls];
-        map = databaseMapFromClass(cls);
-        NSDictionary * propertyInfos = [self propertyInfosWithClass:cls keys:saveKeys];
-        [maker configWithPropertyInfos:propertyInfos databaseMap:map];
-        [maker make];
-        [args addObjectsFromArray:[maker fetchArguments]];
-        [conditionStrings addObjectsFromArray:[maker fetchConditions]];
-        [validConditionKeys addObjectsFromArray:[maker fetchValidKeys]];
-    } else {
-        cls = clazz;
-        saveKeys = [self propertysToSaveWithClass:cls];
-        map = databaseMapFromClass(cls);
-    }
+    DWDatabaseSQLFactory * fac = [self querySQLFactoryWithClazz:clazz tblName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending error:error condition:condition];
     
-    if (!saveKeys.count) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid key.",NSStringFromClass(cls)];
-        NSError * err = errorWithMessage(msg, 10013);
-        safeLinkError(error, err);
+    if (!fac) {
         return nil;
     }
-
-    BOOL queryAll = NO;
-    ///如果keys为空则试图查询cls与表对应的所有键值
-    if (!keys.count) {
-        keys = [self propertysToSaveWithClass:cls];
-        ///如果所有键值为空则返回空
-        if (!keys.count) {
-            NSError * err = errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008);
-            safeLinkError(error, err);
-            return nil;
-        }
-        queryAll = YES;
-    } else {
-        ///如果不为空，则将keys与对应键值做交集
-        keys = intersectionOfArray(keys, saveKeys);
-        if (!keys.count) {
-            NSError * err = errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008);
-            safeLinkError(error, err);
-            return nil;
-        }
-    }
-
-    NSMutableArray * validQueryKeys = [NSMutableArray arrayWithCapacity:0];
-    NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos = [self propertyInfosWithClass:cls keys:keys];
-
-    if (!queryKeysProInfos.allKeys.count) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid key to query.",NSStringFromClass(cls)];
-        NSError * err = errorWithMessage(msg, 10009);
-        safeLinkError(error, err);
-        return nil;
-    }
-
-    ///获取查询字符串数组
-    if (queryAll) {
-        [validQueryKeys addObject:@"*"];
-    } else {
-        [validQueryKeys addObject:kUniqueID];
-        [self configInfos:queryKeysProInfos map:map model:nil validKeysContainer:validQueryKeys argumentsContaienr:nil appendingString:nil];
-        if (validQueryKeys.count == 1) {
-            NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to query.",NSStringFromClass(cls)];
-            NSError * err = errorWithMessage(msg, 10009);
-            safeLinkError(error, err);
-            return nil;
-        }
-    }
-
-    ///如果无查询参数置为nil方便后面直接传参
-    if (!args.count) {
-        args = nil;
-    }
     
-    ///获取所有关键字段组
-    NSMutableArray * validKeys = [NSMutableArray arrayWithArray:validQueryKeys];
-    [validKeys addObjectsFromArray:validConditionKeys];
-
-    NSString * sql = nil;
-    ///先尝试取缓存的sql(这里要考虑数组顺序的影响，由于validQueryKeys是由字典遍历后过滤得来的，所以顺序可以保证。conditionStrings为查询条件字段，由于目前只能从maker中获取，故顺序收maker中编写顺序影响，故应对conditionStrings做排序后再行拼装)
-    ///获取sql拼装数组
-    NSArray * sqlCombineArray = [self combineArrayWith:validQueryKeys extraToSort:conditionStrings];
-    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kQueryPrefix class:cls tblName:tblName keys:sqlCombineArray];
-
-    ///有排序添加排序
-    NSString * orderField = nil;
-    if (orderKey.length && [saveKeys containsObject:orderKey]) {
-        DWPrefix_YYClassPropertyInfo * prop = [[self propertyInfosWithClass:cls keys:@[orderKey]] valueForKey:orderKey];
-        if (prop) {
-            NSString * field = propertyInfoTblName(prop, map);
-            if (field.length) {
-                orderField = field;
-
-            }
-        }
-    }
-
-    ///如果排序键不合法，则以Dw_id为排序键
-    if (!orderField.length) {
-        orderField = kUniqueID;
-    }
-    cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-%@-%@",orderField,ascending?@"ASC":@"DESC"]];
-
-    if (limit > 0) {
-        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-L%lu",(unsigned long)limit]];
-    }
-    if (offset > 0) {
-        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-O%lu",(unsigned long)offset]];
-    }
-    if (cacheSqlKey.length) {
-        sql = [self.sqlsCache valueForKey:cacheSqlKey];
-    }
-    ///如果没有缓存的sql则拼装sql
-    if (!sql) {
-        
-        ///条件查询模式，所有值均为查询值，故将条件值加至查询数组
-        NSMutableArray * actualQueryKeys = [NSMutableArray arrayWithArray:validQueryKeys];
-        if (!queryAll) {
-            [actualQueryKeys addObjectsFromArray:validConditionKeys];
-        }
-        
-        ///先配置更新值得sql
-        sql = [NSString stringWithFormat:@"SELECT %@ FROM %@",[actualQueryKeys componentsJoinedByString:@","],tblName];
-
-        ///如果有有效条件时拼装条件值，若无有效条件时且有有效条件字典时拼装有效条件字符串
-        if (args.count) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" WHERE %@",[conditionStrings componentsJoinedByString:@" AND "]]];
-        }
-
-        ///有排序添加排序
-        if (orderField.length) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" ORDER BY %@ %@",orderField,ascending?@"ASC":@"DESC"]];
-        }
-        if (limit > 0) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" LIMIT %lu",(unsigned long)limit]];
-        }
-        if (offset > 0) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" OFFSET %lu",(unsigned long)offset]];
-        }
-
-        ///计算完缓存sql
-        if (cacheSqlKey.length) {
-            [self.sqlsCache setValue:sql forKey:cacheSqlKey];
-        }
-    }
-
     ///组装数组
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
     __block BOOL returnNil = NO;
     excuteOnDBOperationQueue(self, ^{
         [queue inDatabase:^(FMDatabase * _Nonnull db) {
-            FMResultSet * set = [db executeQuery:sql withArgumentsInArray:args];
+            FMResultSet * set = [db executeQuery:fac.sql withArgumentsInArray:fac.args];
             safeLinkError(error, db.lastError);
             ///获取带转换的属性
-            NSDictionary * validPropertyInfo = nil;
-            if (queryAll) {
-                validPropertyInfo = [self propertyInfosWithClass:cls keys:saveKeys];
-            } else {
-                validPropertyInfo = [self propertyInfosWithClass:cls keys:validKeys];
-            }
-            
+            NSDictionary * validPropertyInfo = fac.validPropertyInfos;
+            Class cls = fac.clazz;
+            NSDictionary * dbTransformMap = fac.dbTransformMap;
             BOOL stop = NO;
             
             while ([set next]) {
                 if (handler) {
-                    handler(cls,set,validPropertyInfo,map,ret,&stop,&returnNil,error);
+                    handler(cls,set,validPropertyInfo,dbTransformMap,ret,&stop,&returnNil,error);
                 }
                 if (stop) {
                     break;
@@ -1278,7 +1129,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return ret;
 }
 
-#pragma mark ------ 其他 ------
+#pragma mark ------ SQL factory ------
 -(DWDatabaseSQLFactory *)createSQLFactoryWithClass:(Class)cls tableName:(NSString *)tblName  error:(NSError *__autoreleasing *)error {
     NSDictionary * props = [self propertyInfosForSaveKeysWithClass:cls];
     if (!props.allKeys.count) {
@@ -1517,6 +1368,175 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return fac;
 }
 
+-(DWDatabaseSQLFactory *)querySQLFactoryWithClazz:(Class)clazz tblName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+    
+    ///获取条件字段组并获取本次的class
+    NSMutableArray * args = @[].mutableCopy;
+    NSMutableArray * conditionStrings = @[].mutableCopy;
+    NSMutableArray * validConditionKeys = @[].mutableCopy;
+    Class cls;
+    NSArray * saveKeys = nil;
+    NSDictionary * map = nil;
+    if (condition) {
+        DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+        cls = [maker fetchQueryClass];
+        if (!cls) {
+            cls = clazz;
+        }
+        saveKeys = [self propertysToSaveWithClass:cls];
+        map = databaseMapFromClass(cls);
+        NSDictionary * propertyInfos = [self propertyInfosWithClass:cls keys:saveKeys];
+        [maker configWithPropertyInfos:propertyInfos databaseMap:map];
+        [maker make];
+        [args addObjectsFromArray:[maker fetchArguments]];
+        [conditionStrings addObjectsFromArray:[maker fetchConditions]];
+        [validConditionKeys addObjectsFromArray:[maker fetchValidKeys]];
+    } else {
+        cls = clazz;
+        saveKeys = [self propertysToSaveWithClass:cls];
+        map = databaseMapFromClass(cls);
+    }
+    
+    BOOL queryAll = NO;
+    ///如果keys为空则试图查询cls与表对应的所有键值
+    if (!keys.count) {
+        keys = [self propertysToSaveWithClass:cls];
+        ///如果所有键值为空则返回空
+        if (!keys.count) {
+            NSError * err = errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008);
+            safeLinkError(error, err);
+            return nil;
+        }
+        queryAll = YES;
+    } else {
+        ///如果不为空，则将keys与对应键值做交集
+        keys = intersectionOfArray(keys, saveKeys);
+        if (!keys.count) {
+            NSError * err = errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008);
+            safeLinkError(error, err);
+            return nil;
+        }
+    }
+    
+    NSMutableArray * validQueryKeys = [NSMutableArray arrayWithCapacity:0];
+    NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos = [self propertyInfosWithClass:cls keys:keys];
+    
+    if (!queryKeysProInfos.allKeys.count) {
+        NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid key to query.",NSStringFromClass(cls)];
+        NSError * err = errorWithMessage(msg, 10009);
+        safeLinkError(error, err);
+        return nil;
+    }
+    
+    ///获取查询字符串数组
+    if (queryAll) {
+        [validQueryKeys addObject:@"*"];
+    } else {
+        [validQueryKeys addObject:kUniqueID];
+        [self configInfos:queryKeysProInfos map:map model:nil validKeysContainer:validQueryKeys argumentsContaienr:nil appendingString:nil];
+        if (validQueryKeys.count == 1) {
+            NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to query.",NSStringFromClass(cls)];
+            NSError * err = errorWithMessage(msg, 10009);
+            safeLinkError(error, err);
+            return nil;
+        }
+    }
+    
+    ///如果无查询参数置为nil方便后面直接传参
+    if (!args.count) {
+        args = nil;
+    }
+    
+    ///获取所有关键字段组
+    NSMutableArray * validKeys = [NSMutableArray arrayWithArray:validQueryKeys];
+    [validKeys addObjectsFromArray:validConditionKeys];
+    
+    NSString * sql = nil;
+    ///先尝试取缓存的sql(这里要考虑数组顺序的影响，由于validQueryKeys是由字典遍历后过滤得来的，所以顺序可以保证。conditionStrings为查询条件字段，由于目前只能从maker中获取，故顺序收maker中编写顺序影响，故应对conditionStrings做排序后再行拼装)
+    ///获取sql拼装数组
+    NSArray * sqlCombineArray = [self combineArrayWith:validQueryKeys extraToSort:conditionStrings];
+    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kQueryPrefix class:cls tblName:tblName keys:sqlCombineArray];
+    
+    ///有排序添加排序
+    NSString * orderField = nil;
+    if (orderKey.length && [saveKeys containsObject:orderKey]) {
+        DWPrefix_YYClassPropertyInfo * prop = [[self propertyInfosWithClass:cls keys:@[orderKey]] valueForKey:orderKey];
+        if (prop) {
+            NSString * field = propertyInfoTblName(prop, map);
+            if (field.length) {
+                orderField = field;
+            }
+        }
+    }
+    
+    ///如果排序键不合法，则以Dw_id为排序键
+    if (!orderField.length) {
+        orderField = kUniqueID;
+    }
+    cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-%@-%@",orderField,ascending?@"ASC":@"DESC"]];
+    
+    if (limit > 0) {
+        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-L%lu",(unsigned long)limit]];
+    }
+    if (offset > 0) {
+        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-O%lu",(unsigned long)offset]];
+    }
+    if (cacheSqlKey.length) {
+        sql = [self.sqlsCache valueForKey:cacheSqlKey];
+    }
+    ///如果没有缓存的sql则拼装sql
+    if (!sql) {
+        
+        ///条件查询模式，所有值均为查询值，故将条件值加至查询数组
+        NSMutableArray * actualQueryKeys = [NSMutableArray arrayWithArray:validQueryKeys];
+        if (!queryAll) {
+            [actualQueryKeys addObjectsFromArray:validConditionKeys];
+        }
+        
+        ///先配置更新值得sql
+        sql = [NSString stringWithFormat:@"SELECT %@ FROM %@",[actualQueryKeys componentsJoinedByString:@","],tblName];
+        
+        ///如果有有效条件时拼装条件值，若无有效条件时且有有效条件字典时拼装有效条件字符串
+        if (args.count) {
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" WHERE %@",[conditionStrings componentsJoinedByString:@" AND "]]];
+        }
+        
+        ///有排序添加排序
+        if (orderField.length) {
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" ORDER BY %@ %@",orderField,ascending?@"ASC":@"DESC"]];
+        }
+        if (limit > 0) {
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" LIMIT %lu",(unsigned long)limit]];
+        }
+        if (offset > 0) {
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" OFFSET %lu",(unsigned long)offset]];
+        }
+        
+        ///计算完缓存sql
+        if (cacheSqlKey.length) {
+            [self.sqlsCache setValue:sql forKey:cacheSqlKey];
+        }
+    }
+    
+    ///获取带转换的属性
+    NSDictionary * validPropertyInfo = nil;
+    if (queryAll) {
+        validPropertyInfo = [self propertyInfosWithClass:cls keys:saveKeys];
+    } else {
+        validPropertyInfo = [self propertyInfosWithClass:cls keys:validKeys];
+    }
+    
+    DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
+    fac.sql = sql;
+    fac.args = args;
+    fac.clazz = cls;
+    fac.validPropertyInfos = validPropertyInfo;
+    fac.dbTransformMap = map;
+    return fac;
+}
+
+#pragma mark ------ 其他 ------
 -(BOOL)insertIntoDBWithDatabase:(FMDatabase *)db factory:(DWDatabaseSQLFactory *)fac error:(NSError *__autoreleasing *)error {
     BOOL success = [db executeUpdate:fac.sql withArgumentsInArray:fac.args];
     if (success) {
