@@ -40,17 +40,17 @@
     if (self.tblConf) {
         NSError * error;
         V * v = [V new];
-        v.shortNum = -1;
-        v.unsignedShortNum = 1;
-        v.intNum = -100;
-        v.floatNum = 0.5;
-        v.doubleNum = -2002020200202;
-        v.longlongNum = 1111;
-        v.unsignedIntNum = 100;
-        v.longDoubleNum = -1010004001001;
-        v.unsignedLongLongNum = 20020200202;
-        v.chr = -'a';
-        v.uChr = 'a';
+//        v.shortNum = -1;
+//        v.unsignedShortNum = 1;
+//        v.intNum = -100;
+//        v.floatNum = 0.5;
+//        v.doubleNum = -2002020200202;
+//        v.longlongNum = 1111;
+//        v.unsignedIntNum = 100;
+//        v.longDoubleNum = -1010004001001;
+//        v.unsignedLongLongNum = 20020200202;
+//        v.chr = -'a';
+//        v.uChr = 'a';
 //        v.charString = "hello\0";
 //        v.nsNum = @"1";
 //        v.string = @[@1];
@@ -128,10 +128,13 @@
         v.intNum = -100;
         v.array = @[@1,@2,@3];
         
-        [self.db queryTableWithClass:nil keys:@[keyPathString(v, intNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        [self.db queryTableWithClass:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
-            maker.dw_conditionWith(array).equalTo(v.array);
+//            maker.dw_conditionWith(array).equalTo(v.array);
         } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
+            [results enumerateObjectsUsingBlock:^(__kindof V * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                NSLog(@"%d",isnan(obj.longDoubleNum));
+            }];
             if (results.count) {
                 NSLog(@"Async Query Success:%@",results);
             } else {

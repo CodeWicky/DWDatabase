@@ -10,6 +10,8 @@
 
 @interface V : NSObject
 
+@property (nonatomic ,assign) BOOL boolNum;
+
 @property (nonatomic ,assign) short shortNum;
 
 @property (nonatomic ,assign) unsigned short unsignedShortNum;

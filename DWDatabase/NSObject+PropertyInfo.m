@@ -434,6 +434,18 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
     }
     switch (property.type & DWPrefix_YYEncodingTypeMask) {
         case DWPrefix_YYEncodingTypeBool:
+        {
+            if ([value isEqual:[NSNull null]]) {
+                ///如果是NULL则赋NO
+                [model setValue:@(NO) forKey:property.name];
+            } else if ([value isKindOfClass:[NSNumber class]]) {
+                [model setValue:@([value floatValue] != 0) forKey:property.name];
+            } else if ([value isKindOfClass:[NSString class]]) {
+                float numV = [value floatValue];
+                [model setValue:@(numV != 0) forKey:property.name];
+            }
+            break;
+        }
         case DWPrefix_YYEncodingTypeInt8:
         case DWPrefix_YYEncodingTypeUInt8:
         case DWPrefix_YYEncodingTypeInt16:
