@@ -1214,7 +1214,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
     NSDictionary * map = databaseMapFromClass(cls);
     
-    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:nil];
+    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:nil allowNil:NO];
     
     ///无有效插入值
     if (!args.count) {
@@ -1271,12 +1271,12 @@ static void* dbOpQKey = "dbOperationQueueKey";
         safeLinkError(error, err);
         return nil;
     }
-    ///存在ID可以做更新操作
+    
     NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
     NSDictionary * map = databaseMapFromClass(cls);
     ///先配置更新值得sql
-    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?"];
+    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?" allowNil:NO];
     
     ///无有效插入值
     if (!args.count) {
@@ -1332,7 +1332,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     NSDictionary * map = databaseMapFromClass(cls);
     
     ///先配置更新值得sql
-    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?"];
+    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:@" = ?" allowNil:YES];
     
     ///无有效插入值
     if (!args.count) {
@@ -1434,7 +1434,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         [validQueryKeys addObject:@"*"];
     } else {
         [validQueryKeys addObject:kUniqueID];
-        [self configInfos:queryKeysProInfos map:map model:nil validKeysContainer:validQueryKeys argumentsContaienr:nil appendingString:nil];
+        [self configInfos:queryKeysProInfos map:map model:nil validKeysContainer:validQueryKeys argumentsContaienr:nil appendingString:nil allowNil:NO];
         if (validQueryKeys.count == 1) {
             NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to query.",NSStringFromClass(cls)];
             NSError * err = errorWithMessage(msg, 10009);
@@ -1733,20 +1733,24 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [ctn copy];
 }
 
--(void)configInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args appendingString:(NSString *)appending {
+-(void)configInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args appendingString:(NSString *)appending allowNil:(BOOL)allowNil {
     void (^ab)(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) = nil;
     if (args) {
         ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             if (obj.name) {
                 id value = [model dw_valueForPropertyInfo:obj];
-                if (value) {
+                if (value || allowNil) {
                     NSString * name = propertyInfoTblName(obj, map);
                     if (name.length) {
                         if (appending.length) {
                             name = [name stringByAppendingString:appending];
                         }
                         [validKeys addObject:name];
-                        [args addObject:value];
+                        if (value) {
+                            [args addObject:value];
+                        } else {
+                            [args addObject:[NSNull null]];
+                        }
                     }
                 }
             }

@@ -70,6 +70,7 @@
  
  version 1.0.4.8
  修复sel与char *为空时引起的崩溃
+ 修复update时无法将值更新为nil的bug
 
  */
 
