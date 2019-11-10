@@ -67,6 +67,9 @@
  
  version 1.0.4.7
  优化InValue及NotInValue逻辑，兼容数组0元素、1元素的条件转换
+ 
+ version 1.0.4.8
+ 修复sel与char *为空时引起的崩溃
 
  */
 

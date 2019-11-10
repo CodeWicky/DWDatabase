@@ -404,9 +404,24 @@ static id modelValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo * pro
             }
         }
         case DWPrefix_YYEncodingTypeSEL:
-            return NSStringFromSelector(((SEL (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter));
+        {
+            SEL selector = ((SEL (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter);
+            if (selector) {
+                return NSStringFromSelector(selector);
+            } else {
+                return nil;
+            }
+        }
         case DWPrefix_YYEncodingTypeCString:
-            return [NSString stringWithUTF8String:((char * (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter)];
+        {
+            char * cStr = ((char * (*)(id, SEL))(void *) objc_msgSend)((id)model, property.getter);
+            if (cStr) {
+                return [NSString stringWithUTF8String:cStr];
+            } else {
+                return nil;
+            }
+        }
+            
         default:
             return nil;
     }
