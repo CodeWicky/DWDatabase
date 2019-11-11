@@ -385,7 +385,11 @@ static id modelValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo * pro
                     }
                 }
                 default:
-                    return nil;
+                {
+                    ///这个地方，考虑模型嵌套，直接返回
+                    return value;
+                }
+                    
             }
         }
         case DWPrefix_YYEncodingTypeClass:
@@ -1020,35 +1024,26 @@ NS_INLINE id jsonModel(id model) {
     NSMutableDictionary * ret = [NSMutableDictionary dictionaryWithCapacity:0];
     [allPropertyInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
         if (obj.name.length) {
-            if (obj.isCNumber) {
-                id value = modelValueWithPropertyInfo(model, obj);
-                if (value) {
-                    ///如果是cNumber，取出的值一定是NSNumber。直接赋值
+            id value = modelValueWithPropertyInfo(model, obj);
+            if (value) {
+                if (obj.isCNumber) {
+                ///如果是cNumber，取出的值一定是NSNumber。直接赋值
                     ret[obj.name] = value;
-                }
-            } else if (obj.nsType) {
-                id value = modelValueWithPropertyInfo(model, obj);
-                if (value) {
+                } else if (obj.nsType) {
                     ///如果是对象，取出的可能是其他对象，递归调用一下
                     value = jsonModel(value);
                     if (value) {
                         ret[obj.name] = value;
                     }
-                }
-            } else {
-                ///如果是对象且非系统类型，则有可能是模型嵌套
-                if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                    id value = [model valueForKey:obj.name];
-                    if (value) {
+                } else {
+                    ///如果是对象且非系统类型，则有可能是模型嵌套
+                    if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
                         value = jsonModel(value);
                         if (value) {
                             ret[obj.name] = value;
                         }
-                    }
-                } else {
-                    ///如果不是，则此时有效值仅剩Class/SEL/cString，此时value均为等效的NSString，直接赋值
-                    id value = modelValueWithPropertyInfo(model, obj);
-                    if (value) {
+                    } else {
+                        ///如果不是，则此时有效值仅剩Class/SEL/cString，此时value均为等效的NSString，直接赋值
                         ret[obj.name] = value;
                     }
                 }

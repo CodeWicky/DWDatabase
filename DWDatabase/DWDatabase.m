@@ -1235,9 +1235,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
     ///先看有效插入值，根据有效插入值确定sql
     NSMutableArray * args = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
-    NSDictionary * map = databaseMapFromClass(cls);
+    NSDictionary * dbTransformMap = databaseMapFromClass(cls);
     
-    [self configInfos:infos map:map model:model validKeysContainer:validKeys argumentsContaienr:args appendingString:nil allowNil:NO];
+    [self handleInsertArgumentsWithPropertyInfos:infos dbTransformMap:dbTransformMap model:model validKeysContainer:validKeys argumentsContaienr:args];
     
     ///无有效插入值
     if (!args.count) {
@@ -1794,6 +1794,25 @@ static void* dbOpQKey = "dbOperationQueueKey";
     [props enumerateKeysAndObjectsUsingBlock:ab];
 }
 
+-(void)handleInsertArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbTransformMap:(NSDictionary *)dbTransformMap model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args {
+    [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+        
+        if (obj.name) {
+            id value = [model dw_valueForPropertyInfo:obj];
+            NSString * name = propertyInfoTblName(obj, dbTransformMap);
+            if (value && name.length) {
+                ///此处考虑模型嵌套
+                if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
+                    
+                } else {
+                    [validKeys addObject:name];
+                    [args addObject:value];
+                }
+            }
+        }
+    }];
+}
+
 -(BOOL)supplyFieldIfNeededWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
     Class clazz = [model class];
     NSString * validKey = [NSString stringWithFormat:@"%@%@",conf.dbName,conf.tableName];
@@ -1901,8 +1920,8 @@ static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NS
     NSString * name = property.tblName;
     if (!name.length) {
         ///取出原字段名，若转换表中存在转换关系，则替换为转换名
-        if ([databaseMap.allKeys containsObject:name]) {
-            id mapped = [databaseMap valueForKey:name];
+        if ([databaseMap.allKeys containsObject:property.name]) {
+            id mapped = [databaseMap valueForKey:property.name];
             if ([mapped isKindOfClass:[NSString class]]) {
                 name = mapped;
             } else {

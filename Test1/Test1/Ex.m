@@ -7,7 +7,11 @@
 //
 
 #import "Ex.h"
-
+#import <DWDatabase/DWDatabaseHeader.h>
 @implementation Ex
+
++(nullable NSDictionary *)dw_ModelKeyToDataBaseMap {
+    return @{@"obj":@"object"};
+}
 
 @end
