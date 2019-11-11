@@ -1,0 +1,25 @@
+PODS:
+  - DWDatabase (1.0.4.6):
+    - FMDB (~> 2.7.2)
+  - FMDB (2.7.5):
+    - FMDB/standard (= 2.7.5)
+  - FMDB/standard (2.7.5)
+
+DEPENDENCIES:
+  - DWDatabase (from `../`)
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - FMDB
+
+EXTERNAL SOURCES:
+  DWDatabase:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  DWDatabase: 95eeb52ba28dc5148ec959e098e61dbb7b8f7425
+  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
+
+PODFILE CHECKSUM: 4f13283fd39fb0678af6241e5a8225dc26742b3a
+
+COCOAPODS: 1.7.5

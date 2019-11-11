@@ -1,0 +1,3 @@
+target 'Test1' do
+pod 'DWDatabase', :path => '../'
+end
