@@ -90,6 +90,29 @@
 @end
 #pragma mark --------- 数据库管理模型部分结束 ---------
 
+#pragma mark --------- 数据库插入结果模型开始 ---------
+@interface DWDatabaseResult : NSObject
+
+@property (nonatomic ,assign) BOOL success;
+
+@property (nonatomic ,assign) NSInteger Dw_id;
+
+@end
+
+@implementation DWDatabaseResult
+
+DWDatabaseResult * defaultFailResult () {
+    static DWDatabaseResult * failResult = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        failResult = [DWDatabaseResult new];
+    });
+    return failResult;
+}
+
+@end
+#pragma mark --------- 数据库插入结果模型结束 ---------
+
 #pragma mark --------- DWDatabaseConfiguration开始 ---------
 @implementation DWDatabaseConfiguration
 
@@ -678,7 +701,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
                 if (!hasFailure) {
                     ///如果插入失败则记录失败状态并将模型加入失败数组
                     [self supplyFieldIfNeededWithModel:obj.model configuration:conf error:error];
-                    if (![self insertIntoDBWithDatabase:db factory:obj error:&errorRetain]) {
+                    if (![self insertIntoDBWithDatabase:db factory:obj error:&errorRetain].success) {
                         hasFailure = YES;
                         [failures addObject:obj.model];
                     }
@@ -960,27 +983,27 @@ static void* dbOpQKey = "dbOperationQueueKey";
 }
 
 #pragma mark ------ 插入表 ------
--(BOOL)dw_insertTableWithModel:(NSObject *)model tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue error:(NSError * __autoreleasing *)error {
+-(DWDatabaseResult *)dw_insertTableWithModel:(NSObject *)model tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue error:(NSError * __autoreleasing *)error {
     if (!queue) {
         NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
         safeLinkError(error, err);
-        return NO;
+        return defaultFailResult();
     }
     
     DWDatabaseSQLFactory * factory = [self insertSQLFactoryWithModel:model tableName:tblName keys:keys error:error];
     if (!factory) {
-        return NO;
+        return defaultFailResult();
     }
     
     ///至此已取到合法sql
-    __block BOOL success = NO;
+    __block DWDatabaseResult * result = [DWDatabaseResult new];
     excuteOnDBOperationQueue(self, ^{
         [queue inDatabase:^(FMDatabase * _Nonnull db) {
-            success = [self insertIntoDBWithDatabase:db factory:factory error:error];
+            result = [self insertIntoDBWithDatabase:db factory:factory error:error];
         }];
     });
     
-    return success;
+    return result;
 }
 
 #pragma mark ------ 表删除 ------
@@ -1537,13 +1560,15 @@ static void* dbOpQKey = "dbOperationQueueKey";
 }
 
 #pragma mark ------ 其他 ------
--(BOOL)insertIntoDBWithDatabase:(FMDatabase *)db factory:(DWDatabaseSQLFactory *)fac error:(NSError *__autoreleasing *)error {
-    BOOL success = [db executeUpdate:fac.sql withArgumentsInArray:fac.args];
-    if (success) {
+-(DWDatabaseResult *)insertIntoDBWithDatabase:(FMDatabase *)db factory:(DWDatabaseSQLFactory *)fac error:(NSError *__autoreleasing *)error {
+    DWDatabaseResult * result = [DWDatabaseResult new];
+    result.success = [db executeUpdate:fac.sql withArgumentsInArray:fac.args];
+    if (result.success) {
         SetDw_idForModel(fac.model, @(db.lastInsertRowId));
+        result.Dw_id = db.lastInsertRowId;
     }
     safeLinkError(error, db.lastError);
-    return success;
+    return result;
 }
 
 
@@ -1724,9 +1749,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }
     
     if (extra.count) {
-        extra = [extra sortedArrayUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
-            return [obj1 compare:obj2 options:0] == NSOrderedAscending;
-        }];
+        extra = [extra sortedArrayUsingSelector:@selector(compare:)];
         [ctn addObjectsFromArray:extra];
     }
     
@@ -1952,7 +1975,10 @@ static NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * 
                     return [NSString stringWithFormat:@"%@ BLOB",name];
                 }
                 default:
-                    return nil;
+                    ///此时考虑模型嵌套，直接以index保存另一张表中
+                {
+                    return [NSString stringWithFormat:@"%@ INTEGER",name];
+                }
             }
         }
         case DWPrefix_YYEncodingTypeClass:
