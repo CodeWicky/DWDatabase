@@ -10,8 +10,10 @@
 #import <DWDatabase/DWDatabaseHeader.h>
 @implementation Ex
 
-+(nullable NSDictionary *)dw_ModelKeyToDataBaseMap {
++(nullable NSDictionary *)dw_modelKeyToDataBaseMap {
     return @{@"obj":@"object"};
 }
+
+
 
 @end

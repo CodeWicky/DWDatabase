@@ -92,13 +92,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 @optional
 ///模型属性白名单
-+(nullable NSArray *)dw_DataBaseWhiteList;
++(nullable NSArray *)dw_dataBaseWhiteList;
 
 ///模型属性黑名单
-+(nullable NSArray *)dw_DataBaseBlackList;
++(nullable NSArray *)dw_dataBaseBlackList;
 
 ///模型属性名与数据表字段名转化对应关系，字典中key为模型属性名，value为数据表中字段名
-+(nullable NSDictionary *)dw_ModelKeyToDataBaseMap;
++(nullable NSDictionary *)dw_modelKeyToDataBaseMap;
+
+///模型嵌套对应的表名
++(nullable NSDictionary *)dw_inlineModelTableNameMap;
 
 @end
 
@@ -121,6 +124,19 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic ,copy ,readonly) NSString * dbPath;
 
 -(instancetype)init NS_UNAVAILABLE;
+
+@end
+
+/**
+ 数据库操作结果模型
+ */
+@interface DWDatabaseResult : NSObject
+
+///操作是否成功
+@property (nonatomic ,assign) BOOL success;
+
+///操作成功的数据的id
+@property (nonatomic ,assign) NSInteger Dw_id;
 
 @end
 
@@ -199,7 +215,7 @@ NS_ASSUME_NONNULL_BEGIN
  1. -fetchDBConfigurationAutomaticallyWithClass:name:tableName:path:error:
  2. 增删改查对应相关方法
  */
--(BOOL)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
+-(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(BOOL)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path byDw_id:(BOOL)byID keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(BOOL)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
@@ -373,7 +389,7 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 1.此处传入表名数据库句柄
        2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
  */
--(BOOL)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(nonnull DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
 /**
@@ -443,8 +459,8 @@ NS_ASSUME_NONNULL_BEGIN
  @return 返回查询结果
  
  @disc 1.此处传入表名数据库句柄
-       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
-       3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
+       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
+       3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_dataBaseWhiteList 和 +dw_dataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        4.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
        5.当offset为大于0的数是将作为查询的起始点，即从第几条开始查询数据
        6.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
@@ -482,8 +498,8 @@ NS_ASSUME_NONNULL_BEGIN
  @return 返回查询结果
  
  @disc 1.此处传入表名数据库句柄
-       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
-       3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_DataBaseWhiteList 和 +dw_DataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
+       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
+       3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_dataBaseWhiteList 和 +dw_dataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        4.返回的数组中将以传入的clazz的实例作为数据载体
  */
 -(nullable NSArray <__kindof NSObject *>*)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void (^)(DWDatabaseConditionMaker * maker))condition;
@@ -500,7 +516,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 1.此处传入表名数据库句柄
        2.model将作为数据承载的载体
-       3.conditionKeys应该是model的属性的字段名，框架内部将根据 +dw_ModelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_ModelKeyToDataBaseMap 协议方法则字段名不做转化
+       3.conditionKeys应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
        4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
        5.若查询失败将返回-1
  */
