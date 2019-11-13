@@ -760,7 +760,7 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
 @implementation DWMetaClassInfo
 
 +(instancetype)classInfoFromClass:(Class)cls {
-    if (!cls || !NSStringFromClass(cls)) {
+    if (!cls || [cls isEqual:[NSObject class]] || !NSStringFromClass(cls)) {
         return nil;
     }
     static NSMutableDictionary * infoCollection;
@@ -1210,8 +1210,11 @@ NS_INLINE void modelSetValueWithPropertyInfoRecursive(id model,id value,DWPrefix
     NSMutableDictionary * dic = [NSMutableDictionary dictionaryWithCapacity:0];
     NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* all = [self dw_allPropertyInfos];
     [keys enumerateObjectsUsingBlock:^(NSString * obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        if ([all.allKeys containsObject:obj] && obj.length) {
-            [dic setValue:[all valueForKey:obj] forKey:obj];
+        if (obj.length && [all.allKeys containsObject:obj]) {
+            DWPrefix_YYClassPropertyInfo * prop = [all valueForKey:obj];
+            if (![prop.cls isEqual:[NSObject class]]) {
+                [dic setValue:[all valueForKey:obj] forKey:obj];
+            }
         }
     }];
     return [dic copy];
