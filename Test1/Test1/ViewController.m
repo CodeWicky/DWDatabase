@@ -45,7 +45,7 @@
             Ex * model = [Ex new];
             model.num = i;
             model.name = names[i];
-            model.obj = [NSObject new];
+            model.obj = model;
             [self.db insertTableWithModel:model keys:nil configuration:self.tblConf error:nil];
             i++;
         }

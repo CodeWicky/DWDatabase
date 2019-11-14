@@ -90,6 +90,47 @@
 @end
 #pragma mark --------- 数据库管理模型部分结束 ---------
 
+
+#pragma mark --------- 数据库操作记录模型部分开始 ---------
+
+typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
+    DWDatabaseOperationUndefined,
+    DWDatabaseOperationInsert,
+    DWDatabaseOperationDelete,
+    DWDatabaseOperationUpdate,
+    DWDatabaseOperationQuery,
+};
+
+@interface DWDatabaseOperationRecord : NSObject
+
+@property (nonatomic ,weak) __kindof NSObject * model;
+
+@property (nonatomic ,assign) DWDatabaseOperation operation;
+
+@property (nonatomic ,copy) NSString * tblName;
+
+@end
+
+@implementation DWDatabaseOperationRecord
+
+@end
+
+#pragma mark --------- 数据库操作记录模型部分结束 ---------
+
+#pragma mark --------- 数据库操作记录链部分开始 ---------
+
+@interface DWDatabaseOperationChain : NSObject
+
+@property (nonatomic ,strong) NSMutableArray * records;
+
+@end
+
+@implementation DWDatabaseOperationChain
+
+@end
+
+#pragma mark --------- 数据库操作记录链部分结束 ---------
+
 #pragma mark --------- 数据库插入结果模型开始 ---------
 @implementation DWDatabaseResult
 
@@ -1007,7 +1048,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return defaultFailResult();
     }
     
-    ///如果插入链中已经包含model，说明嵌套链中存在自身model，且已经成功插入，此时直接返回结果即可
+    ///如果插入链中已经包含model，说明嵌套链中存在自身model，且已经成功插入，此时直接更新表（如A-B-A这种结构中，inertChains结果中将不包含B，故此需要更新）
     if ([insertChains containsObject:model]) {
         DWDatabaseResult * result = [DWDatabaseResult new];
         result.success = YES;
@@ -2086,12 +2127,13 @@ static NSString * inlineModelTblName(DWPrefix_YYClassPropertyInfo * property,NSD
             if ([mapped isKindOfClass:[NSString class]]) {
                 name = mapped;
             } else {
+                ///如果为指定inline表名，应该考虑当前是否存在同样模型对应表，如果存在，则返回该表名
                 name = [parentTblName stringByAppendingFormat:@"_inline_%@_tbl",property.name];
             }
         } else {
             name = [parentTblName stringByAppendingFormat:@"_inline_%@_tbl",property.name];
         }
-        property.tblName = name;
+        property.inlineModelTblName = name;
     }
     return name;
 }
