@@ -127,6 +127,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 
 @implementation DWDatabaseOperationChain
 
+
+
 @end
 
 #pragma mark --------- 数据库操作记录链部分结束 ---------
