@@ -90,6 +90,20 @@
 @end
 #pragma mark --------- 数据库管理模型部分结束 ---------
 
+#pragma mark --------- 数据库插入结果模型开始 ---------
+@implementation DWDatabaseResult
+
+DWDatabaseResult * defaultFailResult () {
+    static DWDatabaseResult * failResult = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        failResult = [DWDatabaseResult new];
+    });
+    return failResult;
+}
+
+@end
+#pragma mark --------- 数据库插入结果模型结束 ---------
 
 #pragma mark --------- 数据库操作记录模型部分开始 ---------
 
@@ -121,32 +135,94 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 
 @interface DWDatabaseOperationChain : NSObject
 
-@property (nonatomic ,strong) NSMutableArray * records;
+@property (nonatomic ,strong) NSMutableDictionary * records;
+
+-(void)addRecord:(DWDatabaseOperationRecord *)record;
+
+-(DWDatabaseOperationRecord *)recordInChainWithModel:(NSObject *)model;
+
+-(DWDatabaseResult *)existRecordWithModel:(NSObject *)model;
 
 @end
 
 @implementation DWDatabaseOperationChain
 
+-(void)addRecord:(DWDatabaseOperationRecord *)record {
+    if (!record.model) {
+        return;
+    }
+    
+    NSString * key = keyStringFromModel(record.model);
+    if (!key.length) {
+        return;
+    }
+    
+    DWDatabaseResult * result = [self existRecordWithModel:record.model];
+    ///存在
+    if (result.success) {
+        return;
+    }
+    
+    NSMutableArray * records = self.records[key];
+    if (!records) {
+        records = [NSMutableArray arrayWithCapacity:0];
+        self.records[key] = records;
+    }
+    
+    [records addObject:record];
+}
 
+-(DWDatabaseOperationRecord *)recordInChainWithModel:(NSObject *)model {
+    if (!model) {
+        return nil;
+    }
+    NSString *key = keyStringFromModel(model);
+    if (!key.length) {
+        return nil;
+    }
+    NSArray * records = self.records[key];
+    if (!records) {
+        return nil;
+    }
+    __block DWDatabaseOperationRecord * result = nil;
+    [records enumerateObjectsUsingBlock:^(DWDatabaseOperationRecord * obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if ([obj.model isEqual:model]) {
+            result = obj;
+        }
+    }];
+    return result;
+}
+
+-(DWDatabaseResult *)existRecordWithModel:(NSObject *)model {
+    DWDatabaseOperationRecord * record = [self recordInChainWithModel:model];
+    if (!record) {
+        return defaultFailResult();
+    }
+    DWDatabaseResult * result = [DWDatabaseResult new];
+    result.success = YES;
+    result.userInfo = record;
+    return result;
+}
+
+#pragma mark --- tool func ---
+NS_INLINE NSString * keyStringFromModel(NSObject * model) {
+    if (!model) {
+        return nil;
+    }
+    return NSStringFromClass([model class]);
+}
+
+#pragma mark --- setter/getter ---
+-(NSMutableDictionary *)records {
+    if (!_records) {
+        _records = [NSMutableDictionary dictionaryWithCapacity:0];
+    }
+    return _records;
+}
 
 @end
 
 #pragma mark --------- 数据库操作记录链部分结束 ---------
-
-#pragma mark --------- 数据库插入结果模型开始 ---------
-@implementation DWDatabaseResult
-
-DWDatabaseResult * defaultFailResult () {
-    static DWDatabaseResult * failResult = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        failResult = [DWDatabaseResult new];
-    });
-    return failResult;
-}
-
-@end
-#pragma mark --------- 数据库插入结果模型结束 ---------
 
 #pragma mark --------- DWDatabaseConfiguration开始 ---------
 @implementation DWDatabaseConfiguration

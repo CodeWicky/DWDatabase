@@ -138,6 +138,9 @@ NS_ASSUME_NONNULL_BEGIN
 ///操作成功的数据的id
 @property (nonatomic ,assign) NSInteger Dw_id;
 
+///userinfo
+@property (nonatomic ,strong) id userInfo;
+
 @end
 
 ///快速选取模型属性宏（第一个参数传入模型实例，第二个参数敲出所选属性的首字母后自动列出符合条件的属性列表，并将其转为字符串，可配合query方法快速正确的选出属性，且效率与直接写字符串相同）
