@@ -123,6 +123,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 
 @property (nonatomic ,copy) NSString * tblName;
 
+@property (nonatomic ,assign) BOOL finishOperationInChain;
+
 @end
 
 @implementation DWDatabaseOperationRecord
@@ -1057,7 +1059,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 #pragma mark --- tool method ---
 #pragma mark --- 内部入口 ---
--(DWDatabaseResult *)_entry_insertTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf insertChains:(NSMutableArray *)insertChains  error:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)_entry_insertTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf insertChains:(DWDatabaseOperationChain *)insertChains  error:(NSError *__autoreleasing *)error {
     BOOL valid = [self validateConfiguration:conf considerTableName:YES error:error];
     if (!valid) {
         return defaultFailResult();
@@ -1100,7 +1102,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 }
 
 #pragma mark ------ 插入表 ------
--(DWDatabaseResult *)dw_insertTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue insertChains:(NSMutableArray *)insertChains error:(NSError * __autoreleasing *)error {
+-(DWDatabaseResult *)dw_insertTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue insertChains:(DWDatabaseOperationChain *)insertChains error:(NSError * __autoreleasing *)error {
     if (!queue) {
         NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
         safeLinkError(error, err);
@@ -1938,7 +1940,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     [props enumerateKeysAndObjectsUsingBlock:ab];
 }
 
--(void)handleInsertArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName dbTransformMap:(NSDictionary *)dbTransformMap model:(NSObject *)model insertChains:(NSMutableArray *)insertChains validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args {
+-(void)handleInsertArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName dbTransformMap:(NSDictionary *)dbTransformMap model:(NSObject *)model insertChains:(DWDatabaseOperationChain *)insertChains validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args {
     NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass([model class]);
     [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
         
@@ -1948,13 +1950,20 @@ static void* dbOpQKey = "dbOperationQueueKey";
             if (value && name.length) {
                 ///此处考虑模型嵌套
                 if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                    ///首先应该考虑当前要插入的模型，是否存在于插入链中，如果存在，则直接插入ID即可
-                    if ([insertChains containsObject:value]) {
-                        NSNumber * Dw_id = Dw_idFromModel(value);
-                        if (Dw_id) {
-                            [validKeys addObject:name];
-                            [args addObject:Dw_id];
+                    ///首先应该考虑当前要插入的模型，是否存在于插入链中，如果存在，还要考虑是否完成插入了，如果未完成（代表作为头部节点进入插入链，此时需要执行插入操作），如果完成了，说明同级模型中，存在相同实例，直接插入ID即可。如果不存在，直接执行插入操作
+                    DWDatabaseResult * result =  [insertChains existRecordWithModel:value];
+                    if (result.success) {
+                        DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)result.userInfo;
+                        if (!operation.finishOperationInChain) {
+                            
+                        } else {
+                            NSNumber * Dw_id = Dw_idFromModel(value);
+                            if (Dw_id) {
+                                [validKeys addObject:name];
+                                [args addObject:Dw_id];
+                            }
                         }
+                        
                     } else {
                         ///此处取嵌套模型对应地表名
                         NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName);
@@ -1970,9 +1979,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
                                     DWDatabaseResult * result = [self _entry_insertTableWithModel:value keys:nil configuration:tblConf insertChains:insertChains error:nil];
                                     ///如果成功，添加id
                                     if (result.success) {
-                                        [insertChains addObject:value];
-                                        [validKeys addObject:name];
-                                        [args addObject:@(result.Dw_id)];
+//                                        [insertChains addRecord:value];
+//                                        [validKeys addObject:name];
+//                                        [args addObject:@(result.Dw_id)];
                                     }
                                 }
                             }
