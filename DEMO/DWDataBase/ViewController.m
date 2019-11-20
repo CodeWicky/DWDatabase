@@ -12,9 +12,9 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
-#define dbPath @"/Users/momo/Desktop/a.sqlite3"
+//#define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
-//#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
+#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
 @interface ViewController ()<UITableViewDataSource,UITableViewDelegate>
 
 @property (nonatomic ,strong) UITableView * mainTab;
@@ -130,7 +130,9 @@
         
         [self.db queryTableWithClass:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
-            maker.dw_conditionWith(chr).notNull();
+            maker.dw_conditionWith(floatNum).equalTo(0.5);
+            maker.dw_conditionWith(chr).isNull();
+            maker.dw_conditionWith(intNum).equalTo(1);
         } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
             if (results.count) {
                 NSLog(@"Async Query Success:%@",results);
