@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseConditionKey)(NSString * key);
 typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseConditionClass)(Class clazz);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionValue)(id value);
+typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionVoidValue)(void);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 
 
@@ -78,6 +79,12 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 
 ///指定当前条件为在指定值范围中的条件（接收值为DWBetweenFloatValue及DWBetweenIntegerValue）
 @property (nonatomic ,copy) DWDatabaseConditionValue between;
+
+///指定当前条件为Null值字段
+@property (nonatomic ,copy) DWDatabaseConditionVoidValue isNull;
+
+///指定当前条件为非Null值字段
+@property (nonatomic ,copy) DWDatabaseConditionVoidValue notNull;
 
 @end
 
