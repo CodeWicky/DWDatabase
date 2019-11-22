@@ -138,16 +138,17 @@ NS_ASSUME_NONNULL_BEGIN
 ///操作是否成功
 @property (nonatomic ,assign) BOOL success;
 
-///操作成功的数据的id
-@property (nonatomic ,assign) NSInteger Dw_id;
+///操作成功的数据
+///插入成功返回Dw_id，否则返回空；
+///删除成功若按Dw_id删除则返回Dw_id，否则返回空；
+///更新若依Dw_id更新则返回Dw_id，，否则返回空；
+///查询若查询成功，返回结果数组，否则返回空。
+@property (nonatomic ,assign) id result;
 
-///userinfo
-@property (nonatomic ,strong) id userInfo;
+///error
+@property (nonatomic ,strong) NSError * error;
 
 @end
-
-///快速选取模型属性宏（第一个参数传入模型实例，第二个参数敲出所选属性的首字母后自动列出符合条件的属性列表，并将其转为字符串，可配合query方法快速正确的选出属性，且效率与直接写字符串相同）
-//#define keyPathString(objc, keyPath) @(((void)objc.keyPath, #keyPath))
 
 @interface DWDatabase : NSObject
 
@@ -389,13 +390,12 @@ NS_ASSUME_NONNULL_BEGIN
  @param model 指定模型
  @param keys 指定属性数组
  @param conf 数据库句柄
- @param error 插入数据错误信息
  @return 返回是否插入成功
  
  @disc 1.此处传入表名数据库句柄
        2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
  */
--(nonnull DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(nonnull DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**

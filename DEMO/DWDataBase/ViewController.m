@@ -68,9 +68,12 @@
         v.cls = [v class];
         v.sel = @selector(viewDidLoad);
         
-        BOOL success = [self.db insertTableWithModel:v keys:nil configuration:self.tblConf error:&error];
-        if (success) {
-            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:[v class] keys:nil configuration:self.tblConf error:&error condition:nil]);
+        DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil configuration:self.tblConf];
+        if (result.success) {
+            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                maker.dw_loadClass(V);
+                maker.dw_conditionWith(nsNum).equalTo(1);
+            }]);
         } else {
             NSLog(@"%@",error);
         }
@@ -233,7 +236,7 @@
     
     DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath error:nil];
     if (CTblConf) {
-        BOOL success = [self.db insertTableWithModel:model keys:nil configuration:CTblConf error:nil];
+        BOOL success = [self.db insertTableWithModel:model keys:nil configuration:CTblConf];
         NSLog(@"Insert Success:%d",success);
     }
     
