@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9B3D392D2388045400B3F896 /* Ax.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B3D392C2388045400B3F896 /* Ax.m */; };
 		9B5E2B2523671ADC00CDAD4B /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2423671ADC00CDAD4B /* AppDelegate.m */; };
 		9B5E2B2823671ADC00CDAD4B /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2723671ADC00CDAD4B /* SceneDelegate.m */; };
 		9B5E2B2B23671ADC00CDAD4B /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2A23671ADC00CDAD4B /* ViewController.m */; };
@@ -23,6 +24,8 @@
 /* Begin PBXFileReference section */
 		1FB49733DFD8890EC098EF81 /* libPods-Test1.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Test1.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		289E81CEBBB83E019E0C5367 /* Pods-Test1.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Test1.release.xcconfig"; path = "Target Support Files/Pods-Test1/Pods-Test1.release.xcconfig"; sourceTree = "<group>"; };
+		9B3D392B2388045400B3F896 /* Ax.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Ax.h; sourceTree = "<group>"; };
+		9B3D392C2388045400B3F896 /* Ax.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Ax.m; sourceTree = "<group>"; };
 		9B5E2B2023671ADC00CDAD4B /* Test1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Test1.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B5E2B2323671ADC00CDAD4B /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		9B5E2B2423671ADC00CDAD4B /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -102,6 +105,8 @@
 				9B5E2B2723671ADC00CDAD4B /* SceneDelegate.m */,
 				9B5E2B2923671ADC00CDAD4B /* ViewController.h */,
 				9B5E2B2A23671ADC00CDAD4B /* ViewController.m */,
+				9B3D392B2388045400B3F896 /* Ax.h */,
+				9B3D392C2388045400B3F896 /* Ax.m */,
 				9B8C19C323752A950017300C /* Ex.h */,
 				9B8C19C423752A950017300C /* Ex.m */,
 				9B5E2B2C23671ADC00CDAD4B /* Main.storyboard */,
@@ -215,6 +220,7 @@
 				9B5E2B2523671ADC00CDAD4B /* AppDelegate.m in Sources */,
 				9B5E2B3E23671B5C00CDAD4B /* DWCameraManager.m in Sources */,
 				9B5E2B3623671ADD00CDAD4B /* main.m in Sources */,
+				9B3D392D2388045400B3F896 /* Ax.m in Sources */,
 				9B5E2B2823671ADC00CDAD4B /* SceneDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -9,6 +9,7 @@
 #import "ViewController.h"
 #import <DWDatabase/DWDatabaseHeader.h>
 #import "Ex.h"
+#import "Ax.h"
 
 @interface ViewController ()
 
@@ -23,12 +24,9 @@
 #define dbPath @"/Users/momo/Desktop/test.sqlite3"
 #define touchMode 0
 
--(void)loadView {
-    [super loadView];
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.view.backgroundColor = [UIColor whiteColor];
     NSLog(@"Finish did load");
 }
 
@@ -45,8 +43,15 @@
             Ex * model = [Ex new];
             model.num = i;
             model.name = names[i];
-            model.obj = model;
+//            model.obj = [Ex new];
+//            model.obj.num = 100;
+//            Ax * obj = [Ax new];
+//            obj.obj = model.obj;
+//            obj.name = @"zdw";
+//            model.aObj = obj;
+            NSLog(@"start");
             [self.db insertTableWithModel:model keys:nil configuration:self.tblConf error:nil];
+            NSLog(@"end");
             i++;
         }
             break;

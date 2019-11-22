@@ -7,9 +7,8 @@
 //
 
 #import <Foundation/Foundation.h>
-
 NS_ASSUME_NONNULL_BEGIN
-
+@class Ax;
 @interface Ex : NSObject
 
 @property (nonatomic ,assign) int num;
@@ -17,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic ,strong) NSString * name;
 
 @property (nonatomic ,strong) Ex * obj;
+
+@property (nonatomic ,strong) Ax * aObj;
 
 @end
 
