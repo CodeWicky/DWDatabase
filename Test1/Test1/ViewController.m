@@ -43,12 +43,12 @@
             Ex * model = [Ex new];
             model.num = i;
             model.name = names[i];
-//            model.obj = [Ex new];
-//            model.obj.num = 100;
-//            Ax * obj = [Ax new];
-//            obj.obj = model.obj;
-//            obj.name = @"zdw";
-//            model.aObj = obj;
+            model.obj = [Ex new];
+            model.obj.num = 100;
+            Ax * obj = [Ax new];
+            obj.obj = model.obj;
+            obj.name = @"zdw";
+            model.aObj = obj;
             NSLog(@"start");
             [self.db insertTableWithModel:model keys:nil configuration:self.tblConf error:nil];
             NSLog(@"end");
