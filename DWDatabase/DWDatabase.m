@@ -92,13 +92,6 @@
 
 #pragma mark --------- 数据库插入结果模型开始 ---------
 
-@interface DWDatabaseResult ()
-
-///userinfo
-@property (nonatomic ,strong) id userInfo;
-
-@end
-
 @implementation DWDatabaseResult
 
 +(DWDatabaseResult *)failResultWithError:(NSError *)error {
@@ -231,7 +224,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
     }
     DWDatabaseResult * result = [DWDatabaseResult new];
     result.success = YES;
-    result.userInfo = record;
+    result.result = record;
     return result;
 }
 
@@ -2013,9 +2006,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
                 if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
                     if (recursive) {
                         ///首先应该考虑当前要插入的模型，是否存在于插入链中，如果存在，还要考虑是否完成插入了，如果未完成（代表作为头部节点进入插入链，此时需要执行插入操作），如果完成了，说明同级模型中，存在相同实例，直接插入ID即可。如果不存在，直接执行插入操作
-                        DWDatabaseResult * result =  [insertChains existRecordWithModel:value];
-                        if (result.success) {
-                            DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)result.userInfo;
+                        DWDatabaseResult * existResult =  [insertChains existRecordWithModel:value];
+                        if (existResult.success) {
+                            DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
                             if (!operation.finishOperationInChain) {
                                 DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName error:nil];
                                 DWDatabaseResult * result = [self dw_insertTableWithModel:value dbName:dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue insertChains:insertChains recursive:NO];
