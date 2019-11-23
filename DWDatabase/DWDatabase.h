@@ -90,9 +90,6 @@
 ///获取默认存储主路径
 OBJC_EXTERN  NSString * _Nonnull defaultSavePath(void);
 
-///数据库中主键，数据的唯一ID，自增
-UIKIT_EXTERN NSString * const _Nonnull Dw_id;
-
 NS_ASSUME_NONNULL_BEGIN
 @protocol DWDatabaseSaveProtocol
 
@@ -226,7 +223,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 -(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
 -(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path byDw_id:(BOOL)byID keys:(nullable NSArray <NSString *>*)keys;
--(BOOL)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
 -(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 #pragma mark --- 数据库操作方法 ---
@@ -446,7 +443,7 @@ NS_ASSUME_NONNULL_BEGIN
        3.当model中不存在Dw_id时，将想当前表中插入model的数据信息
        4.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
  */
--(BOOL)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**
