@@ -90,6 +90,9 @@
 ///获取默认存储主路径
 OBJC_EXTERN  NSString * _Nonnull defaultSavePath(void);
 
+///数据库中主键，数据的唯一ID，自增
+UIKIT_EXTERN NSString * const _Nonnull Dw_id;
+
 NS_ASSUME_NONNULL_BEGIN
 @protocol DWDatabaseSaveProtocol
 
@@ -140,13 +143,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 ///操作成功的数据
 ///插入成功返回Dw_id，否则返回空；
-///删除成功若按Dw_id删除则返回Dw_id，否则返回空；
 ///更新若依Dw_id更新则返回Dw_id，，否则返回空；
 ///查询若查询成功，返回结果数组，否则返回空。
-@property (nonatomic ,assign) id result;
+@property (nonatomic ,strong ,nullable) id result;
 
 ///error
-@property (nonatomic ,strong) NSError * error;
+@property (nonatomic ,strong ,nullable) NSError * error;
 
 @end
 
@@ -375,7 +377,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 此处应传表名数据库句柄
  */
--(BOOL)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(BOOL)dropTableWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
 
 
 #pragma mark ------ 根据模型操作表 ------
@@ -418,11 +420,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  删除当前库指定表中对应的模型信息
 
- @param model 指定模型
- @param byID 如果Dw_id存在是否已Dw_id作为删除条件
- @param keys 指定属性数组
  @param conf 数据库句柄
- @param error 删除错误信息
  @return 返回是否删除成功
  
  @disc 1.此处传入表明数据库句柄
@@ -430,7 +428,7 @@ NS_ASSUME_NONNULL_BEGIN
        3.当model中不存在Dw_id时，且keys不为空时，将按照指定的键值作为条件进行删除
        4.当model中不存在Dw_id时，且keys为空时将以model所有非nil值作为条件进行删除
  */
--(BOOL)deleteTableWithModel:(NSObject *)model byDw_id:(BOOL)byID keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**

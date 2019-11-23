@@ -22,7 +22,7 @@
 @implementation ViewController
 
 #define dbPath @"/Users/momo/Desktop/test.sqlite3"
-#define touchMode 0
+#define touchMode 2
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -50,8 +50,8 @@
             obj.name = @"zdw";
             model.aObj = obj;
             NSLog(@"start");
-            [self.db insertTableWithModel:model keys:nil configuration:self.tblConf error:nil];
-            NSLog(@"end");
+            DWDatabaseResult * result = [self.db insertTableWithModel:model keys:nil configuration:self.tblConf];
+            NSLog(@"end %@",result);
             i++;
         }
             break;
@@ -60,11 +60,20 @@
             NSArray * values = @[@"zhangsan",@"lisi"];
             NSArray <Ex *>* rets = [self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
                 maker.dw_loadClass(Ex);
-                maker.dw_conditionWith(name).inValues(values);
+                maker.dw_conditionWith(num).equalTo(1024);
             }];
             [rets enumerateObjectsUsingBlock:^(Ex * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                 NSLog(@"%d",obj.num);
             }];
+        }
+            break;
+        case 2:
+        {
+            DWDatabaseResult * result = [self.db deleteTableWithConfiguration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                maker.dw_loadClass(Ex);
+                maker.dw_conditionWith(num).equalTo(1024);
+            }];
+            NSLog(@"%@",result);
         }
             break;
         default:
