@@ -429,6 +429,7 @@ NS_ASSUME_NONNULL_BEGIN
        4.当model中不存在Dw_id时，且keys为空时将以model所有非nil值作为条件进行删除
  */
 -(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**

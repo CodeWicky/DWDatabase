@@ -889,6 +889,27 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [self dw_deleteTableWithTableName:conf.tableName inQueue:conf.dbQueue condition:condition];
 }
 
+-(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf {
+    NSError * error = nil;
+    BOOL valid = [self validateConfiguration:conf considerTableName:YES error:&error];
+    if (!valid) {
+        return [DWDatabaseResult failResultWithError:error];
+    }
+    
+    if (!model) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
+    }
+    
+    NSNumber * DwId = Dw_idFromModel(model);
+    if (!DwId) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
+    }
+    return [self deleteTableWithConfiguration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.loadClass([model class]);
+        maker.conditionWith(Dw_id).equalTo(DwId);
+    }];
+}
+
 -(BOOL)updateTableWithModel:(NSObject *)model keys:(NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
     BOOL valid = [self validateConfiguration:conf considerTableName:YES error:error];
     if (!valid) {
