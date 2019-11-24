@@ -1744,7 +1744,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         [validQueryKeys addObject:@"*"];
     } else {
         [validQueryKeys addObject:kUniqueID];
-        [self configInfos:queryKeysProInfos map:map model:nil validKeysContainer:validQueryKeys argumentsContaienr:nil appendingString:nil allowNil:NO];
+        [self handleQueryValidKeysWithPropertyInfos:queryKeysProInfos map:map validKeysContainer:validQueryKeys];
         if (validQueryKeys.count == 1) {
             NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to query.",NSStringFromClass(cls)];
             NSError * err = errorWithMessage(msg, 10009);
@@ -2169,6 +2169,18 @@ static void* dbOpQKey = "dbOperationQueueKey";
                 } else {
                     [args addObject:[NSNull null]];
                 }
+            }
+        }
+    }];
+}
+
+-(void)handleQueryValidKeysWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map validKeysContainer:(NSMutableArray *)validKeys {
+
+    [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+        if (obj.name.length) {
+            NSString * name = propertyInfoTblName(obj, map);
+            if (name.length) {
+                [validKeys addObject:name];
             }
         }
     }];
