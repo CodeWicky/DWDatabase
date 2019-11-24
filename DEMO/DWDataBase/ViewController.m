@@ -81,45 +81,31 @@
 }
 
 - (void)delete {
-    NSError * error;
-    V * v = [V new];
-    v.unsignedLongLongNum = 20020200202;
-    v.intNum = -100;
-    BOOL success = [self.db deleteTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" byDw_id:NO keys:@[keyPathString(v, intNum),keyPathString(v, unsignedLongLongNum)] error:&error];
-    if (success) {
-        NSLog(@"Delete Success:%@",[self.db queryTableAutomaticallyWithModel:v name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" keys:nil error:&error condition:nil]);
+    DWDatabaseResult * result = [self.db deleteTableAutomaticallyWithModel:nil name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_conditionWith(intNum).equalTo(-100);
+        maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
+    }];
+    if (result.success) {
+        NSLog(@"Delete Success:%@",[self.db queryTableAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath keys:nil error:nil condition:nil]);
     } else {
-        NSLog(@"%@",error);
+        NSLog(@"%@",result.error);
     }
 }
 
 - (void)update {
     
     if (self.tblConf) {
-        NSError * error;
-        NSArray <V *>* ret = [self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        V * newV = [V new];
+        newV.unsignedLongLongNum = 333;
+        newV.intNum = 129;
+        newV.floatNum = 3.5;
+        DWDatabaseResult * result = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
-            maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
-            maker.dw_conditionWith(floatNum).between(DWBetweenMakeIntegerValue(3.09999, 4));
+            maker.dw_conditionWith(unsignedLongLongNum).equalTo(222);
         }];
         
-        if (ret.count) {
-            V * newV = ret.lastObject;
-            newV.intNum = 256;
-            newV.floatNum = 3.1f;
-            BOOL success = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:self.tblConf error:&error];
-            if (success) {
-                NSLog(@"Update Success:%@",[self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-                    maker.loadClass([V class]);
-                    maker.conditionWith(@"intNum").equalTo(256);
-                    maker.conditionWith(@"floatNum").between(DWApproximateFloatValue(3.1));
-                }]);
-            } else {
-                NSLog(@"%@",error);
-            }
-        } else {
-            NSLog(@"%@",error);
-        }
+        NSLog(@"%@",result);
     }
 }
 
@@ -206,8 +192,8 @@
 - (void)drop {
     if (self.tblConf) {
         NSError * error;
-        if ([self.db deleteTableWithConfiguration:self.tblConf error:&error]) {
-            NSLog(@"Drop success:%d",[self.db isTableExistWithTableName:@"V_SQL" configuration:self.tblConf error:&error]);
+        if ([self.db dropTableWithConfiguration:self.tblConf error:&error]) {
+            NSLog(@"Drop success:%d",[self.db isTableExistWithTableName:@"V_SQL" configuration:self.tblConf].success);
         } else {
             NSLog(@"%@",error);
         }

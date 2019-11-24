@@ -222,9 +222,9 @@ NS_ASSUME_NONNULL_BEGIN
  2. 增删改查对应相关方法
  */
 -(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
--(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path byDw_id:(BOOL)byID keys:(nullable NSArray <NSString *>*)keys;
+-(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
--(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 #pragma mark --- 数据库操作方法 ---
 /**
@@ -281,7 +281,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 此处应传库名数据库句柄
  */
--(BOOL)isTableExistWithTableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)isTableExistWithTableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**
@@ -443,7 +443,8 @@ NS_ASSUME_NONNULL_BEGIN
        3.当model中不存在Dw_id时，将想当前表中插入model的数据信息
        4.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
  */
--(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
+
+-(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
