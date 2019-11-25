@@ -308,8 +308,6 @@ NS_INLINE NSString * keyStringFromModel(NSObject * model) {
 #define kQueryPrefix (@"q")
 static const char * kAdditionalConfKey = "kAdditionalConfKey";
 static NSString * const kDwIdKey = @"kDwIdKey";
-static NSString * const kTblNameKey = @"kTblNameKey";
-static NSString * const kDbNameKey = @"kDbNameKey";
 static void* dbOpQKey = "dbOperationQueueKey";
 
 @interface DWDatabase ()
@@ -936,8 +934,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
     
     if (result.success) {
         SetDw_idForModel(model, nil);
-        SetDbNameForModel(model, nil);
-        SetTblNameForModel(model, nil);
     }
     
     return result;
@@ -1886,8 +1882,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
             if (Dw_id) {
                 SetDw_idForModel(tmp, Dw_id);
             }
-            SetTblNameForModel(tmp, tblName);
-            SetDbNameForModel(tmp, dbName);
             [resultArr addObject:tmp];
         }
     }];
@@ -2066,43 +2060,28 @@ static void* dbOpQKey = "dbOperationQueueKey";
                             }
                         } else {
                             
-                            NSNumber * Dw_id = Dw_idFromModel(value);
-                            NSString * tblNameInModel = tblNameFromModel(value);
-                            NSString * dbNameInModel = dbNameFromModel(value);
                             ///此处取嵌套模型对应地表名
                             NSString * existTblName = [insertChains anyRecordInChainWithClass:obj.cls].tblName;
                             NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
                             ///先看嵌套的模型是否存在Dw_id，如果存在代表为已存在记录，直接更新
-                            if (Dw_id && tblNameInModel && [tblNameInModel isEqualToString:inlineTblName] && dbNameInModel && [dbNameInModel isEqualToString:dbName]) {
-                                [validKeys addObject:name];
-                                [args addObject:value];
-                                objMap[obj.name] = Dw_id;
-                                DWDatabaseOperationRecord * record = [DWDatabaseOperationRecord new];
-                                record.model = model;
-                                record.operation = DWDatabaseOperationInsert;
-                                record.tblName = tblName;
-                                record.finishOperationInChain = YES;
-                                [insertChains addRecord:record];
-                            } else {
-                                if (inlineTblName.length) {
-                                    ///开始准备插入模型，先获取库名数据库句柄
-                                    DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName error:nil];
-                                    ///建表
-                                    if (dbConf && [self createTableWithClass:obj.cls tableName:inlineTblName configuration:dbConf error:nil]) {
-                                        ///获取表名数据库句柄
-                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName error:nil];
-                                        if (tblConf) {
-                                            ///插入
-                                            DWDatabaseResult * result = [self _entry_insertTableWithModel:value keys:nil configuration:tblConf insertChains:insertChains];
-                                            ///如果成功，添加id
-                                            if (result.success) {
-                                                [validKeys addObject:name];
-                                                [args addObject:result.result];
-                                                
-                                                DWDatabaseOperationRecord * record = [insertChains recordInChainWithModel:value];
-                                                record.finishOperationInChain = YES;
-                                                objMap[obj.name] = result.result;
-                                            }
+                            if (inlineTblName.length) {
+                                ///开始准备插入模型，先获取库名数据库句柄
+                                DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName error:nil];
+                                ///建表
+                                if (dbConf && [self createTableWithClass:obj.cls tableName:inlineTblName configuration:dbConf error:nil]) {
+                                    ///获取表名数据库句柄
+                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName error:nil];
+                                    if (tblConf) {
+                                        ///插入
+                                        DWDatabaseResult * result = [self _entry_insertTableWithModel:value keys:nil configuration:tblConf insertChains:insertChains];
+                                        ///如果成功，添加id
+                                        if (result.success) {
+                                            [validKeys addObject:name];
+                                            [args addObject:result.result];
+                                            
+                                            DWDatabaseOperationRecord * record = [insertChains recordInChainWithModel:value];
+                                            record.finishOperationInChain = YES;
+                                            objMap[obj.name] = result.result;
                                         }
                                     }
                                 }
@@ -2434,26 +2413,6 @@ NS_INLINE NSNumber * Dw_idFromModel(NSObject * model) {
 ///设置id
 NS_INLINE void SetDw_idForModel(NSObject * model,NSNumber * dw_id) {
     [additionalConfigFromModel(model) setValue:dw_id forKey:kDwIdKey];
-}
-
-///获取表名
-NS_INLINE NSString * tblNameFromModel(NSObject * model) {
-    return [additionalConfigFromModel(model) valueForKey:kTblNameKey];
-}
-
-///设置表名
-NS_INLINE void SetTblNameForModel(NSObject * model,NSString * tblName) {
-    [additionalConfigFromModel(model) setValue:tblName forKey:kTblNameKey];
-}
-
-///获取库名
-NS_INLINE NSString * dbNameFromModel(NSObject * model) {
-    return [additionalConfigFromModel(model) valueForKey:kDbNameKey];
-}
-
-
-NS_INLINE void SetDbNameForModel(NSObject * model,NSString * dbName) {
-    [additionalConfigFromModel(model) setValue:dbName forKey:kDbNameKey];
 }
 
 ///获取两个数组的交集
