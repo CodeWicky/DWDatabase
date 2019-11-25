@@ -89,34 +89,6 @@
 @end
 #pragma mark --------- 数据库管理模型部分结束 ---------
 
-#pragma mark --------- 数据库插入结果模型开始 ---------
-
-@implementation DWDatabaseResult
-
-+(DWDatabaseResult *)failResultWithError:(NSError *)error {
-    DWDatabaseResult * result = [DWDatabaseResult new];
-    result.error = error;
-    return result;
-}
-
-+(DWDatabaseResult *)successResultWithResult:(id)result {
-    DWDatabaseResult * res = [DWDatabaseResult new];
-    res.result = result;
-    res.success = YES;
-    return res;
-}
-
--(NSString *)description {
-    return [NSString stringWithFormat:@"<%@: %p>%@ with: %@",NSStringFromClass([self class]),self,self.success?@"Success":@"Fail",self.success?self.result:self.error];
-}
-
--(NSString *)debugDescription {
-    return [NSString stringWithFormat:@"<%@: %p>%@ with: %@",NSStringFromClass([self class]),self,self.success?@"Success":@"Fail",self.success?self.result:self.error];
-}
-
-@end
-#pragma mark --------- 数据库插入结果模型结束 ---------
-
 #pragma mark --------- 数据库操作记录模型部分开始 ---------
 
 typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
@@ -255,19 +227,28 @@ NS_INLINE NSString * keyStringFromModel(NSObject * model) {
 #pragma mark --------- 数据库操作记录链部分结束 ---------
 
 #pragma mark --------- DWDatabaseConfiguration开始 ---------
-@implementation DWDatabaseConfiguration
+@interface DWDatabaseConfiguration ()
+
+///当前使用的数据库队列
+@property (nonatomic ,strong) FMDatabaseQueue * dbQueue;
+
+///数据库在本地映射的name
+@property (nonatomic ,copy) NSString * dbName;
+
+///当前使用的表名
+@property (nonatomic ,copy) NSString * tableName;
+
+@end
+
+@implementation DWDatabaseConfiguration (Private)
 
 -(instancetype)initWithName:(NSString *)name tblName:(NSString * )tblName dbq:(FMDatabaseQueue *)dbq {
     if (self = [super init]) {
-        _dbName = name;
-        _tableName = tblName;
-        _dbQueue = dbq;
+        self.dbName = name;
+        self.tableName = tblName;
+        self.dbQueue = dbq;
     }
     return self;
-}
-
--(NSString *)dbPath {
-    return self.dbQueue.path;
 }
 
 @end
@@ -514,27 +495,22 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return success;
 }
 
--(BOOL)deleteDBWithName:(NSString *)name error:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)deleteDBWithName:(NSString *)name {
     if (!name.length) {
-        NSError * err = errorWithMessage(@"Invalid name whose length is 0.", 10000);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid name whose length is 0.", 10000)];
     }
     if (![self.allDBs.allKeys containsObject:name]) {
-        NSError * err = errorWithMessage(@"Invalid name which there's no database named with it.", 10002);
-        safeLinkError(error,err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid name which there's no database named with it.", 10002)];
     }
     
-    BOOL success = NO;
-    
+    DWDatabaseResult * result = [DWDatabaseResult failResultWithError:nil];
     ///移除管理表、缓存及数据库
     NSString * path = [self.allDBs valueForKey:name];
     DWDatabaseInfo * info = [DWDatabaseInfo new];
     info.dbName = name;
     info.dbPath = path;
     if ([info configRelativePath]) {
-        success = [self dw_deleteTableWithTableName:kSqlSetTblName inQueue:self.privateQueue condition:^(DWDatabaseConditionMaker * maker) {
+        result = [self dw_deleteTableWithTableName:kSqlSetTblName inQueue:self.privateQueue condition:^(DWDatabaseConditionMaker * maker) {
             maker.dw_loadClass(DWDatabaseInfo);
             maker.dw_conditionWith(dbName).equalTo(info.dbName);
             maker.dw_conditionWith(dbPath).equalTo(info.dbPath);
@@ -542,13 +518,15 @@ static void* dbOpQKey = "dbOperationQueueKey";
             maker.dw_conditionWith(relativeType).equalTo(info.relativeType);
         }];
         ///若表删除成功，应移除所有相关信息，包括缓存的DBQ，数据库地址缓存，本地数据库文件，以及若为当前库还要清空当前库信息
-        if (success) {
+        if (result.success) {
             [self.allDBs_prv removeObjectForKey:name];
             [self.dbqContainer removeObjectForKey:name];
-            success = [[NSFileManager defaultManager] removeItemAtPath:path error:error];
+            NSError * error = nil;
+            result.success = [[NSFileManager defaultManager] removeItemAtPath:path error:&error];
+            result.error = error;
         }
     }
-    return success;
+    return result;
 }
 
 -(DWDatabaseConfiguration *)fetchDBConfigurationWithName:(NSString *)name error:(NSError *__autoreleasing *)error {
@@ -768,7 +746,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
         }];
     });
     
-    
     ///去除ID
     if ([fields containsObject:kUniqueID]) {
         [fields removeObject:kUniqueID];
@@ -801,39 +778,38 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return propNames;
 }
 
--(BOOL)clearTableWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)clearTableWithConfiguration:(DWDatabaseConfiguration *)conf {
     
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return NO;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
-    __block BOOL success = NO;
+    result.result = nil;
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            success = [db executeUpdate:[NSString stringWithFormat:@"DELETE FROM %@",conf.tableName]];
-            safeLinkError(error, db.lastError);
+            result.success = [db executeUpdate:[NSString stringWithFormat:@"DELETE FROM %@",conf.tableName]];
+            result.error = db.lastError;
         }];
     });
     
-    return success;
+    return result;
 }
 
--(BOOL)dropTableWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
-    
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return NO;
+-(DWDatabaseResult *)dropTableWithConfiguration:(DWDatabaseConfiguration *)conf {
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
-    __block BOOL success = NO;
+    result.result = nil;
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            success = [db executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@",conf.tableName]];
-            safeLinkError(error, db.lastError);
+            result.success = [db executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@",conf.tableName]];
+            result.error = db.lastError;
         }];
     });
-    return success;
+    return result;
 }
 
 -(DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf {

@@ -7,6 +7,11 @@
 
 #import "DWDatabaseConfiguration.h"
 
+
 @implementation DWDatabaseConfiguration
+
+-(NSString *)dbPath {
+    return self.dbQueue.path;
+}
 
 @end
