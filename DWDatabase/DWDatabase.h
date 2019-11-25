@@ -126,23 +126,21 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  初始化数据库
 
- @param error 初始化错误信息
  @return 返回是否初始化成功
  
  @disc 数据库使用前，请确保调用过此方法，建议在AppDelegate中调用
  */
--(BOOL)initializeDBWithError:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)initializeDB;
 
 
 #pragma mark --- 组合快捷方法 ---
 /**
- 按需初始化数据库并为指定类创建数据库或者数据表后获取表名数据库句柄
+ 快速获取表名数据库句柄
  
  @param cls 指定类
  @param name 映射的name
  @param tblName 指定的表名
  @param path 指定保存数据库的路径
- @param error 获取失败信息
  @return 返回表名数据库句柄
  
  @disc 行为包括:
@@ -152,8 +150,9 @@ NS_ASSUME_NONNULL_BEGIN
  4. -fetchDBConfigurationWithName:tableName:error:
  
  本方法做了表操作之前的所有准备操作，表操作之前直接调用即可获取表名数据库句柄
+ 如果操作成功，返回结果中result字段将携带表名数据库句柄
  */
--(nullable DWDatabaseConfiguration *)fetchDBConfigurationAutomaticallyWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)fetchDBConfigurationAutomaticallyWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path;
 
 
 /**
@@ -163,7 +162,6 @@ NS_ASSUME_NONNULL_BEGIN
  @param name 映射的name
  @param tblName 指定的表名
  @param path 指定保存数据库的路径
- @param error 创建错误信息
  @return 返回创建是否成功
  
  @disc 若本地已存在库或表则认为无需创建，返回成功
@@ -171,7 +169,7 @@ NS_ASSUME_NONNULL_BEGIN
  1. -configDBIfNeededWithName:path:error:
  2. -createTableWithClass:tableName:configuration:error:
  */
--(BOOL)configDBIfNeededWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)configDBIfNeededWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path;
 
 #pragma mark --- 组合表操作方法 ---
 /**
@@ -184,10 +182,10 @@ NS_ASSUME_NONNULL_BEGIN
  1. -fetchDBConfigurationAutomaticallyWithClass:name:tableName:path:error:
  2. 增删改查对应相关方法
  */
--(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys error:(NSError * _Nullable __autoreleasing *)error;
--(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
+-(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
--(nullable NSArray <__kindof NSObject *>*)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 #pragma mark --- 数据库操作方法 ---
 /**
@@ -200,14 +198,13 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param name 映射的name
  @param path 指定保存数据库的路径
- @param error 如果创建错误则抛出错误信息
  @return 返回是否创建成功
  
  @disc 1.用于创建数据库，若本地已存在对应的数据库映射将创建失败。
        2.当所传path为空时将 /Library/DWDatabase 下创建随机文件名的数据库文件
        3.调用后会自动将数据库配置为当前使用库
  */
--(BOOL)configDBIfNeededWithName:(NSString *)name path:(nullable NSString *)path error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)configDBIfNeededWithName:(NSString *)name path:(nullable NSString *)path;
 
 
 /**
@@ -225,12 +222,12 @@ NS_ASSUME_NONNULL_BEGIN
  库名数据库句柄操作方法
  
  @param name 映射的name
- @param error 获取错误信息
  @return 返回库名数据库句柄
  
  @disc 库名数据库句柄相较表名数据库句柄缺少表名信息，故使用库名数据库句柄的地方均可用表明数据库句柄代替（表名不做校验，无影响）
+      若操作成功，result字段将携带库名数据库句柄。
  */
--(nullable DWDatabaseConfiguration *)fetchDBConfigurationWithName:(NSString *)name error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name;
 
 
 /**
@@ -250,12 +247,11 @@ NS_ASSUME_NONNULL_BEGIN
  获取当前库中包含的所有表名
  
  @param conf 数据库句柄
- @param error 查询错误信息
  @return 返回当前库中所有表名
  
- @disc 此处应传库名数据库句柄
+ @disc 此处应传库名数据库句柄，若操作成功，result字段将携带所有包含所有表名的数组
  */
--(nullable NSArray<NSString *> *)queryAllTableNamesInDBWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)queryAllTableNamesInDBWithConfiguration:(DWDatabaseConfiguration *)conf;
 
 
 /**
@@ -264,13 +260,12 @@ NS_ASSUME_NONNULL_BEGIN
  @param cls 指定类
  @param tblName 指定表名
  @param conf 数据库句柄
- @param error 创建错误信息
  @return 返回是否创建成功
  
  @disc 此处应传入库名数据库句柄
  */
--(BOOL)createTableWithClass:(Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
--(BOOL)createTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)createTableWithClass:(Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)createTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf;
 
 #pragma mark --- 表操作方法 ---
 /**
@@ -283,12 +278,12 @@ NS_ASSUME_NONNULL_BEGIN
  
  @param name 映射的name
  @param tblName 指定表名
- @param error 获取错误信息
  @return 返回表名数据库句柄
  
  @disc 库名数据库句柄相较表名数据库句柄缺少表名信息，故使用表名数据库句柄的地方均不可用表明数据库句柄代替（表名做校验，存在影响）
+      若操作成功，result字段将携带表名数据库句柄。
  */
--(nullable DWDatabaseConfiguration *)fetchDBConfigurationWithName:(NSString *)name tabelName:(NSString *)tblName error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name tabelName:(NSString *)tblName;
 
 
 /**
@@ -296,8 +291,8 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 此处应传表名数据库句柄
  */
--(BOOL)updateTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
--(BOOL)updateTableWithSQLs:(NSArray <NSString *>*)sqls rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError **)error;
+-(DWDatabaseResult *)updateTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)updateTableWithSQLs:(NSArray <NSString *>*)sqls rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf;
 -(void)queryTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf completion:(nullable void(^)(FMResultSet * _Nullable set, NSError * _Nullable error))completion;
 
 /**
@@ -306,13 +301,13 @@ NS_ASSUME_NONNULL_BEGIN
  @param translateToPropertyName 是否转换成对应类的属性名
  @param cls 转换模型的类
  @param conf 数据库句柄
- @param error 查询错误
  @return 所有字段名
  
  @disc 1.此处应传表名数据库句柄
-       2.若数据表名不能一一映射到模型中将给出错误信息
+      2.若数据表名不能一一映射到模型中将给出错误信息
+      3.若操作成功，result字段将携带z包含所有字段名的数组
  */
--(nullable NSArray <NSString *>*)queryAllFieldInTable:(BOOL)translateToPropertyName class:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)queryAllFieldInTable:(BOOL)translateToPropertyName class:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**
@@ -365,14 +360,14 @@ NS_ASSUME_NONNULL_BEGIN
  @param keys 指定属性数组
  @param rollback 插入失败时是否回滚
  @param conf 数据库句柄
- @param error 插入数据错误信息
  @return 插入失败的模型
  
  @disc 1.此处传入表名数据库句柄
        2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
        3.一旦出现错误立即停止操作，不再进行后续插入操作
+       4.若操作失败，result字段将携带插入失败的模型
  */
--(NSArray <NSObject *>*)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf;
 -(void)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <NSObject *>*failureModels,NSError * error))completion;
 
 /**
@@ -429,7 +424,6 @@ NS_ASSUME_NONNULL_BEGIN
  @param orderKey 指定的排序的key
  @param ascending 是否正序
  @param conf 数据库句柄
- @param error 查询错误信息
  @param condition 指定查询条件的构造器
  @return 返回查询结果
  
@@ -442,9 +436,10 @@ NS_ASSUME_NONNULL_BEGIN
        7.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
        8.condition为构造查询条件的构造器，condition与clazz不能同时为空
        10.返回的数组中将以传入的clazz的实例作为数据载体
+       11.若操作成功，result字段中将携带结果数组
  */
 
--(nullable NSArray <__kindof NSObject *>*)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 -(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 /**
@@ -453,12 +448,11 @@ NS_ASSUME_NONNULL_BEGIN
  @param sql 指定sql
  @param cls 承载数据的模型的类
  @param conf 数据库句柄
- @param error 查询错误信息
  @return 返回查询结果
  
- @disc 此处传入表名数据库句柄
+ @disc 此处传入表名数据库句柄，如果操作成功，result字段将携带结果数组
  */
--(nullable NSArray <__kindof NSObject *>*)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf;
 -(void)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 
@@ -468,7 +462,6 @@ NS_ASSUME_NONNULL_BEGIN
  @param clazz 作为数据承载的模型类
  @param keys 想要查询的键值
  @param conf 数据库句柄
- @param error 查询错误信息
  @param condition 指定查询条件的构造器
  @return 返回查询结果
  
@@ -476,8 +469,9 @@ NS_ASSUME_NONNULL_BEGIN
        2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
        3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_dataBaseWhiteList 和 +dw_dataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        4.返回的数组中将以传入的clazz的实例作为数据载体
+       5.若操作成功，result字段将携带结果数组
  */
--(nullable NSArray <__kindof NSObject *>*)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void (^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf condition:(nullable void (^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
@@ -485,7 +479,6 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param clazz 作为数据承载的模型类
  @param conf 数据库句柄
- @param error 查询错误信息
  @param condition 指定查询条件的构造器
  @return 返回是否查询成功
  
@@ -493,9 +486,9 @@ NS_ASSUME_NONNULL_BEGIN
        2.model将作为数据承载的载体
        3.conditionKeys应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
        4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
-       5.若查询失败将返回-1
+       5.若查询成功，result字段将携带个数（NSNumber）
  */
--(NSInteger)queryTableForCountWithClass:(nullable Class)clazz configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableForCountWithClass:(nullable Class)clazz configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
@@ -505,12 +498,11 @@ NS_ASSUME_NONNULL_BEGIN
  @param Dw_id 指定ID
  @param keys 查询的键值
  @param conf 数据库句柄
- @param error 查询错误信息
  @return 返回对应数据的模型
  
- @disc 此处应传入表名数据库，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）
+ @disc 此处应传入表名数据库，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）,若操作成功，result字段将携带指定模型
  */
--(__kindof NSObject *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
 
 
 #pragma mark ------ 其他 ------
@@ -524,9 +516,5 @@ NS_ASSUME_NONNULL_BEGIN
        2.具有Dw_id的模型从表中删除后会移除模型的Dw_id
  */
 -(NSNumber *)fetchDw_idForModel:(NSObject *)model;
-
--(NSArray *)propertysToSaveWithClass:(Class)cls;
-
--(NSDictionary *)propertyInfosWithClass:(Class)cls keys:(NSArray *)keys;
 @end
 NS_ASSUME_NONNULL_END

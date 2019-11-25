@@ -70,7 +70,7 @@
         
         DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil configuration:self.tblConf];
         if (result.success) {
-            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:nil keys:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
                 maker.dw_loadClass(V);
                 maker.dw_conditionWith(nsNum).equalTo(1);
             }]);
@@ -87,7 +87,7 @@
         maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
     }];
     if (result.success) {
-        NSLog(@"Delete Success:%@",[self.db queryTableAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath keys:nil error:nil condition:nil]);
+        NSLog(@"Delete Success:%@",[self.db queryTableAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath keys:nil condition:nil]);
     } else {
         NSLog(@"%@",result.error);
     }
@@ -111,7 +111,7 @@
 
 - (void)query {
     if (self.tblConf) {
-        NSError * error;
+
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
@@ -129,53 +129,54 @@
         }];
         
         
-        NSArray <V *>* ret = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        DWDatabaseResult * result = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.loadClass([V class]);
             maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
         }];
+        NSArray <V *>* ret = result.result;
         if (ret.count) {
             NSLog(@"Query Success:%@",ret);
         } else {
-            NSLog(@"%@",error);
+            NSLog(@"%@",result.error);
         }
     }
 }
 - (void)queryCount {
     if (self.tblConf) {
-        NSError * error;
         V * v = [V new];
         v.unsignedLongLongNum = 20020200202;
         v.intNum = -100;
-        NSInteger count = [self.db queryTableForCountWithClass:nil configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        DWDatabaseResult * result = [self.db queryTableForCountWithClass:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
             maker.dw_conditionWith(intNum).equalTo(-100);
         }];
-        if (count >= 0) {
-            NSLog(@"Query Count Success:%ld",count);
+        if (result.success) {
+            NSLog(@"Query Count Success:%@",result.result);
         } else {
-            NSLog(@"%@",error);
+            NSLog(@"%@",result.error);
         }
     }
 }
 - (void)queryField {
     if (self.tblConf) {
-        NSError * error;
-        NSArray * ret = [self.db queryAllFieldInTable:NO class:Nil configuration:self.tblConf error:&error];
+        
+        DWDatabaseResult * result = [self.db queryAllFieldInTable:NO class:Nil configuration:self.tblConf];
+        NSArray * ret = result.result;
         if (ret) {
             NSLog(@"Query Field Success:%@",ret);
         } else {
-            NSLog(@"%@",error);
+            NSLog(@"%@",result.error);
         }
     }
 }
 - (void)queryID {
     if (self.tblConf) {
-        NSError * error;
-        V * ret = [self.db queryTableWithClass:[V class] Dw_id:@(7) keys:nil configuration:self.tblConf error:&error];
-        if (ret) {
+        DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(7) keys:nil configuration:self.tblConf];
+        V * ret = result.result;
+        if (result.success) {
             NSLog(@"Query ID Success:%@",[self.db fetchDw_idForModel:ret]);
         } else {
-            NSLog(@"%@",error);
+            NSLog(@"%@",result.error);
         }
     }
 }
@@ -183,7 +184,7 @@
     if (self.tblConf) {
         DWDatabaseResult * result = [self.db clearTableWithConfiguration:self.tblConf];
         if (result.success) {
-            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil configuration:self.tblConf error:nil condition:nil]);
+            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil configuration:self.tblConf condition:nil]);
         } else {
             NSLog(@"%@",result.error);
         }
@@ -220,7 +221,7 @@
 -(void)transformToModel {
     C * model = [C dw_modelFromDictionary:@{@"a":@"hello",@"aNum":@(1.f),@"classB":@{@"b":@"100",@"str":@"B",@"classA":@{@"a":@[@1,@2,@3]}},@"array":@[@{@"a":@[@1,@2,@3]},@{@"a":@[@1,@2,@3,@4]}],@"dic":@{@"a":@[@1]},@"modelDic":@{@"a":@{@"a":@[@1,@2,@3,@4]},@"b":@1,@"c":@[@{@"a":@[@1,@2,@3,@4]},@2,@{@"a":@[@1,@2,@3,@4]}]},@"dicFromArray":@[@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]}]}];
     
-    DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath error:nil];
+    DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath].result;
     if (CTblConf) {
         BOOL success = [self.db insertTableWithModel:model keys:nil configuration:CTblConf];
         NSLog(@"Insert Success:%d",success);
@@ -237,17 +238,18 @@
 }
 
 -(void)configDB {
-    NSError * err;
-    if ([self.db initializeDBWithError:nil]) {
+    DWDatabaseResult * result = [self.db initializeDB];
+    if (result.success) {
         NSLog(@"%@",self.db.allDBs);
     } else {
-        NSLog(@"%@",err);
+        NSLog(@"%@",result.error);
     }
     NSLog(@"%@",defaultSavePath());
     
-    self.tblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath error:&err];
+    result = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath];
+    self.tblConf = result.result;
     if (!self.tblConf) {
-        NSLog(@"%@",err);
+        NSLog(@"%@",result.error);
     }
 }
 

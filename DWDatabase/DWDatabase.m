@@ -322,9 +322,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
 @implementation DWDatabase
 
 #pragma mark --- interface method ---
--(BOOL)initializeDBWithError:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)initializeDB {
     if (self.hasInitialize) {
-        return YES;
+        return [DWDatabaseResult successResultWithResult:nil];
     }
     ///首次启动时还没有沙盒地址，此时需要调用一下才能创建出来
     if (![[NSFileManager defaultManager] fileExistsAtPath:defaultSavePath()]) {
@@ -335,15 +335,17 @@ static void* dbOpQKey = "dbOperationQueueKey";
     NSString * savePath = [defaultSavePath() stringByAppendingPathComponent:@".private/privateInfo.sqlite"];
     self.privateQueue = [self openDBQueueWithName:nil path:savePath private:YES];
     if (!self.privateQueue) {
-        NSError * err = errorWithMessage(@"Invalid path which FMDatabaseQueue could not open.", 10003);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid path which FMDatabaseQueue could not open.", 10003)];
     }
-    BOOL success = [self dw_createTableWithClass:[DWDatabaseInfo class] tableName:kSqlSetTblName inQueue:self.privateQueue error:error];
-    NSArray <DWDatabaseInfo *>* res = [self dw_queryTableWithDbName:kSqlSetDbName tableName:kSqlSetTblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:self.privateQueue error:error condition:^(DWDatabaseConditionMaker *maker) {
-        maker.loadClass([DWDatabaseInfo class]);
-    }];
     
+    DWDatabaseResult * result = [self dw_createTableWithClass:[DWDatabaseInfo class] tableName:kSqlSetTblName inQueue:self.privateQueue];
+    if (!result.success) {
+        return result;
+    }
+
+    NSArray <DWDatabaseInfo *>* res = [self dw_queryTableWithDbName:kSqlSetDbName tableName:kSqlSetTblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:self.privateQueue condition:^(DWDatabaseConditionMaker *maker) {
+        maker.loadClass([DWDatabaseInfo class]);
+    }].result;
     if (res.count) {
         ///取出以后配置数据库完整地址
         [res enumerateObjectsUsingBlock:^(DWDatabaseInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -352,52 +354,61 @@ static void* dbOpQKey = "dbOperationQueueKey";
             }
         }];
     }
-    if (success) {
+    if (result.success) {
         self.hasInitialize = YES;
     }
-    return success;
+    return result;
 }
 
--(DWDatabaseConfiguration *)fetchDBConfigurationAutomaticallyWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path error:(NSError *__autoreleasing *)error {
-    if (![self initializeDBWithError:error]) {
-        return nil;
+-(DWDatabaseResult *)fetchDBConfigurationAutomaticallyWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path {
+    DWDatabaseResult * result = [self initializeDB];
+    if (!result.success) {
+        return result;
     }
-    if (![self configDBIfNeededWithClass:cls name:name tableName:tblName path:path error:error]) {
-        return nil;
+    result = [self configDBIfNeededWithClass:cls name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
     }
-    DWDatabaseConfiguration * conf = [self fetchDBConfigurationWithName:name tabelName:tblName error:error];
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return nil;
+    DWDatabaseConfiguration * conf = [self fetchDBConfigurationWithName:name tabelName:tblName].result;
+    result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
-    return conf;
+    return [DWDatabaseResult successResultWithResult:conf];
 }
 
--(BOOL)configDBIfNeededWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path error:(NSError *__autoreleasing *)error {
-    if (cls == Nil || !tblName.length) {
-        return NO;
+-(DWDatabaseResult *)configDBIfNeededWithClass:(Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path {
+    if (cls == Nil) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
-    BOOL success = [self configDBIfNeededWithName:name path:path error:error];
-    if (!success) {
-        return NO;
+    
+    if (!tblName.length) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tblName whose length is 0.", 10005)];
     }
-    DWDatabaseConfiguration * conf = [self fetchDBConfigurationWithName:name error:error];
-    success = [self validateConfiguration:conf considerTableName:NO].success;
-    if (!success) {
-        return NO;
+    
+    DWDatabaseResult * result = [self configDBIfNeededWithName:name path:path];
+    if (!result.success) {
+        return result;
     }
-    BOOL exist = [self isTableExistWithTableName:tblName configuration:conf].success;
-    if (exist) {
-        return YES;
+
+    DWDatabaseConfiguration * conf = [self fetchDBConfigurationWithName:name].result;
+    result = [self validateConfiguration:conf considerTableName:NO];
+    if (!result.success) {
+        return result;
     }
-    return [self createTableWithClass:cls tableName:tblName configuration:conf error:error];
+    result = [self isTableExistWithTableName:tblName configuration:conf];
+    if (result.success) {
+        return result;
+    }
+    return [self createTableWithClass:cls tableName:tblName configuration:conf];
 }
 
--(DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys error:(NSError *__autoreleasing *)error {
-    DWDatabaseConfiguration * conf = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path error:error];
-    if (!conf) {
-        return [DWDatabaseResult failResultWithError:*error];
+-(DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys {
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
     }
+    DWDatabaseConfiguration * conf = result.result;
     [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
     return [self dw_insertTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue insertChains:nil recursive:YES];
 }
@@ -413,12 +424,12 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
     }
     
-    NSError * error;
-    DWDatabaseConfiguration * conf = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path error:&error];
-    if (!conf) {
-        return [DWDatabaseResult failResultWithError:error];
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
     }
     
+    DWDatabaseConfiguration * conf = result.result;
     if (!condition) {
         condition = ^(DWDatabaseConditionMaker * maker) {
             maker.loadClass([model class]);
@@ -430,46 +441,44 @@ static void* dbOpQKey = "dbOperationQueueKey";
 }
 
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys {
-    NSError * error;
-    DWDatabaseConfiguration * conf = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path error:&error];
-    if (!conf) {
-        return [DWDatabaseResult failResultWithError:error];
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
     }
+    DWDatabaseConfiguration * conf = result.result;
     [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
     return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES condition:nil];
 }
 
--(NSArray<NSObject *> *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray *)keys error:(NSError * _Nullable __autoreleasing *)error condition:(void (^)(DWDatabaseConditionMaker * _Nonnull))condition {
+-(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray *)keys condition:(void (^)(DWDatabaseConditionMaker * _Nonnull))condition {
     
     if (!clazz) {
-        NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     
-    DWDatabaseConfiguration * conf = [self fetchDBConfigurationAutomaticallyWithClass:clazz name:name tableName:tblName path:path error:error];
-    if (!conf) {
-        return nil;
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:clazz name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
     }
+    DWDatabaseConfiguration * conf = result.result;
     if (!condition) {
         condition = ^(DWDatabaseConditionMaker * maker) {
             maker.loadClass(clazz);
         };
     }
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error condition:condition];
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue condition:condition];
 }
 
 ///配置数据库
--(BOOL)configDBIfNeededWithName:(NSString *)name path:(NSString *)path error:(NSError * __autoreleasing *)error {
+-(DWDatabaseResult *)configDBIfNeededWithName:(NSString *)name path:(NSString *)path {
     if (!name.length) {
-        NSError * err = errorWithMessage(@"Invalid name whose length is 0.", 10000);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid name whose length is 0.", 10000)];
     }
     if ([self.allDBs_prv.allKeys containsObject:name]) {
-        NSError * err = errorWithMessage(@"Invalid name which there's already an database with it.If you are sure to use this name with a new database,delete the old one first.", 10001);
-        safeLinkError(error,err);
-        return YES;
+        NSError * error = errorWithMessage(@"Invalid name which there's already an database with it.If you are sure to use this name with a new database,delete the old one first.", 10001);
+        DWDatabaseResult * result = [DWDatabaseResult successResultWithResult:nil];
+        result.error = error;
+        return result;
     }
     if (!path.length) {
         path = [[defaultSavePath() stringByAppendingPathComponent:generateUUID()] stringByAppendingPathExtension:@"sqlite3"];
@@ -479,9 +488,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     BOOL success = (q != nil);
     ///创建数据库，若成功则保存
     if (!success) {
-        NSError * err = errorWithMessage(@"Invalid path which FMDatabaseQueue could not open.", 10003);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid path which FMDatabaseQueue could not open.", 10003)];
     }
     
     DWDatabaseInfo * info = [DWDatabaseInfo new];
@@ -492,7 +499,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
     } else {
         success = NO;
     }
-    return success;
+    DWDatabaseResult * result = [DWDatabaseResult new];
+    result.success = success;
+    return result;
 }
 
 -(DWDatabaseResult *)deleteDBWithName:(NSString *)name {
@@ -529,11 +538,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return result;
 }
 
--(DWDatabaseConfiguration *)fetchDBConfigurationWithName:(NSString *)name error:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name {
     if (!name.length) {
-        NSError * err = errorWithMessage(@"Invalid name whose length is 0.", 10000);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid name whose length is 0.", 10000)];
     }
     FMDatabaseQueue *dbqTmp = nil;
     ///内存总存在的DB直接切换
@@ -548,11 +555,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
         }
     }
     if (!dbqTmp) {
-        NSError * err = errorWithMessage(@"Can't not fetch a FMDatabaseQueue", 10004);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Can't not fetch a FMDatabaseQueue", 10004)];
     }
-    return [[DWDatabaseConfiguration alloc] initWithName:name tblName:nil dbq:dbqTmp];
+    DWDatabaseConfiguration * conf = [[DWDatabaseConfiguration alloc] initWithName:name tblName:nil dbq:dbqTmp];
+    return [DWDatabaseResult successResultWithResult:conf];
 }
 
 -(DWDatabaseResult *)isTableExistWithTableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf {
@@ -571,16 +577,16 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [DWDatabaseResult successResultWithResult:nil];
 }
 
--(NSArray<NSString *> *)queryAllTableNamesInDBWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)queryAllTableNamesInDBWithConfiguration:(DWDatabaseConfiguration *)conf {
     
-    BOOL valid = [self validateConfiguration:conf considerTableName:NO].success;
-    if (!valid) {
-        return nil;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:NO];
+    if (!result.success) {
+        return result;
     }
     
     NSMutableArray * arr = [NSMutableArray arrayWithCapacity:0];
     [self queryTableWithSQL:@"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name" configuration:conf completion:^(FMResultSet * _Nullable set, NSError * _Nullable err) {
-        safeLinkError(error, err);
+        result.error = err;
         if (set) {
             while ([set next]) {
                 NSString * tblName = [set stringForColumn:@"name"];
@@ -594,111 +600,105 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if ([arr containsObject:@"sqlite_sequence"]) {
         [arr removeObject:@"sqlite_sequence"];
     }
-    return arr;
-}
-
--(BOOL)createTableWithClass:(Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
-    BOOL valid = [self validateConfiguration:conf considerTableName:NO].success;
-    if (!valid) {
-        return NO;
-    }
-    return [self dw_createTableWithClass:cls tableName:tblName inQueue:conf.dbQueue error:error];
-}
-
--(BOOL)createTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError * __autoreleasing *)error {
     
-    BOOL valid = [self validateConfiguration:conf considerTableName:NO].success;
-    if (!valid) {
-        return NO;
+    result.success = YES;
+    result.result = arr;
+    return result;
+}
+
+-(DWDatabaseResult *)createTableWithClass:(Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf {
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:NO];
+    if (!result.success) {
+        return result;
     }
+    return [self dw_createTableWithClass:cls tableName:tblName inQueue:conf.dbQueue];
+}
+
+-(DWDatabaseResult *)createTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf {
     
     if (!sql.length) {
-        NSError * err = errorWithMessage(@"Invalid sql whose length is 0.", 10007);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid sql whose length is 0.", 10007)];
     }
     
-    __block BOOL success = NO;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:NO];
+    if (!result.success) {
+        return result;
+    }
+    
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
             ///建表
-            success = [db executeUpdate:sql];
-            safeLinkError(error, db.lastError);
+            result.success = [db executeUpdate:sql];
+            result.error = db.lastError;
         }];
     });
-    return success;
+    return result;
 }
 
--(DWDatabaseConfiguration *)fetchDBConfigurationWithName:(NSString *)name tabelName:(NSString *)tblName error:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name tabelName:(NSString *)tblName {
     if (!tblName.length) {
-        NSError * err = errorWithMessage(@"Invalid tblName whose length is 0.", 10005);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tblName whose length is 0.", 10005)];
     }
     
-    DWDatabaseConfiguration * confTmp = [self fetchDBConfigurationWithName:name error:error];
-    if (!confTmp) {
-        return nil;
+    DWDatabaseResult * result = [self fetchDBConfigurationWithName:name];
+    if (!result.success) {
+        return result;
     }
-    
-    if (![self isTableExistWithTableName:tblName configuration:confTmp].success) {
-        return nil;
+    DWDatabaseConfiguration * confTmp = result.result;
+    result = [self isTableExistWithTableName:tblName configuration:confTmp];
+    if (!result.success) {
+        return result;
     }
-    return [[DWDatabaseConfiguration alloc] initWithName:name tblName:tblName dbq:confTmp.dbQueue];
+    DWDatabaseConfiguration * conf = [[DWDatabaseConfiguration alloc] initWithName:name tblName:tblName dbq:confTmp.dbQueue];
+    return [DWDatabaseResult successResultWithResult:conf];
 }
 
--(BOOL)updateTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
-    
-    BOOL valid = [self validateConfiguration:conf considerTableName:NO].success;
-    if (!valid) {
-        return NO;
-    }
+-(DWDatabaseResult *)updateTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf {
     
     if (!sql.length) {
-        NSError * err = errorWithMessage(@"Invalid sql whose length is 0.", 10007);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid sql whose length is 0.", 10007)];
     }
     
-    __block BOOL success = NO;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:NO];
+    if (!result.success) {
+        return result;
+    }
+    
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            success = [db executeUpdate:sql];
-            safeLinkError(error, db.lastError);
+            result.success = [db executeUpdate:sql];
+            result.error = db.lastError;
         }];
     });
-    return success;
+    return result;
 }
 
--(BOOL)updateTableWithSQLs:(NSArray<NSString *> *)sqls rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error {
-    
-    BOOL valid = [self validateConfiguration:conf considerTableName:NO].success;
-    if (!valid) {
-        return NO;
-    }
+-(DWDatabaseResult *)updateTableWithSQLs:(NSArray<NSString *> *)sqls rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf {
     
     if (!sqls.count) {
-        NSError * err = errorWithMessage(@"Invalid sqls whose count is 0.", 10007);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid sqls whose count is 0.", 10007)];
     }
     
-    __block BOOL success = NO;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:NO];
+    if (!result.success) {
+        return result;
+    }
+    
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
             [sqls enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                 if (obj.length) {
-                    success = [db executeUpdate:obj];
-                    if (!success && rollback) {
+                    result.success = [db executeUpdate:obj];
+                    if (!result.success && rollback) {
                         *stop = YES;
                         *rollback = YES;
                     }
-                    safeLinkError(error, db.lastError);
+                    result.error = db.lastError;
                 }
             }];
         }];
     });
-    return success;
+    return result;
 }
 
 -(void)queryTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(FMResultSet * _Nullable, NSError * _Nullable))completion {
@@ -729,10 +729,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     });
 }
 
--(NSArray<NSString *> *)queryAllFieldInTable:(BOOL)translateToPropertyName class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return nil;
+-(DWDatabaseResult *)queryAllFieldInTable:(BOOL)translateToPropertyName class:(Class)cls configuration:(DWDatabaseConfiguration *)conf {
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
     NSMutableArray * fields = [NSMutableArray arrayWithCapacity:0];
@@ -751,12 +751,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
         [fields removeObject:kUniqueID];
     }
     if (!translateToPropertyName) {
-        return fields;
+        return [DWDatabaseResult successResultWithResult:fields];
     }
     if (translateToPropertyName && cls == Nil) {
-        NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propInfos = [self propertyInfosForSaveKeysWithClass:cls];
     NSDictionary * map = databaseMapFromClass(cls);
@@ -770,12 +768,12 @@ static void* dbOpQKey = "dbOperationQueueKey";
         }
     }];
     
+    result.result = propNames;
     ///如果个数不相等说明转换出现了问题
     if (propNames.count != fields.count) {
-        NSError * err = errorWithMessage(@"Something wrong on translating fieldsName to propertyName.Checkout the result of propertyNames and find the reason.", 10020);
-        safeLinkError(error, err);
+        result.error = errorWithMessage(@"Something wrong on translating fieldsName to propertyName.Checkout the result of propertyNames and find the reason.", 10020);
     }
-    return propNames;
+    return result;
 }
 
 -(DWDatabaseResult *)clearTableWithConfiguration:(DWDatabaseConfiguration *)conf {
@@ -785,7 +783,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return result;
     }
     
-    result.result = nil;
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
             result.success = [db executeUpdate:[NSString stringWithFormat:@"DELETE FROM %@",conf.tableName]];
@@ -802,7 +799,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return result;
     }
     
-    result.result = nil;
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
             result.success = [db executeUpdate:[NSString stringWithFormat:@"DROP TABLE IF EXISTS %@",conf.tableName]];
@@ -816,7 +812,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [self _entry_insertTableWithModel:model keys:keys configuration:conf insertChains:nil];
 }
 
--(NSArray<NSObject *> *)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys  rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
+-(DWDatabaseResult *)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys  rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf {
     DWDatabaseOperationChain * insertChains = [DWDatabaseOperationChain new];
     NSMutableArray * failures = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray * factorys = [NSMutableArray arrayWithCapacity:0];
@@ -836,12 +832,13 @@ static void* dbOpQKey = "dbOperationQueueKey";
     ///如果失败就回滚的话，此处无需再做插入操作，直接返回失败的模型
     if (rollback && failures.count > 0) {
         NSUInteger idx = [models indexOfObject:failures.lastObject];
-        return [models subarrayWithRange:NSMakeRange(idx, models.count - idx)];
+        DWDatabaseResult * result = [DWDatabaseResult failResultWithError:nil];
+        result.result = [models subarrayWithRange:NSMakeRange(idx, models.count - idx)];
+        return result;
     }
     
     __block BOOL hasFailure = NO;
-    ///使用一个临时的Error，防止由于原生error已经被释放后野指针调用崩溃问题
-    __block NSError * errorRetain;
+    __block NSError * error;
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollbackP) {
             [factorys enumerateObjectsUsingBlock:^(DWDatabaseSQLFactory * obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -849,9 +846,11 @@ static void* dbOpQKey = "dbOperationQueueKey";
                 if (!hasFailure) {
                     ///如果插入失败则记录失败状态并将模型加入失败数组
                     [self supplyFieldIfNeededWithClass:[obj.model class] configuration:conf];
-                    if (![self insertIntoDBWithDatabase:db factory:obj].success) {
+                    DWDatabaseResult * result = [self insertIntoDBWithDatabase:db factory:obj];
+                    if (!result.success) {
                         hasFailure = YES;
                         [failures addObject:obj.model];
+                        error = result.error;
                     }
                 } else {
                     ///如果失败过，直接将模型加入数组即可
@@ -866,16 +865,20 @@ static void* dbOpQKey = "dbOperationQueueKey";
         }];
     });
     
-    safeLinkError(error, errorRetain);
-    return failures.count?failures:nil;
+    DWDatabaseResult * result = [DWDatabaseResult new];
+    result.error = error;
+    result.success = failures.count == 0;
+    if (!result.success) {
+        result.result = failures;
+    }
+    return result;
 }
 
 -(void)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(NSArray<NSObject *> * _Nonnull, NSError * _Nonnull))completion {
     asyncExcuteOnDBOperationQueue(self, ^{
-        NSError * error;
-        NSMutableArray * ret = (NSMutableArray *)[self insertTableWithModels:models keys:keys rollbackOnFailure:rollback configuration:conf error:&error];
+        DWDatabaseResult * result = [self insertTableWithModels:models keys:keys rollbackOnFailure:rollback configuration:conf];
         if (completion) {
-            completion(ret,error);
+            completion(result.result,result.error);
         }
     });
 }
@@ -919,17 +922,15 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [self _entry_updateTableWithModel:model keys:keys configuration:conf updateChains:nil recursive:YES condition:condition];
 }
 
--(NSArray <NSObject *>*)queryTableWithClass:(Class)clazz keys:(NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)queryTableWithClass:(Class)clazz keys:(NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
     
     if (!clazz && !condition) {
-        NSError * err = errorWithMessage(@"Invalid query without any condition.", 10010);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return nil;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
     if (!condition) {
@@ -938,35 +939,31 @@ static void* dbOpQKey = "dbOperationQueueKey";
         };
     }
     
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue  error:error condition:condition];
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue condition:condition];
 }
 
 -(void)queryTableWithClass:(Class)clazz keys:(NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(void(^)(DWDatabaseConditionMaker * maker))condition completion:(void (^)(NSArray<__kindof NSObject *> *, NSError *))completion {
     asyncExcuteOnDBOperationQueue(self, ^{
-        NSError * error;
-        NSMutableArray * ret = (NSMutableArray *)[self queryTableWithClass:clazz keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending configuration:conf error:&error condition:condition];
+        
+        DWDatabaseResult * result = [self queryTableWithClass:clazz keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending configuration:conf condition:condition];
         if (completion) {
-            completion(ret,error);
+            completion(result.result,result.error);
         }
     });
 }
 
--(NSArray<NSObject *> *)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
+-(DWDatabaseResult *)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf {
     if (!sql.length) {
-        NSError * err = errorWithMessage(@"Invalid sql whose length is 0.", 10007);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid sql whose length is 0.", 10007)];
     }
     
     if (cls == Nil) {
-        NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return nil;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
     NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* props = [self propertyInfosForSaveKeysWithClass:cls];
@@ -974,13 +971,12 @@ static void* dbOpQKey = "dbOperationQueueKey";
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
     __block BOOL returnNil = NO;
     [self queryTableWithSQL:sql configuration:conf completion:^(FMResultSet * _Nullable set, NSError * _Nullable err) {
-        safeLinkError(error, err);
+        result.error = err;
         if (set) {
             while ([set next]) {
                 id tmp = [cls new];
                 if (!tmp) {
-                    NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-                    safeLinkError(error, err);
+                    result.error = errorWithMessage(@"Invalid Class who is Nil.", 10017);
                     returnNil = YES;
                     break;
                 }
@@ -1007,33 +1003,33 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }];
     
     if (returnNil) {
-        return nil;
+        result.success = NO;
+        return result;
     }
-
-    return ret;
+    
+    result.result = ret;
+    
+    return result;
 }
 
 -(void)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(NSArray<__kindof NSObject *> * _Nonnull, NSError * _Nonnull))completion {
     asyncExcuteOnDBOperationQueue(self, ^{
-        NSError * error;
-        NSMutableArray * ret = (NSMutableArray *)[self queryTableWithSQL:sql class:cls configuration:conf error:&error];
+        DWDatabaseResult * result = [self queryTableWithSQL:sql class:cls configuration:conf];
         if (completion) {
-            completion(ret,error);
+            completion(result.result,result.error);
         }
     });
 }
 
--(NSArray<NSObject *> *)queryTableWithClass:(Class)clazz keys:(NSArray *)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing *)error condition:(void (^)(DWDatabaseConditionMaker * ))condition {
+-(DWDatabaseResult *)queryTableWithClass:(Class)clazz keys:(NSArray *)keys configuration:(DWDatabaseConfiguration *)conf condition:(void (^)(DWDatabaseConditionMaker * ))condition {
     
     if (!clazz && !condition) {
-        NSError * err = errorWithMessage(@"Invalid query without any condition.", 10010);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return nil;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
     if (!condition) {
@@ -1041,20 +1037,18 @@ static void* dbOpQKey = "dbOperationQueueKey";
             maker.loadClass(clazz);
         };
     }
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error condition:condition];
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue condition:condition];
 }
 
--(NSInteger)queryTableForCountWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error condition:(void (^)(DWDatabaseConditionMaker * _Nonnull))condition {
+-(DWDatabaseResult *)queryTableForCountWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf condition:(void (^)(DWDatabaseConditionMaker * _Nonnull))condition {
     
     if (!clazz && !condition) {
-        NSError * err = errorWithMessage(@"Invalid query without any condition.", 10010);
-        safeLinkError(error, err);
-        return -1;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return -1;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
     if (!condition) {
@@ -1063,31 +1057,28 @@ static void* dbOpQKey = "dbOperationQueueKey";
         };
     }
     
-    return [self dw_queryTableForCountWithTableName:conf.tableName inQueue:conf.dbQueue error:error condition:condition];
+    return [self dw_queryTableForCountWithTableName:conf.tableName inQueue:conf.dbQueue condition:condition];
 }
 
--(NSObject *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf error:(NSError *__autoreleasing  _Nullable *)error {
+-(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf {
     if (!Dw_id) {
-        NSError * err = errorWithMessage(@"Invalid Dw_id who is Nil.", 10018);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Dw_id who is Nil.", 10018)];
     }
-    BOOL valid = [self validateConfiguration:conf considerTableName:YES].success;
-    if (!valid) {
-        return nil;
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
     }
     
-    return [self dw_queryTableWithClass:cls tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue error:error condition:^(DWDatabaseConditionMaker *maker) {
+    result = [self dw_queryTableWithClass:cls tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue condition:^(DWDatabaseConditionMaker *maker) {
         maker.loadClass(cls);
         maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    } resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    } resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-            safeLinkError(error, err);
             *stop = YES;
             *returnNil = YES;
-            return;
+            return err;
         }
         __block BOOL validValue = NO;
         [validProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
@@ -1108,7 +1099,17 @@ static void* dbOpQKey = "dbOperationQueueKey";
             [resultArr addObject:tmp];
             *stop = YES;
         }
-    }].lastObject;
+        return nil;
+    }];
+    
+    if (!result.success) {
+        return result;
+    }
+    
+    NSArray * ret = result.result;
+    result.result = ret.lastObject;
+    
+    return result;
 }
 
 -(NSNumber *)fetchDw_idForModel:(NSObject *)model {
@@ -1150,36 +1151,32 @@ static void* dbOpQKey = "dbOperationQueueKey";
 }
 
 #pragma mark ------ 建表 ------
--(BOOL)dw_createTableWithClass:(Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue error:(NSError * __autoreleasing *)error {
+-(DWDatabaseResult *)dw_createTableWithClass:(Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue {
     if (cls == Nil) {
-        NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     if (!queue) {
-        NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
-        safeLinkError(error, err);
-        return NO;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
     }
     if (!tblName.length) {
         tblName = [NSStringFromClass(cls) stringByAppendingString:@"_tbl"];
     }
     
-    DWDatabaseSQLFactory * fac = [self createSQLFactoryWithClass:cls tableName:tblName error:error];
-    if (!fac) {
-        return NO;
+    DWDatabaseResult * result = [self createSQLFactoryWithClass:cls tableName:tblName];
+    if (!result.success) {
+        return result;
     }
-    
-    __block BOOL success = NO;
+    DWDatabaseSQLFactory * fac = result.result;
+    result.result = nil;
     excuteOnDBOperationQueue(self, ^{
         [queue inDatabase:^(FMDatabase * _Nonnull db) {
             ///建表
-            success = [db executeUpdate:fac.sql];
-            safeLinkError(error, db.lastError);
+            result.success = [db executeUpdate:fac.sql];
+            result.error = db.lastError;
         }];
     });
     
-    return success;
+    return result;
 }
 
 #pragma mark ------ 插入表 ------
@@ -1293,7 +1290,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
             return result;
         }
         DWDatabaseSQLFactory * fac = result.result;
-        result = [DWDatabaseResult new];
+        result.result = nil;
         excuteOnDBOperationQueue(self, ^{
             [queue inDatabase:^(FMDatabase * _Nonnull db) {
                 result.success = [db executeUpdate:fac.sql withArgumentsInArray:fac.args];
@@ -1310,36 +1307,32 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 #pragma mark ------ 查询表 ------
 
--(NSArray <__kindof NSObject *>*)dw_queryTableWithClass:(Class)clazz tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(void(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil,NSError * __autoreleasing * error))handler {
+-(DWDatabaseResult *)dw_queryTableWithClass:(Class)clazz tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(NSError *(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil))handler {
     if (!queue) {
-        NSError * err = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
     }
     if (!tblName.length) {
-        NSError * err = errorWithMessage(@"Invalid tblName whose length is 0.", 10005);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tblName whose length is 0.", 10005)];
     }
     if (!clazz && !condition) {
-        NSError * err = errorWithMessage(@"Invalid query without any condition.", 10010);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
-    DWDatabaseSQLFactory * fac = [self querySQLFactoryWithClazz:clazz tblName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending error:error condition:condition];
-    
-    if (!fac) {
-        return nil;
+    DWDatabaseResult * result = [self querySQLFactoryWithClazz:clazz tblName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending condition:condition];
+    if (!result.success) {
+        return result;
     }
     
     ///组装数组
+    DWDatabaseSQLFactory * fac = result.result;
+    result.result = nil;
+    result.success = YES;
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
     __block BOOL returnNil = NO;
     excuteOnDBOperationQueue(self, ^{
         [queue inDatabase:^(FMDatabase * _Nonnull db) {
             FMResultSet * set = [db executeQuery:fac.sql withArgumentsInArray:fac.args];
-            safeLinkError(error, db.lastError);
+            result.error = db.lastError;
             ///获取带转换的属性
             NSDictionary * validPropertyInfo = fac.validPropertyInfos;
             Class cls = fac.clazz;
@@ -1348,7 +1341,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
             
             while ([set next]) {
                 if (handler) {
-                    handler(cls,set,validPropertyInfo,dbTransformMap,ret,&stop,&returnNil,error);
+                     result.error = handler(cls,set,validPropertyInfo,dbTransformMap,ret,&stop,&returnNil);
                 }
                 if (stop) {
                     break;
@@ -1359,24 +1352,23 @@ static void* dbOpQKey = "dbOperationQueueKey";
     });
 
     if (returnNil) {
+        result.success = NO;
         return nil;
     }
-
+    result.success = YES;
+    result.result = ret;
     if (!ret.count) {
-        NSError * err = errorWithMessage(@"There's no result with this conditions", 10011);
-        safeLinkError(error, err);
+        result.error = errorWithMessage(@"There's no result with this conditions", 10011);
     }
-    return ret;
+    return result;
 }
 
 #pragma mark ------ SQL factory ------
--(DWDatabaseSQLFactory *)createSQLFactoryWithClass:(Class)cls tableName:(NSString *)tblName  error:(NSError *__autoreleasing *)error {
+-(DWDatabaseResult *)createSQLFactoryWithClass:(Class)cls tableName:(NSString *)tblName {
     NSDictionary * props = [self propertyInfosForSaveKeysWithClass:cls];
     if (!props.allKeys.count) {
         NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no save key.",NSStringFromClass(cls)];
-        NSError * err = errorWithMessage(msg, 10012);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10012)];
     }
     
     NSString * sql = nil;
@@ -1400,9 +1392,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         
         if (!validKeys.count) {
             NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to create table.",NSStringFromClass(cls)];
-            NSError * err = errorWithMessage(msg, 10009);
-            safeLinkError(error, err);
-            return nil;
+            return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
         }
         
         ///对表中字段名进行排序
@@ -1417,7 +1407,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }
     DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
     fac.sql = sql;
-    return fac;
+    return [DWDatabaseResult successResultWithResult:fac];
 }
 
 -(DWDatabaseResult *)insertSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray<NSString *> *)keys insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive {
@@ -1647,7 +1637,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [DWDatabaseResult successResultWithResult:fac];
 }
 
--(DWDatabaseSQLFactory *)querySQLFactoryWithClazz:(Class)clazz tblName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)querySQLFactoryWithClazz:(Class)clazz tblName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
     
     ///获取条件字段组并获取本次的class
     NSMutableArray * args = @[].mutableCopy;
@@ -1683,18 +1673,14 @@ static void* dbOpQKey = "dbOperationQueueKey";
         keys = [self propertysToSaveWithClass:cls];
         ///如果所有键值为空则返回空
         if (!keys.count) {
-            NSError * err = errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008);
-            safeLinkError(error, err);
-            return nil;
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008)];
         }
         queryAll = YES;
     } else {
         ///如果不为空，则将keys与对应键值做交集
         keys = intersectionOfArray(keys, saveKeys);
         if (!keys.count) {
-            NSError * err = errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008);
-            safeLinkError(error, err);
-            return nil;
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008)];
         }
     }
     
@@ -1703,9 +1689,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     
     if (!queryKeysProInfos.allKeys.count) {
         NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid key to query.",NSStringFromClass(cls)];
-        NSError * err = errorWithMessage(msg, 10009);
-        safeLinkError(error, err);
-        return nil;
+        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
     }
     
     ///获取查询字符串数组
@@ -1716,9 +1700,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         [self handleQueryValidKeysWithPropertyInfos:queryKeysProInfos map:map validKeysContainer:validQueryKeys];
         if (validQueryKeys.count == 1) {
             NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to query.",NSStringFromClass(cls)];
-            NSError * err = errorWithMessage(msg, 10009);
-            safeLinkError(error, err);
-            return nil;
+            return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
         }
     }
     
@@ -1812,7 +1794,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     fac.clazz = cls;
     fac.validPropertyInfos = validPropertyInfo;
     fac.dbTransformMap = map;
-    return fac;
+    return [DWDatabaseResult successResultWithResult:fac];
 }
 
 #pragma mark ------ 其他 ------
@@ -1828,16 +1810,15 @@ static void* dbOpQKey = "dbOperationQueueKey";
 }
 
 
--(NSArray <__kindof NSObject *>*)dw_queryTableWithDbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)dw_queryTableWithDbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
 
-    return [self dw_queryTableWithClass:nil tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    return [self dw_queryTableWithClass:nil tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil) {
         id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-            safeLinkError(error, err);
             *stop = YES;
             *returnNil = YES;
-            return;
+            return err;
         }
         __block BOOL validValue = NO;
         [validProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
@@ -1857,22 +1838,28 @@ static void* dbOpQKey = "dbOperationQueueKey";
             }
             [resultArr addObject:tmp];
         }
+        return nil;
     }];
 }
 
 
--(NSInteger)dw_queryTableForCountWithTableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue error:(NSError *__autoreleasing *)error condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)dw_queryTableForCountWithTableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
     if (!condition) {
-        return -1;
+        return [DWDatabaseResult failResultWithError:nil];
     }
-    NSArray * ret = [self dw_queryTableWithClass:nil tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue error:error condition:condition resultSetHandler:^(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil, NSError *__autoreleasing *error) {
+    
+    DWDatabaseResult * result = [self dw_queryTableWithClass:nil tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil) {
         [resultArr addObject:@1];
+        return nil;
     }];
     
-    if (!ret) {
-        return -1;
+    if (!result.success) {
+        return result;
     }
-    return ret.count;
+    
+    NSArray * ret = result.result;
+    result.result = @(ret.count);
+    return result;
 }
 
 -(DWDatabaseResult *)validateConfiguration:(DWDatabaseConfiguration *)conf considerTableName:(BOOL)consider {
@@ -2016,7 +2003,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
                         if (existResult.success) {
                             DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
                             if (!operation.finishOperationInChain) {
-                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName error:nil];
+                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
                                 DWDatabaseResult * result = [self dw_insertTableWithModel:value dbName:dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue insertChains:insertChains recursive:NO];
                                 if (result.success) {
                                     [validKeys addObject:name];
@@ -2039,11 +2026,11 @@ static void* dbOpQKey = "dbOperationQueueKey";
                             ///先看嵌套的模型是否存在Dw_id，如果存在代表为已存在记录，直接更新
                             if (inlineTblName.length) {
                                 ///开始准备插入模型，先获取库名数据库句柄
-                                DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName error:nil];
+                                DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName].result;
                                 ///建表
-                                if (dbConf && [self createTableWithClass:obj.cls tableName:inlineTblName configuration:dbConf error:nil]) {
+                                if (dbConf && [self createTableWithClass:obj.cls tableName:inlineTblName configuration:dbConf].success) {
                                     ///获取表名数据库句柄
-                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName error:nil];
+                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
                                     if (tblConf) {
                                         ///插入
                                         DWDatabaseResult * result = [self _entry_insertTableWithModel:value keys:nil configuration:tblConf insertChains:insertChains];
@@ -2105,8 +2092,8 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if ([DWMetaClassInfo hasValidFieldSupplyForClass:clazz withValidKey:validKey]) {
         return [DWDatabaseResult successResultWithResult:nil];
     }
-    NSError * error;
-    NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:clazz configuration:conf error:&error];
+    
+    NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:clazz configuration:conf].result;
     NSArray * propertyToSaveKey = [self propertysToSaveWithClass:clazz];
     NSArray * saveProArray = minusArray(propertyToSaveKey, allKeysInTbl);
     if (saveProArray.count == 0) {
@@ -2190,12 +2177,12 @@ NS_INLINE NSError * errorWithMessage(NSString * msg,NSInteger code) {
     return [NSError errorWithDomain:dbErrorDomain code:code userInfo:userInfo];
 }
 
-///安全赋error
-NS_INLINE void safeLinkError(NSError * __autoreleasing * error ,NSError * error2Link) {
-    if (error != NULL) {
-        *error = error2Link;
-    }
-}
+/////安全赋error
+//NS_INLINE void safeLinkError(NSError * __autoreleasing * error ,NSError * error2Link) {
+//    if (error != NULL) {
+//        *error = error2Link;
+//    }
+//}
 
 ///获取键值转换表
 NS_INLINE NSDictionary * databaseMapFromClass(Class cls) {
