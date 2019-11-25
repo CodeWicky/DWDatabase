@@ -1644,16 +1644,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
     
     NSString * sql = nil;
     
-    NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:validUpdateKeys.count + conditionStrings.count];
-    [validKeys addObjectsFromArray:validUpdateKeys];
-    [validKeys addObjectsFromArray:conditionStrings];
-    
-    NSMutableArray * args = [NSMutableArray arrayWithCapacity:updateArgs.count + conditionArgs.count];
-    [args addObjectsFromArray:updateArgs];
-    [args addObjectsFromArray:conditionArgs];
-    
     ///先尝试取缓存的sql
-    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kUpdatePrefix class:cls tblName:tblName keys:validKeys];
+    NSArray * sqlCombineArray = [self combineArrayWith:validUpdateKeys extraToSort:conditionStrings];
+    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kUpdatePrefix class:cls tblName:tblName keys:sqlCombineArray];
     if (cacheSqlKey.length) {
         sql = [self.sqlsCache valueForKey:cacheSqlKey];
     }
@@ -1666,6 +1659,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
             [self.sqlsCache setValue:sql forKey:cacheSqlKey];
         }
     }
+    
+    NSMutableArray * args = [NSMutableArray arrayWithCapacity:updateArgs.count + conditionArgs.count];
+    [args addObjectsFromArray:updateArgs];
+    [args addObjectsFromArray:conditionArgs];
     
     DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
     fac.sql = sql;
@@ -2171,7 +2168,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return nil;
     }
     NSArray * saveKeys = [self propertysToSaveWithClass:clazz];
-    
     return intersectionOfArray(keys,saveKeys);
 }
 
