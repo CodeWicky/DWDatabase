@@ -2033,44 +2033,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [ctn copy];
 }
 
--(void)configInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props map:(NSDictionary *)map model:(NSObject *)model validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args appendingString:(NSString *)appending allowNil:(BOOL)allowNil {
-    void (^ab)(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) = nil;
-    if (args) {
-        ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            if (obj.name) {
-                id value = [model dw_valueForPropertyInfo:obj];
-                if (value || allowNil) {
-                    NSString * name = propertyInfoTblName(obj, map);
-                    if (name.length) {
-                        if (appending.length) {
-                            name = [name stringByAppendingString:appending];
-                        }
-                        [validKeys addObject:name];
-                        if (value) {
-                            [args addObject:value];
-                        } else {
-                            [args addObject:[NSNull null]];
-                        }
-                    }
-                }
-            }
-        };
-    } else {
-        ab = ^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            if (obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, map);
-                if (name.length) {
-                    if (appending.length) {
-                        name = [name stringByAppendingString:appending];
-                    }
-                    [validKeys addObject:name];
-                }
-            }
-        };
-    }
-    [props enumerateKeysAndObjectsUsingBlock:ab];
-}
-
 -(void)handleInsertArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName dbTransformMap:(NSDictionary *)dbTransformMap model:(NSObject *)model insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
     NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass([model class]);
     [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
