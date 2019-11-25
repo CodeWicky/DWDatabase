@@ -81,8 +81,9 @@
  */
 
 #import <Foundation/Foundation.h>
-#import <fmdb/FMDB.h>
+#import "DWDatabaseConfiguration.h"
 #import "DWDatabaseConditionMaker.h"
+#import "DWDatabaseResult.h"
 
 /**
  模型数据表转换协议
@@ -108,47 +109,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 ///模型嵌套对应的表名
 +(nullable NSDictionary *)dw_inlineModelTableNameMap;
-
-@end
-
-
-/**
- 数据库配置项，数据库操作的基本对象信息，不可通过自行创建，只可通过DWDatabase获取
- */
-@interface DWDatabaseConfiguration : NSObject
-
-///当前使用的数据库队列
-@property (nonatomic ,strong ,readonly) FMDatabaseQueue * dbQueue;
-
-///数据库在本地映射的name
-@property (nonatomic ,copy ,readonly) NSString * dbName;
-
-///当前使用的表名
-@property (nonatomic ,copy ,readonly) NSString * tableName;
-
-///当前数据库文件路径
-@property (nonatomic ,copy ,readonly) NSString * dbPath;
-
--(instancetype)init NS_UNAVAILABLE;
-
-@end
-
-/**
- 数据库操作结果模型
- */
-@interface DWDatabaseResult : NSObject
-
-///操作是否成功
-@property (nonatomic ,assign) BOOL success;
-
-///操作成功的数据
-///插入成功返回Dw_id，否则返回空；
-///更新若依Dw_id更新则返回Dw_id，，否则返回空；
-///查询若查询成功，返回结果数组，否则返回空。
-@property (nonatomic ,strong ,nullable) id result;
-
-///error
-@property (nonatomic ,strong ,nullable) NSError * error;
 
 @end
 
@@ -254,12 +214,11 @@ NS_ASSUME_NONNULL_BEGIN
  根据映射name删除本地数据库
 
  @param name 映射的name
- @param error 如果操作失败将抛出错误信息
  @return 返回是否删除成功
  
  @disc 若删除的库为当前使用的库，当前库将被置空
  */
--(BOOL)deleteDBWithName:(NSString *)name error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)deleteDBWithName:(NSString *)name;
 
 
 /**
@@ -279,11 +238,11 @@ NS_ASSUME_NONNULL_BEGIN
  
  @param tblName 指定表名
  @param conf 数据库句柄
- @param error error
  @return 返回是否存在
  
  @disc 此处应传库名数据库句柄
  */
+
 -(DWDatabaseResult *)isTableExistWithTableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf;
 
 
@@ -360,24 +319,22 @@ NS_ASSUME_NONNULL_BEGIN
  清空当前库指定表
 
  @param conf 数据库句柄
- @param error 操作错误信息
  @return 返回是否清空成功
  
  @disc 此处应传表名数据库句柄
  */
--(BOOL)clearTableWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)clearTableWithConfiguration:(DWDatabaseConfiguration *)conf;
 
 
 /**
  删除当前库指定表
  
  @param conf 数据库句柄
- @param error 删除错误信息
  @return 返回是否删除成功
  
  @disc 此处应传表名数据库句柄
  */
--(BOOL)dropTableWithConfiguration:(DWDatabaseConfiguration *)conf error:(NSError * _Nullable __autoreleasing *)error;
+-(DWDatabaseResult *)dropTableWithConfiguration:(DWDatabaseConfiguration *)conf;
 
 
 #pragma mark ------ 根据模型操作表 ------
@@ -395,9 +352,10 @@ NS_ASSUME_NONNULL_BEGIN
  @return 返回是否插入成功
  
  @disc 1.此处传入表名数据库句柄
-       2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
+      2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
+      3.若插入成功，返回结果中result将携带当前模型的唯一id
  */
--(nonnull DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**
@@ -421,14 +379,23 @@ NS_ASSUME_NONNULL_BEGIN
  删除当前库指定表中对应的模型信息
 
  @param conf 数据库句柄
+ @param condition 删除模型的条件
  @return 返回是否删除成功
  
  @disc 1.此处传入表明数据库句柄
-       2.当model中存在Dw_id且以Dw_id作为删除条件时，将直接以Dw_id作为条件进行删除
-       3.当model中不存在Dw_id时，且keys不为空时，将按照指定的键值作为条件进行删除
-       4.当model中不存在Dw_id时，且keys为空时将以model所有非nil值作为条件进行删除
  */
--(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(void(^)(DWDatabaseConditionMaker * maker))condition;
+
+/**
+删除当前库指定表中对应的模型信息
+
+@param model 待删除的模型
+@param conf 数据库句柄
+@return 返回是否删除成功
+
+@disc 1.此处传入表明数据库句柄
+     2.此处根据model自身的唯一ID删除。若其不存在ID将删除失败。即model为通过框架查询得来的才可以进行删除
+*/
 -(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf;
 
 
@@ -438,13 +405,15 @@ NS_ASSUME_NONNULL_BEGIN
  @param model 指定模型
  @param keys 指定属性数组
  @param conf 数据库句柄
- @param error 更新错误信息
+ @param condition 更新模型的条件
  @return 返回是否更新成功
  
  @disc 1.此处传入表名数据库句柄
-       2.当model中存在Dw_id时，将更新对应Dw_id的条目的信息
-       3.当model中不存在Dw_id时，将想当前表中插入model的数据信息
-       4.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
+       2.仅更新keys中指定的字段
+       3.如果condition存在，将按照条件进行更新
+       4.若果condition不存在，将按照模型的唯一ID进行更新
+       5.当model中不存在Dw_id时，将向当前表中插入model的数据信息
+       6.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
  */
 
 -(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;

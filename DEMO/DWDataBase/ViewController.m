@@ -181,21 +181,21 @@
 }
 - (void)clear {
     if (self.tblConf) {
-        NSError * error;
-        if ([self.db clearTableWithConfiguration:self.tblConf error:&error]) {
-            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil configuration:self.tblConf error:&error condition:nil]);
+        DWDatabaseResult * result = [self.db clearTableWithConfiguration:self.tblConf];
+        if (result.success) {
+            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil configuration:self.tblConf error:nil condition:nil]);
         } else {
-            NSLog(@"%@",error);
+            NSLog(@"%@",result.error);
         }
     }
 }
 - (void)drop {
     if (self.tblConf) {
-        NSError * error;
-        if ([self.db dropTableWithConfiguration:self.tblConf error:&error]) {
+        DWDatabaseResult * result = [self.db dropTableWithConfiguration:self.tblConf];
+        if (result.success) {
             NSLog(@"Drop success:%d",[self.db isTableExistWithTableName:@"V_SQL" configuration:self.tblConf].success);
         } else {
-            NSLog(@"%@",error);
+            NSLog(@"%@",result.error);
         }
     }
 }

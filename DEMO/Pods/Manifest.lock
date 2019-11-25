@@ -1,5 +1,5 @@
 PODS:
-  - DWDatabase (1.0.4.3):
+  - DWDatabase (1.0.4.6):
     - FMDB (~> 2.7.2)
   - FMDB (2.7.5):
     - FMDB/standard (= 2.7.5)
@@ -17,7 +17,7 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  DWDatabase: 4173e79c344a180b530165aae18c499e1a6b2e38
+  DWDatabase: 95eeb52ba28dc5148ec959e098e61dbb7b8f7425
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
 
 PODFILE CHECKSUM: a40028e90cac68bfcd3a58c19ae19f13c543940b
