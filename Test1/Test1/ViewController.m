@@ -22,7 +22,7 @@
 @implementation ViewController
 
 #define dbPath @"/Users/momo/Desktop/test.sqlite3"
-#define touchMode 2
+#define touchMode 3
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -58,10 +58,10 @@
         case 1:
         {
             NSArray * values = @[@"zhangsan",@"lisi"];
-            NSArray <Ex *>* rets = [self.db queryTableWithClass:nil keys:nil configuration:self.tblConf error:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            NSArray <Ex *>* rets = [self.db queryTableWithClass:nil keys:nil configuration:self.tblConf  condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
                 maker.dw_loadClass(Ex);
                 maker.dw_conditionWith(num).equalTo(1024);
-            }];
+            }].result;
             [rets enumerateObjectsUsingBlock:^(Ex * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                 NSLog(@"%d",obj.num);
             }];
@@ -76,6 +76,15 @@
             NSLog(@"%@",result);
         }
             break;
+        case 3:
+        {
+            DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+            maker.dw_loadClass(Ex);
+            maker.dw_conditionWith(aObj.obj.num).equalTo(1);
+            [maker make];
+            NSLog(@"%@",[maker fetchConditions]);
+        }
+            break;
         default:
             break;
     }
@@ -87,7 +96,7 @@
 -(DWDatabase *)db {
     if (!_db) {
         _db = [DWDatabase shareDB];
-        self.tblConf = [_db fetchDBConfigurationAutomaticallyWithClass:[Ex class] name:@"test" tableName:@"test" path:dbPath error:nil];
+        self.tblConf = [_db fetchDBConfigurationAutomaticallyWithClass:[Ex class] name:@"test" tableName:@"test" path:dbPath].result;
     }
     return _db;
 }
