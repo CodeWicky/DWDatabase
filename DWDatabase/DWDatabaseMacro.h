@@ -31,6 +31,7 @@ static inline NSValue * DWBetweenMakeFloatValue(CGFloat start,CGFloat end) {
     return nsvalue;
 }
 
+///配合between对浮点数使用
 static inline NSValue * DWApproximateFloatValue(CGFloat value) {
     return DWBetweenMakeFloatValue(value - 0.000001f, value + 0.000001f);
 }
