@@ -2062,37 +2062,6 @@ NS_INLINE void SetDw_idForModel(NSObject * model,NSNumber * dw_id) {
     [additionalConfigFromModel(model) setValue:dw_id forKey:kDwIdKey];
 }
 
-///获取两个数组的交集
-NS_INLINE NSArray * intersectionOfArray(NSArray * arr1,NSArray * arr2) {
-    if (!arr1.count || !arr2.count) {
-        return nil;
-    } else {
-        NSMutableSet * set1 = [NSMutableSet setWithArray:arr1];
-        NSSet * set2 = [NSSet setWithArray:arr2];
-        [set1 intersectSet:set2];
-        if (!set1.count) {
-            return nil;
-        }
-        return [set1 allObjects];
-    }
-}
-
-NS_INLINE NSArray * minusArray(NSArray * arr1,NSArray * arr2) {
-    if (!arr1.count) {
-        return nil;
-    } else if (!arr2.count) {
-        return arr1;
-    } else {
-        NSMutableSet * all = [NSMutableSet setWithArray:arr1];
-        NSSet * black = [NSSet setWithArray:arr2];
-        [all minusSet:black];
-        if (!all.count) {
-            return nil;
-        }
-        return [all allObjects];
-    }
-}
-
 #pragma mark --- singleton ---
 static DWDatabase * db = nil;
 +(instancetype)shareDB {

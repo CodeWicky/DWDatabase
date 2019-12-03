@@ -25,3 +25,16 @@ NSString * inlineModelTblName(DWPrefix_YYClassPropertyInfo * property,NSDictiona
 
 ///支持存表的属性
 BOOL supportSavingWithPropertyInfo(DWPrefix_YYClassPropertyInfo * property);
+
+///时间转换格式化
+NSDateFormatter *dateFormatter(void);
+
+///
+id transformValueWithPropertyInfo(id value,DWPrefix_YYClassPropertyInfo * property);
+
+id transformValueWithType(id value,DWPrefix_YYEncodingType encodingType,DWPrefix_YYEncodingNSType nsType);
+
+///获取两个数组的交集
+NSArray * intersectionOfArray(NSArray * arr1,NSArray * arr2);
+
+NSArray * minusArray(NSArray * arr1,NSArray * arr2);
