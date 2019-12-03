@@ -109,6 +109,18 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 
 @protocol DWDatabaseTransformProtocol <NSObject>
 
+/**
+ 模型嵌套时，指定属性对应的类，以便完成自动转换
+ 
+ +(NSDictionary *)dw_containerPropertyGenericClassMap {
+     return @{
+         @"array":[A class],
+         @"modelDic":[A class],
+         @"dicFromArray":@"A",
+     };
+ }
+ 
+ */
 +(NSDictionary *)dw_containerPropertyGenericClassMap;
 
 @end
