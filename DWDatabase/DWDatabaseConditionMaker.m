@@ -7,6 +7,7 @@
 
 #import "DWDatabaseConditionMaker.h"
 #import "DWDatabaseMacro.h"
+#import "DWDatabaseFunction.h"
 
 typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
     DWDatabaseValueRelationEqual,
@@ -462,26 +463,6 @@ NS_INLINE NSDateFormatter *dateFormatter(){
         formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     });
     return formatter;
-}
-
-///获取property对应的表名
-static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NSDictionary * databaseMap) {
-    NSString * name = property.tblName;
-    if (!name.length) {
-        ///取出原字段名，若转换表中存在转换关系，则替换为转换名
-        if ([databaseMap.allKeys containsObject:name]) {
-            id mapped = [databaseMap valueForKey:name];
-            if ([mapped isKindOfClass:[NSString class]]) {
-                name = mapped;
-            } else {
-                name = property.name;
-            }
-        } else {
-            name = property.name;
-        }
-        property.tblName = name;
-    }
-    return name;
 }
 
 #pragma mark --- override ---
