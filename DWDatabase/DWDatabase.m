@@ -2041,13 +2041,6 @@ NS_INLINE NSError * errorWithMessage(NSString * msg,NSInteger code) {
     return [NSError errorWithDomain:dbErrorDomain code:code userInfo:userInfo];
 }
 
-/////安全赋error
-//NS_INLINE void safeLinkError(NSError * __autoreleasing * error ,NSError * error2Link) {
-//    if (error != NULL) {
-//        *error = error2Link;
-//    }
-//}
-
 ///获取键值转换表
 NS_INLINE NSDictionary * databaseMapFromClass(Class cls) {
     NSDictionary * map = nil;

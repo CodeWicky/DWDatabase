@@ -528,14 +528,6 @@ static NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NS
     NSString * conditionString1 = self.conditionA.conditionString;
     NSString * conditionString2 = self.conditionB.conditionString;
     if (conditionString1.length && conditionString2.length) {
-//        if (self.conditionA.validKeys.count > 1) {
-//            conditionString1 = [NSString stringWithFormat:@"(%@)",conditionString1];
-//        }
-//        
-//        if (self.conditionB.validKeys.count > 1) {
-//            conditionString2 = [NSString stringWithFormat:@"(%@)",conditionString2];
-//        }
-        
         [self.validKeys addObjectsFromArray:self.conditionA.validKeys];
         [self.validKeys addObjectsFromArray:self.conditionA.validKeys];
         [self.arguments addObjectsFromArray:self.conditionA.arguments];
