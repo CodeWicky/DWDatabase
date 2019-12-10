@@ -148,4 +148,10 @@ loadClass = nil
 ///快速为创建的条件添加一个范围
 #define between(value) between(DWDataBaseBoxValue(value))
 
+///快速为创建的条件添加一个空值（无实际意义，为了统一变成宏）
+#define isNull() isNull()
+
+///快速为创建的条件添加一个非空值
+#define notNull() notNull()
+
 #endif /* DWDatabaseMacro_h */

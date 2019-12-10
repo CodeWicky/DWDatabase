@@ -20,6 +20,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
     DWDatabaseValueRelationNotInValues,
     DWDatabaseValueRelationLike,
     DWDatabaseValueRelationBetween,
+    DWDatabaseValueRelationIsNull,
+    DWDatabaseValueRelationNotNull,
     
     ///以下类型为错误处理类型
     DWDatabaseValueRelationErrorALL,///创建一个可以匹配所有的条件
@@ -120,13 +122,18 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
             tblName = propertyInfoTblName(property, self.maker.databaseMap);
         }
         
+
         if (!tblName.length) {
             return;
         }
-        
+
         [self.validKeys addObject:tblName];
-        [self.arguments addObjectsFromArray:values];
+        ///Null不需要添加参数
+        if (self.relation != DWDatabaseValueRelationIsNull && self.relation != DWDatabaseValueRelationNotNull) {
+            [self.arguments addObjectsFromArray:values];
+        }
         [conditionStrings addObject:conditionString];
+
     }];
     if (conditionStrings.count) {
         _conditionString = [conditionStrings componentsJoinedByString:@" AND "];
@@ -227,6 +234,10 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
             return [NSString stringWithFormat:@"%@ LIKE ?",key];
         case DWDatabaseValueRelationBetween:
             return [NSString stringWithFormat:@"%@ BETWEEN ? AND ?",key];
+        case DWDatabaseValueRelationIsNull:
+            return [NSString stringWithFormat:@"%@ IS NULL",key];
+        case DWDatabaseValueRelationNotNull:
+            return [NSString stringWithFormat:@"%@ IS NOT NULL",key];
         default:
             return nil;
     }
@@ -464,6 +475,20 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
     return ^(id value) {
         NSLog(@"Setup condition with a between value:%@",value);
         return installCondition(self, value, DWDatabaseValueRelationBetween);
+    };
+}
+
+-(DWDatabaseConditionVoidValue)isNull {
+    return ^(void) {
+        NSLog(@"Setup condition with a null value");
+        return installCondition(self, [NSNull null], DWDatabaseValueRelationIsNull);
+    };
+}
+
+-(DWDatabaseConditionVoidValue)notNull {
+    return ^(void) {
+        NSLog(@"Setup condition with a not null value");
+        return installCondition(self, [NSNull null], DWDatabaseValueRelationNotNull);
     };
 }
 

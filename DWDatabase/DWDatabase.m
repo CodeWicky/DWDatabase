@@ -1624,7 +1624,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         sql = [NSString stringWithFormat:@"SELECT %@ FROM %@",[actualQueryKeys componentsJoinedByString:@","],tblName];
         
         ///如果有有效条件时拼装条件值，若无有效条件时且有有效条件字典时拼装有效条件字符串
-        if (args.count) {
+        if (conditionStrings.count) {
             sql = [sql stringByAppendingString:[NSString stringWithFormat:@" WHERE %@",[conditionStrings componentsJoinedByString:@" AND "]]];
         }
         

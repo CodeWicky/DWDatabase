@@ -117,9 +117,11 @@
         v.intNum = -100;
         v.array = @[@1,@2,@3];
         
-        [self.db queryTableWithClass:nil keys:@[keyPathString(v, intNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        [self.db queryTableWithClass:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
-            maker.dw_conditionWith(array).equalTo(v.array);
+            maker.dw_conditionWith(floatNum).equalTo(0.5);
+            maker.dw_conditionWith(chr).isNull();
+            maker.dw_conditionWith(intNum).equalTo(1);
         } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
             if (results.count) {
                 NSLog(@"Async Query Success:%@",results);
@@ -129,6 +131,7 @@
         }];
         
         
+<<<<<<< HEAD
         DWDatabaseResult * result = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.loadClass([V class]);
             maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
@@ -139,6 +142,17 @@
         } else {
             NSLog(@"%@",result.error);
         }
+=======
+//        NSArray <V *>* ret = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+//            maker.loadClass([V class]);
+//            maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
+//        }];
+//        if (ret.count) {
+//            NSLog(@"Query Success:%@",ret);
+//        } else {
+//            NSLog(@"%@",error);
+//        }
+>>>>>>> master
     }
 }
 - (void)queryCount {
