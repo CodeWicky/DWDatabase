@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		9B3D392D2388045400B3F896 /* Ax.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B3D392C2388045400B3F896 /* Ax.m */; };
 		9B5E2B2523671ADC00CDAD4B /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2423671ADC00CDAD4B /* AppDelegate.m */; };
-		9B5E2B2823671ADC00CDAD4B /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2723671ADC00CDAD4B /* SceneDelegate.m */; };
 		9B5E2B2B23671ADC00CDAD4B /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2A23671ADC00CDAD4B /* ViewController.m */; };
 		9B5E2B2E23671ADC00CDAD4B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2C23671ADC00CDAD4B /* Main.storyboard */; };
 		9B5E2B3023671ADD00CDAD4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9B5E2B2F23671ADD00CDAD4B /* Assets.xcassets */; };
@@ -29,8 +28,6 @@
 		9B5E2B2023671ADC00CDAD4B /* Test1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Test1.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B5E2B2323671ADC00CDAD4B /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		9B5E2B2423671ADC00CDAD4B /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		9B5E2B2623671ADC00CDAD4B /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
-		9B5E2B2723671ADC00CDAD4B /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
 		9B5E2B2923671ADC00CDAD4B /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		9B5E2B2A23671ADC00CDAD4B /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		9B5E2B2D23671ADC00CDAD4B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -101,8 +98,6 @@
 				9B5E2B3D23671B5C00CDAD4B /* DWCameraManager.m */,
 				9B5E2B2323671ADC00CDAD4B /* AppDelegate.h */,
 				9B5E2B2423671ADC00CDAD4B /* AppDelegate.m */,
-				9B5E2B2623671ADC00CDAD4B /* SceneDelegate.h */,
-				9B5E2B2723671ADC00CDAD4B /* SceneDelegate.m */,
 				9B5E2B2923671ADC00CDAD4B /* ViewController.h */,
 				9B5E2B2A23671ADC00CDAD4B /* ViewController.m */,
 				9B3D392B2388045400B3F896 /* Ax.h */,
@@ -221,7 +216,6 @@
 				9B5E2B3E23671B5C00CDAD4B /* DWCameraManager.m in Sources */,
 				9B5E2B3623671ADD00CDAD4B /* main.m in Sources */,
 				9B3D392D2388045400B3F896 /* Ax.m in Sources */,
-				9B5E2B2823671ADC00CDAD4B /* SceneDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -10,6 +10,8 @@
 #import <DWDatabase/DWDatabaseHeader.h>
 #import "Ex.h"
 #import "Ax.h"
+#import <DWDatabase/DWDatabase.h>
+#import <DWDatabase/DWDatabaseFunction.h>
 
 @interface ViewController ()
 
@@ -79,8 +81,13 @@
         case 3:
         {
             DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+            Class cls = [Ex class];
+            NSArray * saveKeys = [self.db propertysToSaveWithClass:cls];
+            NSDictionary * map = databaseMapFromClass(cls);
+            NSDictionary * propertyInfos = [self.db propertyInfosWithClass:cls keys:saveKeys];
+            [maker configWithPropertyInfos:propertyInfos databaseMap:map];
             maker.dw_loadClass(Ex);
-            maker.dw_conditionWith(aObj.obj.num).equalTo(1);
+            maker.dw_conditionWith(num).equalTo(1);
             [maker make];
             NSLog(@"%@",[maker fetchConditions]);
         }

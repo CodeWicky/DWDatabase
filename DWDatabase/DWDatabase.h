@@ -516,5 +516,14 @@ NS_ASSUME_NONNULL_BEGIN
        2.具有Dw_id的模型从表中删除后会移除模型的Dw_id
  */
 -(NSNumber *)fetchDw_idForModel:(NSObject *)model;
+
+
+
+
+///模型存数据库需要保存的键值
+-(NSArray *)propertysToSaveWithClass:(Class)cls;
+
+///获取类指定键值的propertyInfo
+-(NSDictionary *)propertyInfosWithClass:(Class)cls keys:(NSArray *)keys;
 @end
 NS_ASSUME_NONNULL_END

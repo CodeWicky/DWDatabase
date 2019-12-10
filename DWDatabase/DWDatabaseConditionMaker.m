@@ -101,7 +101,17 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
     NSMutableArray * conditionStrings = @[].mutableCopy;
     [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         NSArray * values = [self conditionValuesWithKey:obj];
+        
+        if (!values.count) {
+            return ;
+        }
+        
         NSString * conditionString = [self conditioinStringWithKey:obj valueCount:values.count];
+        
+        if (!conditionString) {
+            return ;
+        }
+        
         NSString * tblName = nil;
         if ([obj isEqualToString:kUniqueID]) {
             tblName = kUniqueID;
@@ -110,11 +120,13 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
             tblName = propertyInfoTblName(property, self.maker.databaseMap);
         }
         
-        if (conditionString && values.count && tblName.length) {
-            [self.validKeys addObject:tblName];
-            [self.arguments addObjectsFromArray:values];
-            [conditionStrings addObject:conditionString];
+        if (!tblName.length) {
+            return;
         }
+        
+        [self.validKeys addObject:tblName];
+        [self.arguments addObjectsFromArray:values];
+        [conditionStrings addObject:conditionString];
     }];
     if (conditionStrings.count) {
         _conditionString = [conditionStrings componentsJoinedByString:@" AND "];
