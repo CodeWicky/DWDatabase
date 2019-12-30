@@ -130,8 +130,7 @@
             }
         }];
         
-        
-<<<<<<< HEAD
+    
         DWDatabaseResult * result = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.loadClass([V class]);
             maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
@@ -142,17 +141,6 @@
         } else {
             NSLog(@"%@",result.error);
         }
-=======
-//        NSArray <V *>* ret = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf error:&error condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-//            maker.loadClass([V class]);
-//            maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
-//        }];
-//        if (ret.count) {
-//            NSLog(@"Query Success:%@",ret);
-//        } else {
-//            NSLog(@"%@",error);
-//        }
->>>>>>> master
     }
 }
 - (void)queryCount {

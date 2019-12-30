@@ -92,13 +92,13 @@
 #pragma mark --------- 数据库管理模型部分结束 ---------
 
 #pragma mark --------- DWDatabaseConfiguration开始 ---------
-@interface DWDatabaseConfiguration ()
+@interface DWDatabaseConfiguration (Private)
 
 ///当前使用的数据库队列
 @property (nonatomic ,strong) FMDatabaseQueue * dbQueue;
 
 ///数据库在本地映射的name
-@property (nonatomic ,copy) NSString * dbName;
+@property (nonatomic ,copy ,readwrite) NSString * dbName;
 
 ///当前使用的表名
 @property (nonatomic ,copy) NSString * tableName;
@@ -106,9 +106,13 @@
 @end
 
 @implementation DWDatabaseConfiguration (Private)
+//@dynamic dbName;
+//@synthesize executing = _executing;
+
 
 -(instancetype)initWithName:(NSString *)name tblName:(NSString * )tblName dbq:(FMDatabaseQueue *)dbq {
     if (self = [super init]) {
+        [self setValue:name forKey:@"dbName"];
         self.dbName = name;
         self.tableName = tblName;
         self.dbQueue = dbq;
