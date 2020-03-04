@@ -12,9 +12,9 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
-//#define dbPath @"/Users/momo/Desktop/a.sqlite3"
+#define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
-#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
+//#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
 @interface ViewController ()<UITableViewDataSource,UITableViewDelegate>
 
 @property (nonatomic ,strong) UITableView * mainTab;
@@ -24,6 +24,8 @@
 @property (nonatomic ,strong) DWDatabaseConfiguration * tblConf;
 
 @property (nonatomic ,strong) DWDatabase * db;
+
+@property (nonatomic ,strong) DWDatabaseConfiguration * cTblConf;
 
 @end
 
@@ -176,7 +178,7 @@
         DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(7) keys:nil configuration:self.tblConf];
         V * ret = result.result;
         if (result.success) {
-            NSLog(@"Query ID Success:%@",[self.db fetchDw_idForModel:ret]);
+            NSLog(@"Query ID Success:%@",[DWDatabase fetchDw_idForModel:ret]);
         } else {
             NSLog(@"%@",result.error);
         }
@@ -215,7 +217,7 @@
     classA.a = @[@1,@2,@3];
     classB.classA = classA;
     classC.obj = [NSObject new];
-    
+    classC.array = @[classB];
     NSDictionary * dic = [classC dw_transformToDictionary];
     NSLog(@"%@",dic);
 }
@@ -231,6 +233,29 @@
     
     
     NSLog(@"%@",model);
+}
+
+-(void)insertCModel {
+    C * model = [C new];
+    model.classB = [B new];
+    model.classB.b = 10;
+    model.array = @[[A new]];
+    
+    DWDatabaseResult * result = [self.db insertTableWithModel:model keys:@[keyPathString(model, array)] configuration:self.cTblConf];
+    if (!result.success) {
+        NSLog(@"error = %@",result.error);
+    } else {
+        NSLog(@"success = %@",result.result);
+    }
+}
+
+-(void)queryCModel {
+    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil configuration:self.cTblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(C);
+        maker.dw_conditionWith(a).equalTo(@"aaa");
+    }];
+    
+    NSLog(@"%@",result.result);
 }
 
 #pragma mark --- tool method ---
@@ -251,6 +276,12 @@
     result = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath];
     self.tblConf = result.result;
     if (!self.tblConf) {
+        NSLog(@"%@",result.error);
+    }
+    
+    result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"V_SQL" tableName:@"C_tbl" path:dbPath];
+    self.cTblConf = result.result;
+    if (!self.cTblConf) {
         NSLog(@"%@",result.error);
     }
 }
@@ -324,6 +355,16 @@
             [self transformToModel];
         }
             break;
+        case 11:
+        {
+            [self insertCModel];
+        }
+            break;
+        case 12:
+        {
+            [self queryCModel];
+        }
+            break;
         default:
             break;
     }
@@ -355,7 +396,8 @@
             @"删表",
             @"模型转字典",
             @"字典转模型",
-                     
+            @"模型嵌套插入",
+            @"模型嵌套查询",
         ].mutableCopy;
     }
     return _dataArr;

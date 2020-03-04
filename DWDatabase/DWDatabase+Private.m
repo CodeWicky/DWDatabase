@@ -6,7 +6,7 @@
 //
 
 #import "DWDatabase+Private.h"
-
+#import "DWDatabase.h"
 @implementation DWDatabaseOperationRecord
 
 @end
@@ -60,6 +60,17 @@
     [records enumerateObjectsUsingBlock:^(DWDatabaseOperationRecord * obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if ([obj.model isEqual:model]) {
             result = obj;
+        } else {
+            NSNumber * modelID = [DWDatabase fetchDw_idForModel:model];
+            if (modelID) {
+                NSNumber * objID = [DWDatabase fetchDw_idForModel:obj.model];
+                if (objID && [objID isEqualToNumber:modelID]) {
+                    result = obj;
+                }
+            }
+        }
+        if (result) {
+            *stop = YES;
         }
     }];
     return result;

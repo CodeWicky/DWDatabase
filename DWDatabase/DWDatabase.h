@@ -517,7 +517,7 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 1.只有由框架查询得到的或者是插入到表中成功的model才会存在Dw_id
        2.具有Dw_id的模型从表中删除后会移除模型的Dw_id
  */
--(NSNumber *)fetchDw_idForModel:(NSObject *)model;
++(NSNumber *)fetchDw_idForModel:(NSObject *)model;
 
 
 
