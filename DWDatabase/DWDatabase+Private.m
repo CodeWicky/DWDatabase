@@ -24,7 +24,7 @@
         return;
     }
     
-    NSString * key = keyStringFromModel(record.model);
+    NSString * key = keyStringFromClass([record.model class]);
     if (!key.length) {
         return;
     }
@@ -48,7 +48,7 @@
     if (!model) {
         return nil;
     }
-    NSString *key = keyStringFromModel(model);
+    NSString *key = keyStringFromClass([model class]);
     if (!key.length) {
         return nil;
     }
@@ -60,16 +60,29 @@
     [records enumerateObjectsUsingBlock:^(DWDatabaseOperationRecord * obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if ([obj.model isEqual:model]) {
             result = obj;
-        } else {
-            NSNumber * modelID = [DWDatabase fetchDw_idForModel:model];
-            if (modelID) {
-                NSNumber * objID = [DWDatabase fetchDw_idForModel:obj.model];
-                if (objID && [objID isEqualToNumber:modelID]) {
-                    result = obj;
-                }
-            }
+            *stop = YES;
         }
-        if (result) {
+    }];
+    return result;
+}
+
+-(DWDatabaseOperationRecord *)recordInChainWithClass:(Class)cls Dw_Id:(NSNumber *)dw_id {
+    if (!dw_id) {
+        return nil;
+    }
+    NSString *key = keyStringFromClass(cls);
+    if (!key.length) {
+        return nil;
+    }
+    NSArray * records = self.records[key];
+    if (!records) {
+        return nil;
+    }
+    __block DWDatabaseOperationRecord * result = nil;
+    [records enumerateObjectsUsingBlock:^(DWDatabaseOperationRecord * obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSNumber * objId = [DWDatabase fetchDw_idForModel:obj.model];
+        if ([objId isEqualToNumber:dw_id]) {
+            result = obj;
             *stop = YES;
         }
     }];
@@ -102,12 +115,23 @@
     return result;
 }
 
+-(DWDatabaseResult *)existRecordWithClass:(Class)cls Dw_Id:(NSNumber *)dw_id {
+    DWDatabaseOperationRecord * record = [self recordInChainWithClass:cls Dw_Id:dw_id];
+    if (!record) {
+        return [DWDatabaseResult failResultWithError:nil];
+    }
+    DWDatabaseResult * result = [DWDatabaseResult new];
+    result.success = YES;
+    result.result = record;
+    return result;
+}
+
 #pragma mark --- tool func ---
-NS_INLINE NSString * keyStringFromModel(NSObject * model) {
-    if (!model) {
+NS_INLINE NSString * keyStringFromClass(Class cls) {
+    if (cls == NULL) {
         return nil;
     }
-    return NSStringFromClass([model class]);
+    return NSStringFromClass(cls);
 }
 
 #pragma mark --- setter/getter ---

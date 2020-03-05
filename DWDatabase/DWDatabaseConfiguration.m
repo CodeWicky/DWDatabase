@@ -13,7 +13,7 @@
 @property (nonatomic ,strong) FMDatabaseQueue * dbQueue;
 
 ///数据库在本地映射的name
-@property (nonatomic ,copy ,readwrite) NSString * dbName;
+@property (nonatomic ,copy) NSString * dbName;
 
 ///当前使用的表名
 @property (nonatomic ,copy) NSString * tableName;

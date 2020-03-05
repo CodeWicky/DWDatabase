@@ -98,7 +98,7 @@
 @property (nonatomic ,strong) FMDatabaseQueue * dbQueue;
 
 ///数据库在本地映射的name
-@property (nonatomic ,copy ,readwrite) NSString * dbName;
+@property (nonatomic ,copy) NSString * dbName;
 
 ///当前使用的表名
 @property (nonatomic ,copy) NSString * tableName;
@@ -106,13 +106,9 @@
 @end
 
 @implementation DWDatabaseConfiguration (Private)
-//@dynamic dbName;
-//@synthesize executing = _executing;
-
 
 -(instancetype)initWithName:(NSString *)name tblName:(NSString * )tblName dbq:(FMDatabaseQueue *)dbq {
     if (self = [super init]) {
-        [self setValue:name forKey:@"dbName"];
         self.dbName = name;
         self.tableName = tblName;
         self.dbQueue = dbq;
@@ -910,59 +906,11 @@ static void* dbOpQKey = "dbOperationQueueKey";
         };
     }
     
-    return [self dw_queryTableForCountWithTableName:conf.tableName inQueue:conf.dbQueue condition:condition];
+    return [self dw_queryTableForCountWithDbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue condition:condition];
 }
 
 -(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf {
-    if (!Dw_id) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Dw_id who is Nil.", 10018)];
-    }
-    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
-    if (!result.success) {
-        return result;
-    }
-    
-    result = [self dw_queryTableWithClass:cls tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:YES condition:^(DWDatabaseConditionMaker *maker) {
-        maker.loadClass(cls);
-        maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    } resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil) {
-        id tmp = [cls new];
-        if (!tmp) {
-            NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
-            *stop = YES;
-            *returnNil = YES;
-            return err;
-        }
-        __block BOOL validValue = NO;
-        [validProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            if (obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, databaseMap);
-                if (name.length) {
-                    id value = [set objectForColumn:name];
-                    [tmp dw_setValue:value forPropertyInfo:obj];
-                    validValue = YES;
-                }
-            }
-        }];
-        if (validValue) {
-            NSNumber * Dw_id = [set objectForColumn:kUniqueID];
-            if (Dw_id) {
-                SetDw_idForModel(tmp, Dw_id);
-            }
-            [resultArr addObject:tmp];
-            *stop = YES;
-        }
-        return nil;
-    }];
-    
-    if (!result.success) {
-        return result;
-    }
-    
-    NSArray * ret = result.result;
-    result.result = ret.lastObject;
-    
-    return result;
+    return [self _entry_queryTableWithClass:cls Dw_id:Dw_id keys:keys queryChains:nil configuration:conf];
 }
 
 +(NSNumber *)fetchDw_idForModel:(NSObject *)model {
@@ -1022,6 +970,108 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue queryChains:queryChains recursive:YES condition:condition];
 }
 
+-(DWDatabaseResult *)_entry_queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys queryChains:(DWDatabaseOperationChain *)queryChains configuration:(DWDatabaseConfiguration *)conf {
+    if (!Dw_id) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Dw_id who is Nil.", 10018)];
+    }
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
+    }
+    
+    result = [self dw_queryTableWithClass:cls dbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:YES condition:^(DWDatabaseConditionMaker *maker) {
+        maker.loadClass(cls);
+        maker.conditionWith(kUniqueID).equalTo(Dw_id);
+    } resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+        id tmp = [cls new];
+        if (!tmp) {
+            NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
+            *stop = YES;
+            *returnNil = YES;
+            return err;
+        }
+        
+        NSNumber * Dw_id = [set objectForColumn:kUniqueID];
+        if (Dw_id) {
+            SetDw_idForModel(tmp, Dw_id);
+            DWDatabaseOperationRecord * record = [DWDatabaseOperationRecord new];
+            record.model = tmp;
+            record.operation = DWDatabaseOperationQuery;
+            record.tblName = conf.tableName;
+            [queryChains addRecord:record];
+        }
+        
+        __block BOOL validValue = NO;
+        NSMutableDictionary * unhandledPros = nil;
+        DWDatabaseOperationRecord * record = nil;
+        
+        if (recursive) {
+            unhandledPros = [NSMutableDictionary dictionaryWithCapacity:0];
+            record = [DWDatabaseOperationRecord new];
+            record.model = tmp;
+            record.finishOperationInChain = YES;
+            record.userInfo = unhandledPros;
+        }
+        
+        [validProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+            if (obj.name.length) {
+                NSString * name = propertyInfoTblName(obj, databaseMap);
+                if (name.length) {
+                    id value = [set objectForColumn:name];
+                    ///这里考虑对象嵌套
+                    if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
+                        if (recursive && [value isKindOfClass:[NSNumber class]]) {
+                            DWDatabaseResult * existRecord = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
+                            ///这个数据查过，直接赋值
+                            if (existRecord.success) {
+                                [tmp setValue:existRecord.result forKey:obj.name];
+                                validValue = YES;
+                                ///借用这个标志位记录至少有一个可选值
+                                record.operation = DWDatabaseOperationQuery;
+                            } else {
+                                ///此处取嵌套模型对应地表名
+                                NSString * existTblName = [queryChains anyRecordInChainWithClass:obj.cls].tblName;
+                                NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, conf.tableName,existTblName);
+                                if (inlineTblName.length) {
+                                    DWDatabaseOperationRecord * result = [DWDatabaseOperationRecord new];
+                                    result.model = obj;
+                                    result.userInfo = value;
+                                    [unhandledPros setValue:result forKey:inlineTblName];
+                                    if (record.finishOperationInChain) {
+                                        record.finishOperationInChain = NO;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        [tmp dw_setValue:value forPropertyInfo:obj];
+                        record.operation = DWDatabaseOperationQuery;
+                        validValue = YES;
+                    }
+                }
+            }
+        }];
+        if (validValue) {
+            if (recursive) {
+                [resultArr addObject:record];
+            } else {
+                [resultArr addObject:tmp];
+            }
+            *stop = YES;
+        }
+        return nil;
+    }];
+    
+    if (!result.success) {
+        return result;
+    }
+    
+    NSArray * ret = result.result;
+    result.result = ret.lastObject;
+    
+    return result;
+}
+
 #pragma mark ------ 建表 ------
 -(DWDatabaseResult *)dw_createTableWithClass:(Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue {
     if (cls == Nil) {
@@ -1062,6 +1112,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!model) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
     }
+    
+    
+    ///插入时的递归操作思路：
+    ///当根据模型生成sql时，如果模型的某个属性是对象类型，那么先将这个属性的对象插入表中，插入完成后，再将dw_id拼接至sql中。这里需要注意一点如果存在多级模型嵌套，为避免A-B-A这种引用关系造成的死循环，在访问过程中要记录插入链，如果插入前检查到插入链中包含当前要插入的模型，说明已经插入过，直接赋值即可。
     
     if (!insertChains && recursive) {
         insertChains = [DWDatabaseOperationChain new];
@@ -1179,7 +1233,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 #pragma mark ------ 查询表 ------
 
--(DWDatabaseResult *)dw_queryTableWithClass:(Class)clazz tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(NSError *(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,BOOL * stop,BOOL * returnNil))handler {
+-(DWDatabaseResult *)dw_queryTableWithClass:(Class)clazz dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(void(^)(DWDatabaseConditionMaker * maker))condition resultSetHandler:(NSError *(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,DWDatabaseOperationChain * queryChains,BOOL recursive,NSDictionary * inlineTblNameMap,BOOL * stop,BOOL * returnNil))handler {
     if (!queue) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
     }
@@ -1190,9 +1244,16 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
+    ///嵌套查询的思路：
+    ///先将按指定条件查询符合条件的跟模型。在遍历模型属性给结果赋值时，检测赋值属性是否为对象类型。因为如果为对象类型，通过property将无法赋值成功。此时将这部分未赋值成功的属性值记录下来并标记为未完成状态。当根模型有效值赋值完成时，遍历结果集，如果有未完成状态的模型，则遍历模型未赋值成功的属性，尝试赋值。同插入一样，要考虑死循环的问题，所以查询前先校验查询链。此处将状态记录下来在所有根结果查询完成后在尝试赋值对象属性还有一个原因是，如果想要在为每个结果的属性赋值同时完成对象类型的查询，会由于队里造成死锁，原因是查询完成赋值在dbQueue中，但在赋值同时进行查询操作，会同步在dbQueue中再次派发至dbQueue，造成死锁。
+    
     DWDatabaseResult * result = [self querySQLFactoryWithClazz:clazz tblName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending condition:condition];
     if (!result.success) {
         return result;
+    }
+    
+    if (!queryChains && recursive) {
+        queryChains = [DWDatabaseOperationChain new];
     }
     
     ///组装数组
@@ -1200,6 +1261,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     result.result = nil;
     result.success = YES;
     NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
+    
     __block BOOL returnNil = NO;
     excuteOnDBOperationQueue(self, ^{
         [queue inDatabase:^(FMDatabase * _Nonnull db) {
@@ -1210,10 +1272,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
             Class cls = fac.clazz;
             NSDictionary * dbTransformMap = fac.dbTransformMap;
             BOOL stop = NO;
-            
+            NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
             while ([set next]) {
                 if (handler) {
-                     result.error = handler(cls,set,validPropertyInfo,dbTransformMap,ret,&stop,&returnNil);
+                     result.error = handler(cls,set,validPropertyInfo,dbTransformMap,ret,queryChains,recursive,inlineTblNameMap,&stop,&returnNil);
                 }
                 if (stop) {
                     break;
@@ -1228,6 +1290,52 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return nil;
     }
     result.success = YES;
+    
+    if (recursive) {
+        NSMutableArray * tmp = [NSMutableArray arrayWithCapacity:ret.count];
+        for (NSInteger i = ret.count - 1; i >= 0; i--) {
+            DWDatabaseOperationRecord * obj = ret[i];
+            NSObject * model = obj.model;
+            if (obj.finishOperationInChain) {
+                [tmp addObject:model];
+            } else {
+                NSDictionary <NSString *,DWDatabaseOperationRecord *>* pros = (NSDictionary *)obj.userInfo;
+                DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName].result;
+                if (!dbConf) {
+                    ///没有dbConf，说明无法补充嵌套值，这时候看下有没有已经有的有效值，如果有，证明此模型合法，添加至结果数组
+                    if (obj.operation == DWDatabaseOperationQuery) {
+                        [tmp addObject:model];
+                    }
+                    continue;
+                }
+                __block BOOL hasValue = NO;
+                [pros enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseOperationRecord * _Nonnull aObj, BOOL * _Nonnull stop) {
+                    ///建表成功
+                    DWPrefix_YYClassPropertyInfo * prop = aObj.model;
+                    NSNumber * value = aObj.userInfo;
+                    if (prop && value && [self createTableWithClass:prop.cls tableName:key configuration:dbConf].success) {
+                        ///获取表名数据库句柄
+                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:key].result;
+                        if (tblConf) {
+                            ///插入
+                            DWDatabaseResult * result = [self _entry_queryTableWithClass:prop.cls Dw_id:value keys:nil queryChains:queryChains configuration:tblConf];
+                            if (result.success && result.result) {
+                                [model setValue:result.result forKey:prop.name];
+                                hasValue = YES;
+                            }
+                        }
+                    }
+                }];
+                
+                if (hasValue) {
+                    [tmp addObject:model];
+                }
+            }
+        }
+        
+        ret = tmp;
+    }
+    
     result.result = ret;
     if (!ret.count) {
         result.error = errorWithMessage(@"There's no result with this conditions", 10011);
@@ -1684,43 +1792,102 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(DWDatabaseResult *)dw_queryTableWithDbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
 
-    return [self dw_queryTableWithClass:nil tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue queryChains:queryChains recursive:recursive condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil) {
-        id tmp = [cls new];
+    return [self dw_queryTableWithClass:nil dbName:dbName tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue queryChains:queryChains recursive:recursive condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive ,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+        __block id tmp = [cls new];
         if (!tmp) {
             NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
             *stop = YES;
             *returnNil = YES;
             return err;
         }
+        NSNumber * Dw_id = [set objectForColumn:kUniqueID];
+        if (Dw_id) {
+            SetDw_idForModel(tmp, Dw_id);
+            DWDatabaseOperationRecord * record = [DWDatabaseOperationRecord new];
+            record.model = tmp;
+            record.operation = DWDatabaseOperationQuery;
+            record.tblName = tblName;
+            [queryChains addRecord:record];
+        }
         __block BOOL validValue = NO;
+        NSMutableDictionary * unhandledPros = nil;
+        DWDatabaseOperationRecord * record = nil;
+        if (recursive) {
+            unhandledPros = [NSMutableDictionary dictionaryWithCapacity:0];
+            record = [DWDatabaseOperationRecord new];
+            record.model = tmp;
+            record.finishOperationInChain = YES;
+            record.userInfo = unhandledPros;
+        }
         [validProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             if (obj.name.length) {
                 NSString * name = propertyInfoTblName(obj, databaseMap);
                 if (name.length) {
                     id value = [set objectForColumn:name];
-                    [tmp dw_setValue:value forPropertyInfo:obj];
-                    validValue = YES;
+                    ///这里考虑对象嵌套
+                    if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
+                        if (recursive && [value isKindOfClass:[NSNumber class]]) {
+                            DWDatabaseResult * existRecord = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
+                            ///这个数据查过，直接赋值
+                            if (existRecord.success) {
+                                [tmp setValue:existRecord.result forKey:obj.name];
+                                validValue = YES;
+                                ///借用这个标志位记录至少有一个可选值
+                                record.operation = DWDatabaseOperationQuery;
+                            } else {
+                                ///此处取嵌套模型对应地表名
+                                NSString * existTblName = [queryChains anyRecordInChainWithClass:obj.cls].tblName;
+                                NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
+                                if (inlineTblName.length) {
+                                    DWDatabaseOperationRecord * result = [DWDatabaseOperationRecord new];
+                                    result.model = obj;
+                                    result.userInfo = value;
+                                        [unhandledPros setValue:result forKey:inlineTblName];
+                                    if (record.finishOperationInChain) {
+                                        record.finishOperationInChain = NO;
+                                    }
+//                                    if (dbConf && [self createTableWithClass:obj.cls tableName:inlineTblName configuration:dbConf].success) {
+//                                        ///获取表名数据库句柄
+//                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
+//                                        if (tblConf) {
+//                                            ///插入
+//                                            DWDatabaseResult * result = [self _entry_queryTableWithClass:obj.cls Dw_id:value keys:nil queryChains:queryChains configuration:tblConf];
+//                                            ///如果成功，添加id
+//                                            if (result.success) {
+//                                                [tmp setValue:result.result forKey:obj.name];
+//                                                validValue = YES;
+//                                            }
+//                                        }
+//                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        [tmp dw_setValue:value forPropertyInfo:obj];
+                        record.operation = DWDatabaseOperationQuery;
+                        validValue = YES;
+                    }
                 }
             }
         }];
         if (validValue) {
-            NSNumber * Dw_id = [set objectForColumn:kUniqueID];
-            if (Dw_id) {
-                SetDw_idForModel(tmp, Dw_id);
+            if (recursive) {
+                [resultArr addObject:record];
+            } else {
+                [resultArr addObject:tmp];
             }
-            [resultArr addObject:tmp];
         }
         return nil;
     }];
 }
 
 
--(DWDatabaseResult *)dw_queryTableForCountWithTableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)dw_queryTableForCountWithDbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
     if (!condition) {
         return [DWDatabaseResult failResultWithError:nil];
     }
     
-    DWDatabaseResult * result = [self dw_queryTableWithClass:nil tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue queryChains:nil recursive:NO condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, BOOL *stop, BOOL *returnNil) {
+    DWDatabaseResult * result = [self dw_queryTableWithClass:nil dbName:dbName tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue queryChains:nil recursive:NO condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         [resultArr addObject:@1];
         return nil;
     }];
