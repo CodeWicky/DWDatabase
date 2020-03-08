@@ -1211,6 +1211,8 @@ static void* dbOpQKey = "dbOperationQueueKey";
     
     ///存在Dw_id的会被更新为条件模式，故只判断condition即可
     if (condition) {
+        ///更新时的递归操作思路：
+        ///思路与插入时大致相同，当根据模型生成sql是，如果模型的某个属性是对象类型，应该根据该属性对应的对象是否包含Dw_id，如果不包含，则需要插入操作，完成后，更新至模型中。如果存在Dw_id，则直接更新指定模型，并在sql中可以更新为此Dw_id。同样，为了避免循环插入，要记录在更新链中。
         DWDatabaseResult * result = [self updateSQLFactoryWithModel:model tableName:tblName keys:keys condition:condition];
         if (!result.success) {
             return result;
