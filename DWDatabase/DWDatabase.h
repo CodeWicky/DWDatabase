@@ -537,6 +537,28 @@ NS_ASSUME_NONNULL_BEGIN
  */
 +(NSNumber *)fetchDw_idForModel:(NSObject *)model;
 
+/**
+获取模型所在的数据库名称。
+
+@param model 指定模型
+@return 对应数据库名称
+
+@disc 1.只有由框架查询得到的或者是插入到表中成功的model才会存在数据库名称
+      2.具有数据库名称的模型从表中删除后会移除模型的数据库名称
+*/
++(NSString *)fetchDbNameForModel:(NSObject *)model;
+
+/**
+获取模型所在的数据表名称。
+
+@param model 指定模型
+@return 对应数据表名称
+
+@disc 1.只有由框架查询得到的或者是插入到表中成功的model才会存在数据表名称
+      2.具有数据表名称的模型从表中删除后会移除模型的数据表名称
+*/
++(NSString *)fetchTblNameForModel:(NSObject *)model;
+
 
 
 
