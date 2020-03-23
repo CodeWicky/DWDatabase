@@ -302,7 +302,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         };
     }
     
-    return [self dw_deleteTableWithTableName:tblName inQueue:conf.dbQueue condition:condition];
+    return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:nil recursive:YES condition:condition];
 }
 
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys {
@@ -384,7 +384,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     info.dbName = name;
     info.dbPath = path;
     if ([info configRelativePath]) {
-        result = [self dw_deleteTableWithTableName:kSqlSetTblName inQueue:self.privateQueue condition:^(DWDatabaseConditionMaker * maker) {
+        result = [self dw_deleteTableWithModel:nil dbName:kSqlSetDbName tableName:kSqlSetTblName inQueue:self.privateQueue deleteChains:nil recursive:NO condition:^(DWDatabaseConditionMaker *maker) {
             maker.dw_loadClass(DWDatabaseInfo);
             maker.dw_conditionWith(dbName).equalTo(info.dbName);
             maker.dw_conditionWith(dbPath).equalTo(info.dbPath);
@@ -753,15 +753,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     if (!result.success) {
         return result;
     }
-    return [self dw_deleteTableWithTableName:conf.tableName inQueue:conf.dbQueue condition:condition];
+    return [self _entry_deleteTableWithModel:nil configuration:conf deleteChains:nil recursive:NO condition:condition];
 }
 
 -(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf {
-    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
-    if (!result.success) {
-        return result;
-    }
-    
     if (!model) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
     }
@@ -771,16 +766,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
     }
     
-    result = [self deleteTableWithConfiguration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-        maker.loadClass([model class]);
-        maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    }];
-    
-    if (result.success) {
-        SetDw_idForModel(model, nil);
-    }
-    
-    return result;
+    return [self _entry_deleteTableWithModel:model configuration:conf deleteChains:nil recursive:YES condition:nil];
 }
 
 -(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf condition:(void (^)(DWDatabaseConditionMaker * _Nonnull))condition {
@@ -929,6 +915,25 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }
     [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
     return [self dw_insertTableWithModel:model dbName:conf.dbName tableName:conf.tableName keys:keys inQueue:conf.dbQueue insertChains:insertChains recursive:YES];
+}
+
+-(DWDatabaseResult *)_entry_deleteTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
+    if (!result.success) {
+        return result;
+    }
+    
+    if (!condition && model) {
+        NSNumber * Dw_id = Dw_idFromModel(model);
+        if (Dw_id) {
+            condition = ^(DWDatabaseConditionMaker * maker) {
+                maker.loadClass([model class]);
+                maker.conditionWith(kUniqueID).equalTo(Dw_id);
+            };
+        }
+    }
+    
+    return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:deleteChains recursive:recursive condition:condition];
 }
 
 -(DWDatabaseResult *)_entry_updateTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive condition:(void (^)(DWDatabaseConditionMaker * maker))condition {
@@ -1165,7 +1170,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 }
 
 #pragma mark ------ 表删除 ------
--(DWDatabaseResult *)dw_deleteTableWithTableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue condition:(void (^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)dw_deleteTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(void (^)(DWDatabaseConditionMaker * maker))condition {
     NSError * error = nil;
     if (!queue) {
         error = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
@@ -1176,8 +1181,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
         return [DWDatabaseResult failResultWithError:error];
     }
     
-    ///ID存在删除对应ID，不存在删除所有值相等的条目
-    DWDatabaseResult * result = [self deleteSQLFactoryWithTableName:tblName condition:condition];
+    ///删除时的递归操作思路：
+    ///当根据模型生成sql时，如果模型的某个属性是对象类型，那么先将这个属性的对象删除，再将自身删除。这里需要注意一点如果存在多级模型嵌套，为避免A-B-A这种引用关系造成的死循环，在访问过程中要记录删除链，如果删除前检查到删除链中包含当前要删除的模型，说明已经删除过，直接跳过即可。
+    DWDatabaseResult * result = [self deleteSQLFactoryWithModel:model dbName:dbName tableName:tblName deleteChains:deleteChains recursive:recursive condition:condition];
     if (!result.success) {
         return result;
     }
@@ -1296,19 +1302,19 @@ static void* dbOpQKey = "dbOperationQueueKey";
     DWDatabaseSQLFactory * fac = result.result;
     result.result = nil;
     result.success = YES;
-    NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
     
+    NSDictionary * validPropertyInfo = fac.validPropertyInfos;
+    Class cls = fac.clazz;
+    NSDictionary * dbTransformMap = fac.dbTransformMap;
+    NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
+    NSMutableArray * ret = [NSMutableArray arrayWithCapacity:0];
     __block BOOL returnNil = NO;
     excuteOnDBOperationQueue(self, ^{
         [queue inDatabase:^(FMDatabase * _Nonnull db) {
             FMResultSet * set = [db executeQuery:fac.sql withArgumentsInArray:fac.args];
             result.error = db.lastError;
             ///获取带转换的属性
-            NSDictionary * validPropertyInfo = fac.validPropertyInfos;
-            Class cls = fac.clazz;
-            NSDictionary * dbTransformMap = fac.dbTransformMap;
             BOOL stop = NO;
-            NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
             while ([set next]) {
                 if (handler) {
                      result.error = handler(cls,set,validPropertyInfo,dbTransformMap,ret,queryChains,recursive,inlineTblNameMap,&stop,&returnNil);
@@ -1461,10 +1467,8 @@ static void* dbOpQKey = "dbOperationQueueKey";
         objMap = [NSMutableDictionary dictionaryWithCapacity:0];
     }
     
-    NSDictionary * dbTransformMap = databaseMapFromClass(cls);
-    
     ///获取配置sql的相关参数
-    [self handleInsertArgumentsWithPropertyInfos:infos dbName:dbName tblName:tblName dbTransformMap:dbTransformMap model:model insertChains:insertChains recursive:recursive validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+    [self handleInsertArgumentsWithPropertyInfos:infos dbName:dbName tblName:tblName model:model insertChains:insertChains recursive:recursive validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
     
     ///无有效插入值
     if (!args.count) {
@@ -1503,7 +1507,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [DWDatabaseResult successResultWithResult:fac];
 }
 
--(DWDatabaseResult *)deleteSQLFactoryWithTableName:(NSString *)tblName condition:(void (^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)deleteSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(void (^)(DWDatabaseConditionMaker * maker))condition {
     
     if (!condition) {
         NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who have no valid value to delete.",condition];
@@ -1538,6 +1542,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
         NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who have no valid value to delete.",condition];
         return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
     }
+    
+    ///处理递归删除
+    [self handleDeleteRecursiveModelWithPropertyInfos:propertyInfos dbName:dbName tblName:tblName model:model deleteChains:deleteChains recursive:recursive];
     
     NSString * sql = nil;
     ///先尝试取缓存的sql
@@ -1600,9 +1607,9 @@ static void* dbOpQKey = "dbOperationQueueKey";
     NSMutableArray * conditionStrings = @[].mutableCopy;
     NSMutableArray * validConditionKeys = @[].mutableCopy;
     NSArray * saveKeys = [self propertysToSaveWithClass:cls];
-    NSDictionary * dbTransformMap = databaseMapFromClass(cls);
+    NSDictionary * databaseMap = databaseMapFromClass(cls);
     NSDictionary * propertyInfos = [self propertyInfosWithClass:cls keys:saveKeys];
-    [maker configWithPropertyInfos:propertyInfos databaseMap:dbTransformMap];
+    [maker configWithPropertyInfos:propertyInfos databaseMap:databaseMap];
     [maker make];
     [conditionArgs addObjectsFromArray:[maker fetchArguments]];
     [conditionStrings addObjectsFromArray:[maker fetchConditions]];
@@ -1624,7 +1631,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }
     
     ///获取更新sql相关参数
-    [self handleUpdateArgumentsWithPropertyInfos:infos dbName:dbName tblName:tblName dbTransformMap:dbTransformMap model:model updateChains:updateChains recursive:recursive validKeysContainer:validUpdateKeys argumentsContaienr:updateArgs objMap:objMap];
+    [self handleUpdateArgumentsWithPropertyInfos:infos dbName:dbName tblName:tblName model:model updateChains:updateChains recursive:recursive validKeysContainer:validUpdateKeys argumentsContaienr:updateArgs objMap:objMap];
     
     ///无有效插入值
     if (!updateArgs.count) {
@@ -2071,8 +2078,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
     return [ctn copy];
 }
 
--(void)handleInsertArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName dbTransformMap:(NSDictionary *)dbTransformMap model:(NSObject *)model insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
-    NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass([model class]);
+-(void)handleInsertArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName model:(NSObject *)model insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
+    Class cls = [model class];
+    NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
+    NSDictionary * dbTransformMap = databaseMapFromClass(cls);
     [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
         
         if (obj.name) {
@@ -2143,8 +2152,58 @@ static void* dbOpQKey = "dbOperationQueueKey";
     }];
 }
 
--(void)handleUpdateArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props  dbName:(NSString *)dbName tblName:(NSString *)tblName dbTransformMap:(NSDictionary *)dbTransformMap model:(NSObject *)model updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
-    NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass([model class]);
+-(void)handleDeleteRecursiveModelWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName model:(NSObject *)model deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive {
+    if (model && recursive) {
+        Class cls = [model class];
+        NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
+        NSDictionary * dbTransformMap = databaseMapFromClass(cls);
+        [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
+            if (obj.name && obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
+                id value = [model dw_valueForPropertyInfo:obj];
+                NSNumber * Dw_id = Dw_idFromModel(value);
+                if (Dw_id) {
+                    NSString * name = propertyInfoTblName(obj, dbTransformMap);
+                    if (name.length) {
+                        DWDatabaseResult * existResult =  [deleteChains existRecordWithModel:value];
+                        if (existResult.success) {
+                            DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
+                            ///如果还没有完成，说明作为子节点，直接以非递归模式删除即可。如果完成了，跳过即可。
+                            if (!operation.finishOperationInChain) {
+                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
+                                if (tblConf) {
+                                    DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO condition:nil];
+                                    
+                                    if (result.success) {
+                                        operation.finishOperationInChain = YES;
+                                    }
+                                }
+                            }
+                        } else {
+                            ///如果不存在，直接走递归删除逻辑
+                            NSString * existTblName = [deleteChains anyRecordInChainWithClass:obj.cls].tblName;
+                            NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
+                            if (inlineTblName.length) {
+                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
+                                if (tblConf) {
+                                    DWDatabaseResult * result = [self _entry_deleteTableWithModel:value configuration:tblConf deleteChains:deleteChains recursive:recursive condition:nil];
+                                    if (result.success) {
+                                        DWDatabaseOperationRecord * record = [deleteChains recordInChainWithModel:value];
+                                        record.finishOperationInChain = YES;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }];
+    }
+}
+
+-(void)handleUpdateArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName model:(NSObject *)model updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
+    Class cls = [model class];
+    NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
+    NSDictionary * dbTransformMap = databaseMapFromClass(cls);
     [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
         if (obj.name) {
             id value = [model dw_valueForPropertyInfo:obj];
@@ -2205,10 +2264,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
                                                 } else {
                                                     ///走的是插入逻辑，要标记状态
                                                     [args addObject:result.result];
-                                                    DWDatabaseOperationRecord * record = [updateChains recordInChainWithModel:value];
-                                                    record.finishOperationInChain = YES;
                                                     objMap[obj.name] = result.result;
                                                 }
+                                                DWDatabaseOperationRecord * record = [updateChains recordInChainWithModel:value];
+                                                record.finishOperationInChain = YES;
                                             }
                                         }
                                     }
