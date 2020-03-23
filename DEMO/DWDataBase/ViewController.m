@@ -70,9 +70,9 @@
         v.cls = [v class];
         v.sel = @selector(viewDidLoad);
         
-        DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil configuration:self.tblConf];
+        DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil recursive:YES configuration:self.tblConf];
         if (result.success) {
-            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:nil keys:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:nil keys:nil recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
                 maker.dw_loadClass(V);
                 maker.dw_conditionWith(nsNum).equalTo(1);
             }]);
@@ -102,7 +102,7 @@
         newV.unsignedLongLongNum = 333;
         newV.intNum = 129;
         newV.floatNum = 3.5;
-        DWDatabaseResult * result = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        DWDatabaseResult * result = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
             maker.dw_conditionWith(unsignedLongLongNum).equalTo(222);
         }];
@@ -119,7 +119,7 @@
         v.intNum = -100;
         v.array = @[@1,@2,@3];
         
-        [self.db queryTableWithClass:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        [self.db queryTableWithClass:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(V);
             maker.dw_conditionWith(floatNum).equalTo(0.5);
             maker.dw_conditionWith(chr).isNull();
@@ -133,7 +133,7 @@
         }];
         
     
-        DWDatabaseResult * result = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        DWDatabaseResult * result = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.loadClass([V class]);
             maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
         }];
@@ -175,7 +175,7 @@
 }
 - (void)queryID {
     if (self.tblConf) {
-        DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(7) keys:nil configuration:self.tblConf];
+        DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(7) keys:nil recursive:YES configuration:self.tblConf];
         V * ret = result.result;
         if (result.success) {
             NSLog(@"Query ID Success:%@",[DWDatabase fetchDw_idForModel:ret]);
@@ -188,7 +188,7 @@
     if (self.tblConf) {
         DWDatabaseResult * result = [self.db clearTableWithConfiguration:self.tblConf];
         if (result.success) {
-            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil configuration:self.tblConf condition:nil]);
+            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil recursive:YES configuration:self.tblConf condition:nil]);
         } else {
             NSLog(@"%@",result.error);
         }
@@ -227,7 +227,7 @@
     
     DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath].result;
     if (CTblConf) {
-        BOOL success = [self.db insertTableWithModel:model keys:nil configuration:CTblConf];
+        BOOL success = [self.db insertTableWithModel:model keys:nil recursive:YES configuration:CTblConf];
         NSLog(@"Insert Success:%d",success);
     }
     
@@ -241,7 +241,7 @@
     model.classB.b = 10;
     model.array = @[[A new]];
     
-    DWDatabaseResult * result = [self.db insertTableWithModel:model keys:@[keyPathString(model, array)] configuration:self.cTblConf];
+    DWDatabaseResult * result = [self.db insertTableWithModel:model keys:@[keyPathString(model, array)] recursive:YES configuration:self.cTblConf];
     if (!result.success) {
         NSLog(@"error = %@",result.error);
     } else {
@@ -250,7 +250,7 @@
 }
 
 -(void)queryCModel {
-    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil configuration:self.cTblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:self.cTblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(C);
         maker.dw_conditionWith(a).equalTo(@"aaa");
     }];

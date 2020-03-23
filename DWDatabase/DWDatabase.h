@@ -345,14 +345,16 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param model 指定模型
  @param keys 指定属性数组
+ @param recursive 是否递归插入
  @param conf 数据库句柄
  @return 返回是否插入成功
  
  @disc 1.此处传入表名数据库句柄
       2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
-      3.若插入成功，返回结果中result将携带当前模型的唯一id
+      3.当模型的属性中存在另一个模型时，可通过recursive指定是否递归插入。如果为真，将自动插入嵌套模型
+      4.若插入成功，返回结果中result将携带当前模型的唯一id
  */
--(DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**
@@ -360,17 +362,19 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param models 模型数组
  @param keys 指定属性数组
+ @param recursive 是否递归插入
  @param rollback 插入失败时是否回滚
  @param conf 数据库句柄
  @return 插入失败的模型
  
  @disc 1.此处传入表名数据库句柄
        2.若传入keys为空或者nil时则以全部对应落库属性作为插入数据
-       3.一旦出现错误立即停止操作，不再进行后续插入操作
-       4.若操作失败，result字段将携带插入失败的模型
+       3.当模型的属性中存在另一个模型时，可通过recursive指定是否递归插入。如果为真，将自动插入嵌套模型
+       4.一旦出现错误立即停止操作，不再进行后续插入操作
+       5.若操作失败，result字段将携带插入失败的模型
  */
--(DWDatabaseResult *)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf;
--(void)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <NSObject *>*failureModels,NSError * error))completion;
+-(DWDatabaseResult *)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf;
+-(void)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <NSObject *>*failureModels,NSError * error))completion;
 
 /**
  删除当前库指定表中对应的模型信息
@@ -384,16 +388,19 @@ NS_ASSUME_NONNULL_BEGIN
 -(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(void(^)(DWDatabaseConditionMaker * maker))condition;
 
 /**
-删除当前库指定表中对应的模型信息
+ 删除当前库指定表中对应的模型信息
 
-@param model 待删除的模型
-@param conf 数据库句柄
-@return 返回是否删除成功
+ @param model 待删除的模型
+ @param recursive 是否递归删除
+ @param conf 数据库句柄
+ @return 返回是否删除成功
 
 @disc 1.此处传入表明数据库句柄
      2.此处根据model自身的唯一ID删除。若其不存在ID将删除失败。即model为通过框架查询得来的才可以进行删除
+     3.当模型的属性中存在另一个模型时，可通过recursive指定是否递归删除。如果为真，将自动删除嵌套模型
+     4.自动删除嵌套模型时，将根据嵌套模型是否存在Dw_id决定是否将其删除。若嵌套的模型不包含Dw_id，将跳过此嵌套模型的删除操作
 */
--(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
 
 
 /**
@@ -401,19 +408,22 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param model 指定模型
  @param keys 指定属性数组
+ @param recursive 是否递归更新
  @param conf 数据库句柄
  @param condition 更新模型的条件
  @return 返回是否更新成功
  
  @disc 1.此处传入表名数据库句柄
        2.仅更新keys中指定的字段
-       3.如果condition存在，将按照条件进行更新
-       4.若果condition不存在，将按照模型的唯一ID进行更新
-       5.当model中不存在Dw_id时，将向当前表中插入model的数据信息
-       6.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
+       3.当模型的属性中存在另一个模型时，可通过recursive指定是否递归更新。如果为真，将自动更新嵌套模型
+       4.自动更新模型时，若嵌套模型存在Dw_id，则将直接更新对应表中数据，如果嵌套模型中不存在数据，则将自动插入至指定表中
+       5.如果condition存在，将按照条件进行更新
+       6.若果condition不存在，将按照模型的唯一ID进行更新
+       7.当model中不存在Dw_id时，将向当前表中插入model的数据信息
+       8.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
  */
 
--(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
@@ -425,6 +435,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param offset 查询的起始点
  @param orderKey 指定的排序的key
  @param ascending 是否正序
+ @param recursive 是否递归查询
  @param conf 数据库句柄
  @param condition 指定查询条件的构造器
  @return 返回查询结果
@@ -436,33 +447,37 @@ NS_ASSUME_NONNULL_BEGIN
        5.当offset为大于0的数是将作为查询的起始点，即从第几条开始查询数据
        6.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
        7.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
-       8.condition为构造查询条件的构造器，condition与clazz不能同时为空
+       8.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
+       9.condition为构造查询条件的构造器，condition与clazz不能同时为空
        10.返回的数组中将以传入的clazz的实例作为数据载体
        11.若操作成功，result字段中将携带结果数组
  */
 
--(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
--(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型
 
  @param sql 指定sql
  @param cls 承载数据的模型的类
+ @param recursive 是否递归查询
  @param conf 数据库句柄
  @return 返回查询结果
  
- @disc 此处传入表名数据库句柄，如果操作成功，result字段将携带结果数组
+ @disc 1.此处传入表名数据库句柄，如果操作成功，result字段将携带结果数组
+      2.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
  */
--(DWDatabaseResult *)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf;
--(void)queryTableWithSQL:(NSString *)sql class:(Class)cls configuration:(DWDatabaseConfiguration *)conf completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
+-(DWDatabaseResult *)queryTableWithSQL:(NSString *)sql class:(Class)cls recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
+-(void)queryTableWithSQL:(NSString *)sql class:(Class)cls recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 
 /**
  根据指定条件在当前库指定表中查询数据
 
- @param clazz 作为数据承载的模型类
+ @param cls 作为数据承载的模型类
  @param keys 想要查询的键值
+ @param recursive 是否递归查询
  @param conf 数据库句柄
  @param condition 指定查询条件的构造器
  @return 返回查询结果
@@ -470,16 +485,17 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 1.此处传入表名数据库句柄
        2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
        3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_dataBaseWhiteList 和 +dw_dataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
-       4.返回的数组中将以传入的clazz的实例作为数据载体
-       5.若操作成功，result字段将携带结果数组
+       4.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
+       5.返回的数组中将以传入的cls的实例作为数据载体
+       6.若操作成功，result字段将携带结果数组
  */
--(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf condition:(nullable void (^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)cls keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void (^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
  查询表中符合条件的数据条数，仅查询个数时请调用此API，会避免很多赋值计算
 
- @param clazz 作为数据承载的模型类
+ @param cls 作为数据承载的模型类
  @param conf 数据库句柄
  @param condition 指定查询条件的构造器
  @return 返回是否查询成功
@@ -490,7 +506,7 @@ NS_ASSUME_NONNULL_BEGIN
        4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
        5.若查询成功，result字段将携带个数（NSNumber）
  */
--(DWDatabaseResult *)queryTableForCountWithClass:(nullable Class)clazz configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableForCountWithClass:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 
 
 /**
@@ -499,12 +515,14 @@ NS_ASSUME_NONNULL_BEGIN
  @param cls 承载数据的模型类
  @param Dw_id 指定ID
  @param keys 查询的键值
+ @param recursive 是否递归查询
  @param conf 数据库句柄
  @return 返回对应数据的模型
  
- @disc 此处应传入表名数据库，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）,若操作成功，result字段将携带指定模型
+ @disc 1.此处应传入表名数据库，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）,若操作成功，result字段将携带指定模型
+     2.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
  */
--(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(nullable NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
 
 
 #pragma mark ------ 其他 ------
