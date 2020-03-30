@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "DWDatabaseResult.h"
+#import "DWDatabase.h"
 
 typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
     DWDatabaseOperationUndefined,
@@ -43,5 +44,53 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 -(DWDatabaseResult *)existRecordWithModel:(NSObject *)model;
 
 -(DWDatabaseResult *)existRecordWithClass:(Class)cls Dw_Id:(NSNumber *)dw_id;
+
+@end
+
+@interface DWDatabaseSQLFactory : NSObject
+
+@property (nonatomic ,copy) NSString * dbName;
+
+@property (nonatomic ,copy) NSString * tblName;
+
+@property (nonatomic ,strong) NSArray * args;
+
+@property (nonatomic ,copy) NSString * sql;
+
+@property (nonatomic ,strong) NSObject * model;
+
+@property (nonatomic ,strong) NSMutableDictionary * objMap;
+
+@property (nonatomic ,assign) Class clazz;
+
+@property (nonatomic ,strong) NSDictionary * validPropertyInfos;
+
+@property (nonatomic ,strong) NSDictionary * dbTransformMap;
+
+@end
+
+static void* dbOpQKey = "dbOperationQueueKey";
+@interface DWDatabase (Private)
+
+///当前使用过的数据库的FMDatabaseQueue的容器
+@property (nonatomic ,strong) NSMutableDictionary <NSString *,FMDatabaseQueue *>* dbqContainer;
+
+@property (nonatomic ,strong ,readonly) dispatch_queue_t dbOperationQueue;
+
+@property (nonatomic ,strong ,readonly) NSCache * saveInfosCache;
+
+@property (nonatomic ,strong ,readonly) NSCache * sqlsCache;
+
+-(DWDatabaseResult *)excuteUpdate:(FMDatabase *)db WithFactory:(DWDatabaseSQLFactory *)fac clear:(BOOL)clear;
+
+-(NSArray <NSString *>*)validKeysIn:(NSArray <NSString *>*)keys forClass:(Class)clazz;
+
+-(NSDictionary *)propertyInfosForSaveKeysWithClass:(Class)cls;
+
+-(NSString *)sqlCacheKeyWithPrefix:(NSString *)prefix class:(Class)cls tblName:(NSString *)tblName keys:(NSArray <NSString *>*)keys;
+
+-(DWDatabaseResult *)validateConfiguration:(DWDatabaseConfiguration *)conf considerTableName:(BOOL)consider;
+
+-(DWDatabaseResult *)supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf;
 
 @end

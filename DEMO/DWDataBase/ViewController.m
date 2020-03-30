@@ -73,6 +73,7 @@
         DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil recursive:YES configuration:self.tblConf];
         if (result.success) {
             NSLog(@"Insert Success:%@",[self.db queryTableWithClass:nil keys:nil recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                
                 maker.dw_loadClass(V);
                 maker.dw_conditionWith(nsNum).equalTo(1);
             }]);

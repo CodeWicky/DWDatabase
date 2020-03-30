@@ -85,6 +85,7 @@
 #import <Foundation/Foundation.h>
 #import "DWDatabaseConfiguration.h"
 #import "DWDatabaseConditionMaker.h"
+#import "DWDatabaseMacro.h"
 #import "DWDatabaseResult.h"
 
 /**

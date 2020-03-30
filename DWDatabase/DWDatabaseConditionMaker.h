@@ -15,8 +15,7 @@ typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseConditionClass)(Class claz
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionValue)(id value);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionVoidValue)(void);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
-
-
+typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 
 @interface DWDatabaseCondition : NSObject
 

@@ -8,10 +8,11 @@
 #ifndef DWDatabaseHeader_h
 #define DWDatabaseHeader_h
 
-#import "DWDatabaseMacro.h"   
 #import "DWDatabase.h"
-#import "NSObject+PropertyInfo.h"
 #import "DWDatabaseConfiguration.h"
 #import "DWDatabaseResult.h"
+#import "DWDatabaseConditionMaker.h"
+#import "DWDatabaseMacro.h"
+#import "NSObject+PropertyInfo.h"
 
 #endif /* DWDatabaseHeader_h */

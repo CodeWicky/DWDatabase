@@ -6,7 +6,7 @@
 //
 
 #import "DWDatabaseFunction.h"
-#import "DWDatabase.h"
+#import "DWDatabase+Private.h"
 
 ///获取键值转换表
 NSDictionary * databaseMapFromClass(Class cls) {
@@ -400,4 +400,90 @@ NSArray * minusArray(NSArray * arr1,NSArray * arr2) {
         }
         return [all allObjects];
     }
+}
+
+NSString * const dbErrorDomain = @"com.DWDatabase.error";
+///快速生成NSError
+NSError * errorWithMessage(NSString * msg,NSInteger code) {
+    NSDictionary * userInfo = nil;
+    if (msg.length) {
+        userInfo = @{NSLocalizedDescriptionKey:msg};
+    }
+    return [NSError errorWithDomain:dbErrorDomain code:code userInfo:userInfo];
+}
+
+static const char * kAdditionalConfKey = "kAdditionalConfKey";
+static NSString * const kDwIdKey = @"kDwIdKey";
+static NSString * const kDbNameKey = @"kDbNameKey";
+static NSString * const kTblNameKey = @"kTblNameKey";
+///获取额外配置字典
+NSMutableDictionary * additionalConfigFromModel(NSObject * model) {
+    NSMutableDictionary * additionalConf = objc_getAssociatedObject(model, kAdditionalConfKey);
+    if (!additionalConf) {
+        additionalConf = [NSMutableDictionary dictionaryWithCapacity:0];
+        objc_setAssociatedObject(model, kAdditionalConfKey, additionalConf, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return additionalConf;
+}
+
+///获取id
+NSNumber * Dw_idFromModel(NSObject * model) {
+    return [additionalConfigFromModel(model) valueForKey:kDwIdKey];
+}
+
+///设置id
+void SetDw_idForModel(NSObject * model,NSNumber * dw_id) {
+    [additionalConfigFromModel(model) setValue:dw_id forKey:kDwIdKey];
+}
+
+NSString * DbNameFromModel(NSObject * model) {
+    return [additionalConfigFromModel(model) valueForKey:kDbNameKey];
+}
+
+void SetDbNameForModel(NSObject * model,NSString * dbName) {
+    [additionalConfigFromModel(model) setValue:dbName forKey:kDbNameKey];
+}
+
+NSString * TblNameFromModel(NSObject * model) {
+    return [additionalConfigFromModel(model) valueForKey:kTblNameKey];
+}
+
+void SetTblNameForModel(NSObject * model,NSString * tblName) {
+    [additionalConfigFromModel(model) setValue:tblName forKey:kTblNameKey];
+}
+
+void excuteOnDBOperationQueue(DWDatabase * db,dispatch_block_t block) {
+    if (!block) {
+        return;
+    }
+    if (dispatch_get_specific(dbOpQKey)) {
+        block();
+    } else {
+        dispatch_sync(db.dbOperationQueue, block);
+    }
+}
+
+void asyncExcuteOnDBOperationQueue(DWDatabase * db,dispatch_block_t block) {
+    if (!block) {
+        return;
+    }
+    dispatch_async(db.dbOperationQueue, block);
+}
+
+NSArray * combineArrayWithExtraToSort(NSArray <NSString *>* array,NSArray <NSString *>* extra) {
+    ///这里因为使用场景中，第一个数组为不关心排序的数组，故第一个数组直接添加，第二个数组排序后添加
+    if (array.count + extra.count == 0) {
+        return nil;
+    }
+    NSMutableArray * ctn = [NSMutableArray arrayWithCapacity:array.count + extra.count];
+    if (array.count) {
+        [ctn addObjectsFromArray:array];
+    }
+    
+    if (extra.count) {
+        extra = [extra sortedArrayUsingSelector:@selector(compare:)];
+        [ctn addObjectsFromArray:extra];
+    }
+    
+    return [ctn copy];
 }
