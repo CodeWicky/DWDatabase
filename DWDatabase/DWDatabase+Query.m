@@ -29,22 +29,38 @@
         };
     }
     
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue queryChains:queryChains recursive:recursive condition:condition];
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    Class cls = [maker fetchQueryClass];
+    if (!cls) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+    }
+    
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)_entry_queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf {
     if (!Dw_id) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Dw_id who is Nil.", 10018)];
     }
+    
+    if (!cls) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+    }
+    
     DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
     if (!result.success) {
         return result;
     }
     
-    result = [self dw_queryTableWithClass:cls dbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:recursive condition:^(DWDatabaseConditionMaker *maker) {
+    DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
         maker.loadClass(cls);
         maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    } resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+    };
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    
+    result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:validProInfos databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:YES];
         if (result.success) {
             return nil;
@@ -63,9 +79,9 @@
     return result;
 }
 
--(DWDatabaseResult *)dw_queryTableWithDbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
+-(DWDatabaseResult *)dw_queryTableWithDbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
 
-    return [self dw_queryTableWithClass:nil dbName:dbName tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue queryChains:queryChains recursive:recursive condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive ,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+    return [self dw_queryTableWithDbName:dbName tableName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive ,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:dbName tblName:tblName resultSet:set validProInfos:validProInfos databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:NO];
         if (result.success) {
             return nil;
@@ -75,21 +91,21 @@
     }];
 }
 
--(DWDatabaseResult *)dw_queryTableWithClass:(Class)clazz dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(DWDatabaseConditionHandler)condition resultSetHandler:(NSError *(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,DWDatabaseOperationChain * queryChains,BOOL recursive,NSDictionary * inlineTblNameMap,BOOL * stop,BOOL * returnNil))handler {
+-(DWDatabaseResult *)dw_queryTableWithDbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker resultSetHandler:(NSError *(^)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSDictionary * databaseMap,NSMutableArray * resultArr,DWDatabaseOperationChain * queryChains,BOOL recursive,NSDictionary * inlineTblNameMap,BOOL * stop,BOOL * returnNil))handler {
     if (!queue) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
     }
     if (!tblName.length) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tblName whose length is 0.", 10005)];
     }
-    if (!clazz && !condition) {
+    if (!maker) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
     ///嵌套查询的思路：
     ///先将按指定条件查询符合条件的跟模型。在遍历模型属性给结果赋值时，检测赋值属性是否为对象类型。因为如果为对象类型，通过property将无法赋值成功。此时将这部分未赋值成功的属性值记录下来并标记为未完成状态。当根模型有效值赋值完成时，遍历结果集，如果有未完成状态的模型，则遍历模型未赋值成功的属性，尝试赋值。同插入一样，要考虑死循环的问题，所以查询前先校验查询链。此处将状态记录下来在所有根结果查询完成后在尝试赋值对象属性还有一个原因是，如果想要在为每个结果的属性赋值同时完成对象类型的查询，会由于队里造成死锁，原因是查询完成赋值在dbQueue中，但在赋值同时进行查询操作，会同步在dbQueue中再次派发至dbQueue，造成死锁。
     
-    DWDatabaseResult * result = [self querySQLFactoryWithClazz:clazz tblName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending condition:condition];
+    DWDatabaseResult * result = [self querySQLFactoryWithTblName:tblName keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending conditionMaker:maker];
     if (!result.success) {
         return result;
     }
@@ -135,12 +151,12 @@
     return [self handleQueryRecursiveResultWithDbName:dbName tblName:tblName resultArr:resultArr queryChains:queryChains recursive:recursive];
 }
 
--(DWDatabaseResult *)dw_queryTableForCountWithDbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue condition:(void(^)(DWDatabaseConditionMaker * maker))condition {
-    if (!condition) {
-        return [DWDatabaseResult failResultWithError:nil];
+-(DWDatabaseResult *)dw_queryTableForCountWithDbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue conditionMaker:(DWDatabaseConditionMaker *)maker {
+    if (!maker) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
-    DWDatabaseResult * result = [self dw_queryTableWithClass:nil dbName:dbName tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue queryChains:nil recursive:NO condition:condition resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+    DWDatabaseResult * result = [self dw_queryTableWithDbName:dbName tableName:tblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue queryChains:nil recursive:NO conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         [resultArr addObject:@1];
         return nil;
     }];
@@ -295,7 +311,7 @@
 }
 
 #pragma mark --- tool method ---
--(DWDatabaseResult *)querySQLFactoryWithClazz:(Class)clazz tblName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)querySQLFactoryWithTblName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending conditionMaker:(DWDatabaseConditionMaker *)maker {
     
     ///获取条件字段组并获取本次的class
     NSMutableArray * args = @[].mutableCopy;
@@ -304,12 +320,10 @@
     Class cls;
     NSArray * saveKeys = nil;
     NSDictionary * map = nil;
-    if (condition) {
-        DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-        condition(maker);
+    if (maker) {
         cls = [maker fetchQueryClass];
         if (!cls) {
-            cls = clazz;
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
         }
         saveKeys = [self propertysToSaveWithClass:cls];
         map = databaseMapFromClass(cls);
@@ -320,9 +334,7 @@
         [conditionStrings addObjectsFromArray:[maker fetchConditions]];
         [validConditionKeys addObjectsFromArray:[maker fetchValidKeys]];
     } else {
-        cls = clazz;
-        saveKeys = [self propertysToSaveWithClass:cls];
-        map = databaseMapFromClass(cls);
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
     BOOL queryAll = NO;

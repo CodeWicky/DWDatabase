@@ -221,14 +221,16 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     result.success = [db executeUpdate:fac.sql withArgumentsInArray:fac.args];
     if (result.success) {
         NSObject * model = fac.model;
-        if (clear) {
-            SetDw_idForModel(model, nil);
-            SetDbNameForModel(model, nil);
-            SetTblNameForModel(model, nil);
-        } else {
-            SetDw_idForModel(model, @(db.lastInsertRowId));
-            SetDbNameForModel(model, fac.dbName);
-            SetTblNameForModel(model, fac.tblName);
+        if (model) {
+            if (clear) {
+                SetDw_idForModel(model, nil);
+                SetDbNameForModel(model, nil);
+                SetTblNameForModel(model, nil);
+            } else {
+                SetDw_idForModel(model, @(db.lastInsertRowId));
+                SetDbNameForModel(model, fac.dbName);
+                SetTblNameForModel(model, fac.tblName);
+            }
         }
         result.result = @(db.lastInsertRowId);
     }

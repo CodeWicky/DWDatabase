@@ -259,6 +259,85 @@
     NSLog(@"%@",result.result);
 }
 
+-(void)insertAutomatically {
+    V * model = [V new];
+    model.intNum = -100;
+    model.floatNum = 3.14;
+    model.string = @"123";
+    DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil keys:@[keyPathString(model, intNum),keyPathString(model, floatNum)]];
+    if (result.success) {
+        NSLog(@"%@",[DWDatabase fetchDw_idForModel:model]);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)updateAutomatically {
+    V * model = [V new];
+    model.intNum = 100;
+    model.string = @"456";
+    DWDatabaseResult * result = [self.db updateTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil keys:@[keyPathString(model, intNum),keyPathString(model, string)] condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_conditionWith(floatNum).between(DWApproximateFloatValue(3.14));
+    }];
+    if (result.success) {
+        result = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"Auto" tableName:@"Auto_V_Tbl" path:nil];
+        if (result.success) {
+            DWDatabaseConfiguration * tblConf = result.result;
+            result = [self.db queryTableForCountWithClass:NULL configuration:tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                maker.dw_loadClass(V);
+                maker.dw_conditionWith(intNum).equalTo(100);
+            }];
+            if (result.success) {
+                NSLog(@"%@",result.result);
+            } else {
+                NSLog(@"%@",result.error);
+            }
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)queryAutomatically {
+    DWDatabaseResult * result = [self.db queryTableAutomaticallyWithClass:NULL name:@"Auto" tableName:@"Auto_V_Tbl" path:nil keys:@[@"string"] condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_conditionWith(string).equalTo(@"456");
+    }];
+    
+    if (result.success) {
+        NSArray <V *>* results = result.result;
+        NSLog(@"%@",results.firstObject.string);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)deleteAutomatically {
+    DWDatabaseResult * result = [self.db deleteTableAutomaticallyWithModel:nil name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.loadClass([V class]);
+        maker.conditionWith(@"intNum").greaterThanOrEqualTo(50);
+    }];
+    if (result.success) {
+        result = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"Auto" tableName:@"Auto_V_Tbl" path:nil];
+        if (result.success) {
+            DWDatabaseConfiguration * tblConf = result.result;
+            result = [self.db queryTableForCountWithClass:NULL configuration:tblConf condition:nil];
+            if (result.success) {
+                NSLog(@"%@",result.result);
+            } else {
+                NSLog(@"%@",result.error);
+            }
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
 #pragma mark --- tool method ---
 -(void)setupUI {
     self.view.backgroundColor = [UIColor lightGrayColor];
@@ -366,6 +445,26 @@
             [self queryCModel];
         }
             break;
+        case 13:
+        {
+            [self insertAutomatically];
+        }
+            break;
+        case 14:
+        {
+            [self updateAutomatically];
+        }
+            break;
+        case 15:
+        {
+            [self queryAutomatically];
+        }
+            break;
+        case 16:
+        {
+            [self deleteAutomatically];
+        }
+            break;
         default:
             break;
     }
@@ -399,6 +498,10 @@
             @"字典转模型",
             @"模型嵌套插入",
             @"模型嵌套查询",
+            @"全自动插入",
+            @"全自动更新",
+            @"全自动查询",
+            @"全自动删除",
         ].mutableCopy;
     }
     return _dataArr;

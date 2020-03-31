@@ -112,8 +112,7 @@
     NSDictionary * infos = nil;
     
     if (!condition) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who have no valid value to delete.",condition];
-        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to update.",10009)];
     }
     
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
@@ -124,8 +123,7 @@
     }
     
     if (!cls) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who hasn't load class.",condition];
-        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10017)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
     }
     
     ///如果指定更新key则取更新key的infos信息
@@ -157,8 +155,7 @@
     
     ///无有效插入值
     if (!conditionStrings.count) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who have no valid value to update.",condition];
-        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to update.", 10009)];
     }
     
     ///存在ID可以做更新操作

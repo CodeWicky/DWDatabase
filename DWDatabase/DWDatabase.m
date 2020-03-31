@@ -65,10 +65,13 @@
     if (!result.success) {
         return result;
     }
-
-    NSArray <DWDatabaseInfo *>* res = [self dw_queryTableWithDbName:kSqlSetDbName tableName:kSqlSetTblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:self.privateQueue queryChains:nil recursive:NO condition:^(DWDatabaseConditionMaker *maker) {
+    
+    DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
         maker.loadClass([DWDatabaseInfo class]);
-    }].result;
+    };
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    NSArray <DWDatabaseInfo *>* res = [self dw_queryTableWithDbName:kSqlSetDbName tableName:kSqlSetTblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:self.privateQueue queryChains:nil recursive:NO conditionMaker:maker].result;
     if (res.count) {
         ///取出以后配置数据库完整地址
         [res enumerateObjectsUsingBlock:^(DWDatabaseInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -142,39 +145,64 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which both are nil.", 10016)];
     }
     
-    NSNumber * Dw_id = Dw_idFromModel(model);
-    if (!condition && !Dw_id) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
-    }
-    
-    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
-    if (!result.success) {
-        return result;
-    }
-    
-    DWDatabaseConfiguration * conf = result.result;
+    NSNumber * Dw_id = nil;
     if (!condition) {
+        Dw_id = Dw_idFromModel(model);
+        if (!Dw_id) {
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
+        }
+        
         condition = ^(DWDatabaseConditionMaker * maker) {
             maker.loadClass([model class]);
             maker.conditionWith(kUniqueID).equalTo(Dw_id);
         };
     }
     
-    return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:nil recursive:YES condition:condition];
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    Class cls = [maker fetchQueryClass];
+    if (!cls && model) {
+        cls = [model class];
+    }
+    
+    if (!cls) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
+    }
+    
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:cls name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
+    }
+    
+    DWDatabaseConfiguration * conf = result.result;
+    return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:nil recursive:YES conditionMaker:maker];
 }
 
--(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys {
+-(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys condition:(DWDatabaseConditionHandler)condition {
     DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
     if (!result.success) {
         return result;
     }
     DWDatabaseConfiguration * conf = result.result;
     [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
-    return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES condition:nil];
+    return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES condition:condition];
 }
 
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray *)keys condition:(DWDatabaseConditionHandler)condition {
     
+    if (!clazz && !condition) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid class and condition which both are nil.", 10017)];
+    }
+    
+    if (!condition) {
+        condition = ^(DWDatabaseConditionMaker * maker) {
+            maker.loadClass(clazz);
+        };
+    }
+    
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    clazz = [maker fetchQueryClass];
     if (!clazz) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
@@ -184,12 +212,7 @@
         return result;
     }
     DWDatabaseConfiguration * conf = result.result;
-    if (!condition) {
-        condition = ^(DWDatabaseConditionMaker * maker) {
-            maker.loadClass(clazz);
-        };
-    }
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:YES condition:condition];
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:YES conditionMaker:maker];
 }
 
 ///配置数据库
@@ -242,13 +265,19 @@
     info.dbName = name;
     info.dbPath = path;
     if ([info configRelativePath]) {
-        result = [self dw_deleteTableWithModel:nil dbName:kSqlSetDbName tableName:kSqlSetTblName inQueue:self.privateQueue deleteChains:nil recursive:NO condition:^(DWDatabaseConditionMaker *maker) {
+        
+        DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
             maker.dw_loadClass(DWDatabaseInfo);
             maker.dw_conditionWith(dbName).equalTo(info.dbName);
             maker.dw_conditionWith(dbPath).equalTo(info.dbPath);
             maker.dw_conditionWith(relativePath).equalTo(info.relativePath);
             maker.dw_conditionWith(relativeType).equalTo(info.relativeType);
-        }];
+        };
+        
+        DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+        
+        result = [self dw_deleteTableWithModel:nil dbName:kSqlSetDbName tableName:kSqlSetTblName inQueue:self.privateQueue deleteChains:nil recursive:NO conditionMaker:maker];
         ///若表删除成功，应移除所有相关信息，包括缓存的DBQ，数据库地址缓存，本地数据库文件，以及若为当前库还要清空当前库信息
         if (result.success) {
             [self.allDBs_prv removeObjectForKey:name];
@@ -720,7 +749,11 @@
             maker.loadClass(cls);
         };
     }
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:recursive condition:condition];
+    
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:recursive conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)queryTableForCountWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
@@ -740,7 +773,10 @@
         };
     }
     
-    return [self dw_queryTableForCountWithDbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue condition:condition];
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    
+    return [self dw_queryTableForCountWithDbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf {

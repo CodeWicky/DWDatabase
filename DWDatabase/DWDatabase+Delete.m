@@ -29,10 +29,13 @@
         }
     }
     
-    return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:deleteChains recursive:recursive condition:condition];
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    condition(maker);
+    
+    return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:deleteChains recursive:recursive conditionMaker:maker];
 }
 
--(DWDatabaseResult *)dw_deleteTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)dw_deleteTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
     NSError * error = nil;
     if (!queue) {
         error = errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015);
@@ -60,7 +63,7 @@
         [deleteChains addRecord:record];
     }
     
-    DWDatabaseResult * result = [self deleteSQLFactoryWithModel:model dbName:dbName tableName:tblName deleteChains:deleteChains recursive:recursive condition:condition];
+    DWDatabaseResult * result = [self deleteSQLFactoryWithModel:model dbName:dbName tableName:tblName deleteChains:deleteChains recursive:recursive conditionMaker:maker];
     if (!result.success) {
         return result;
     }
@@ -79,26 +82,38 @@
 }
 
 #pragma mark --- tool method ---
--(DWDatabaseResult *)deleteSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)deleteSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
     
-    if (!condition) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who have no valid value to delete.",condition];
-        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
+    if (!model && !maker) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to delete.", 10009)];
     }
     
-    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-    condition(maker);
+    if (!maker) {
+        NSNumber * Dw_id = Dw_idFromModel(model);
+        if (!Dw_id) {
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
+        }
+        DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
+            maker.loadClass([model class]);
+            maker.conditionWith(kUniqueID).equalTo(Dw_id);
+        };
+        
+        maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+    }
+    
     Class cls = [maker fetchQueryClass];
+    if (!cls && model) {
+        cls = [model class];
+    }
     
     if (!cls) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who hasn't load class.",condition];
-        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10017)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
     }
     
     NSMutableArray * args = @[].mutableCopy;
     NSMutableArray * conditionStrings = @[].mutableCopy;
     NSMutableArray * validConditionKeys = @[].mutableCopy;
-    
     
     NSArray * saveKeys = [self propertysToSaveWithClass:cls];
     NSDictionary * map = databaseMapFromClass(cls);
@@ -111,8 +126,7 @@
     
     ///无有效插入值
     if (!conditionStrings.count) {
-        NSString * msg = [NSString stringWithFormat:@"Invalid condition(%@) who have no valid value to delete.",condition];
-        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to delete.", 10009)];
     }
     
     
@@ -163,7 +177,7 @@
                             if (!operation.finishOperationInChain) {
                                 DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
                                 if (tblConf) {
-                                    DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO condition:nil];
+                                    DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO conditionMaker:nil];
                                     
                                     if (result.success) {
                                         operation.finishOperationInChain = YES;

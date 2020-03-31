@@ -12,7 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(DWDatabaseResult *)_entry_deleteTableWithModel:(nullable NSObject *)model configuration:(nullable DWDatabaseConfiguration *)conf deleteChains:(nullable DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(nullable DWDatabaseConditionHandler)condition;
 
--(DWDatabaseResult *)dw_deleteTableWithModel:(nullable NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue deleteChains:(nullable DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)dw_deleteTableWithModel:(nullable NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue deleteChains:(nullable DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive conditionMaker:(nullable DWDatabaseConditionMaker *)maker;
 
 @end
 

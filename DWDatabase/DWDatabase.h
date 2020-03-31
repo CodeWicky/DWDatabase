@@ -186,9 +186,9 @@ NS_ASSUME_NONNULL_BEGIN
  2. 增删改查对应相关方法
  */
 -(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
--(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
--(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
--(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys condition:(nullable DWDatabaseConditionHandler)condition;
+-(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)queryTableAutomaticallyWithClass:(nullable Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray *)keys condition:(nullable DWDatabaseConditionHandler)condition;
 
 #pragma mark --- 数据库操作方法 ---
 /**
