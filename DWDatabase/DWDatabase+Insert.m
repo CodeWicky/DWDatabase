@@ -69,7 +69,7 @@
                     [model setValue:obj forKey:key];
                 }];
                 
-                result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO condition:nil];
+                result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO conditionMaker:nil];
             }
             result.result = Dw_idFromModel(model);
             return result;

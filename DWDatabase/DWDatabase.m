@@ -185,7 +185,12 @@
     }
     DWDatabaseConfiguration * conf = result.result;
     [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
-    return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES condition:condition];
+    DWDatabaseConditionMaker * maker = nil;
+    if (condition) {
+        maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+    }
+    return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray *)keys condition:(DWDatabaseConditionHandler)condition {

@@ -32,10 +32,16 @@
         }
     }
     
-    return [self dw_updateTableWithModel:model dbName:conf.dbName tableName:conf.tableName keys:keys inQueue:conf.dbQueue updateChains:updateChains recursive:recursive condition:condition];
+    DWDatabaseConditionMaker * maker = nil;
+    if (condition) {
+        maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+    }
+    
+    return [self dw_updateTableWithModel:model dbName:conf.dbName tableName:conf.tableName keys:keys inQueue:conf.dbQueue updateChains:updateChains recursive:recursive conditionMaker:maker];
 }
 
--(DWDatabaseResult *)dw_updateTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)dw_updateTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
     if (!queue) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
     }
@@ -50,7 +56,7 @@
     }
     
     ///存在Dw_id的会被更新为条件模式，故只判断condition即可
-    if (condition) {
+    if (maker) {
         ///更新时的递归操作思路：
         ///思路与插入时大致相同，当根据模型生成sql是，如果模型的某个属性是对象类型，应该根据该属性对应的对象是否包含Dw_id，如果不包含，则需要插入操作，完成后，更新至模型中。如果存在Dw_id，则直接更新指定模型，并在sql中可以更新为此Dw_id。同样，为了避免循环插入，要记录在更新链中。
         
@@ -68,7 +74,7 @@
             [updateChains addRecord:record];
         }
         
-        __block DWDatabaseResult * result = [self updateSQLFactoryWithModel:model dbName:dbName tableName:tblName keys:keys updateChains:updateChains recursive:recursive condition:condition];
+        __block DWDatabaseResult * result = [self updateSQLFactoryWithModel:model dbName:dbName tableName:tblName keys:keys updateChains:updateChains recursive:recursive conditionMaker:maker];
         if (!result.success) {
             return result;
         }
@@ -85,7 +91,7 @@
                         [model setValue:obj forKey:key];
                     }];
                     
-                    result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO condition:nil];
+                    result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO conditionMaker:nil];
                 }
                 return result;
             }
@@ -108,15 +114,13 @@
 }
 
 #pragma mark --- tool method ---
--(DWDatabaseResult *)updateSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray<NSString *> *)keys updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)updateSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray<NSString *> *)keys updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
     NSDictionary * infos = nil;
     
-    if (!condition) {
+    if (!maker) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to update.",10009)];
     }
     
-    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-    condition(maker);
     Class cls = [maker fetchQueryClass];
     if (!cls && model) {
         cls = [model class];
@@ -229,7 +233,7 @@
                                     ///如果未完成，有存在，证明此次作为子节点递归存在，故不需要再次递归更新，仅更新本层即可
                                     DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
                                     if (tblConf) {
-                                        DWDatabaseResult * result = [self dw_updateTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue updateChains:updateChains recursive:NO condition:nil];
+                                        DWDatabaseResult * result = [self dw_updateTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue updateChains:updateChains recursive:NO conditionMaker:nil];
                                         if (result.success) {
                                             name = [name stringByAppendingString:@" = ?"];
                                             [validKeys addObject:name];

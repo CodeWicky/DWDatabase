@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(DWDatabaseResult *)_entry_updateTableWithModel:(NSObject *)model keys:(nullable NSArray<NSString *> *)keys configuration:(nullable DWDatabaseConfiguration *)conf updateChains:(nullable DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive condition:(nullable DWDatabaseConditionHandler)condition;
 
--(DWDatabaseResult *)dw_updateTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(nullable NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue updateChains:(nullable DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)dw_updateTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(nullable NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue updateChains:(nullable DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive conditionMaker:(nullable DWDatabaseConditionMaker *)maker;
 
 @end
 
