@@ -308,7 +308,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 1.此处应传表名数据库句柄
       2.若数据表名不能一一映射到模型中将给出错误信息
-      3.若操作成功，result字段将携带z包含所有字段名的数组
+      3.若操作成功，result字段将携带包含所有字段名的数组
  */
 -(DWDatabaseResult *)queryAllFieldInTable:(BOOL)translateToPropertyName class:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf;
 
@@ -375,7 +375,7 @@ NS_ASSUME_NONNULL_BEGIN
        5.若操作失败，result字段将携带插入失败的模型
  */
 -(DWDatabaseResult *)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf;
--(void)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(NSArray <NSObject *>*failureModels,NSError * error))completion;
+-(void)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(DWDatabaseResult * result))completion;
 
 /**
  删除当前库指定表中对应的模型信息

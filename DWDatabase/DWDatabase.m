@@ -583,6 +583,7 @@
             }
         } else {
             [factorys addObject:fac];
+            [self supplyFieldIfNeededWithClass:[fac.model class] configuration:conf];
         }
     }];
     
@@ -604,7 +605,6 @@
                 ///如果还没失败过则执行插入操作
                 if (!hasFailure) {
                     ///如果插入失败则记录失败状态并将模型加入失败数组
-                    [strongSelf supplyFieldIfNeededWithClass:[obj.model class] configuration:conf];
                     DWDatabaseResult * result = [strongSelf excuteUpdate:db WithFactory:obj clear:NO];
                     if (!result.success) {
                         hasFailure = YES;
@@ -633,11 +633,11 @@
     return result;
 }
 
--(void)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(NSArray<NSObject *> * _Nonnull, NSError * _Nonnull))completion {
+-(void)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(DWDatabaseResult * result))completion {
     asyncExcuteOnDBOperationQueue(self, ^{
         DWDatabaseResult * result = [self insertTableWithModels:models keys:keys recursive:recursive rollbackOnFailure:rollback configuration:conf];
         if (completion) {
-            completion(result.result,result.error);
+            completion(result);
         }
     });
 }

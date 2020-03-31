@@ -37,51 +37,7 @@
     [self setupUI];
     [self configDB];
 }
-- (void)insert {
-    
-    if (self.tblConf) {
-        NSError * error;
-        V * v = [V new];
-        v.shortNum = -1;
-        v.unsignedShortNum = 1;
-        v.intNum = -100;
-        v.floatNum = 0.5;
-        v.doubleNum = -2002020200202;
-        v.longlongNum = 1111;
-        v.unsignedIntNum = 100;
-        v.longDoubleNum = -1010004001001;
-        v.unsignedLongLongNum = 20020200202;
-        v.chr = -'a';
-        v.uChr = 'a';
-        v.charString = "hello\0";
-        v.nsNum = @"1";
-        v.string = @[@1];
-        v.mString = [@"hello" mutableCopy];
-        v.data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
-        v.mData = [v.data mutableCopy];
-        v.date = @"1";
-        v.url = [NSURL URLWithString:@"www.baidu.com"];
-        v.array = @"[1,2,3]";
-        v.mArray = @[@4,@5,@6].mutableCopy;
-        v.dictionary = @{@"a":@"b"};
-        v.mDictionary = @{@"c":v.array}.mutableCopy;
-        v.aSet = [NSSet setWithObjects:@7,@8,@9, nil];
-        v.mSet = [NSMutableSet setWithObjects:@10,@11,@12, nil];
-        v.cls = [v class];
-        v.sel = @selector(viewDidLoad);
-        
-        DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil recursive:YES configuration:self.tblConf];
-        if (result.success) {
-            NSLog(@"Insert Success:%@",[self.db queryTableWithClass:nil keys:nil recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-                
-                maker.dw_loadClass(V);
-                maker.dw_conditionWith(nsNum).equalTo(1);
-            }]);
-        } else {
-            NSLog(@"%@",error);
-        }
-    }
-}
+
 
 - (void)delete {
     DWDatabaseResult * result = [self.db deleteTableAutomaticallyWithModel:nil name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
@@ -146,22 +102,7 @@
         }
     }
 }
-- (void)queryCount {
-    if (self.tblConf) {
-        V * v = [V new];
-        v.unsignedLongLongNum = 20020200202;
-        v.intNum = -100;
-        DWDatabaseResult * result = [self.db queryTableForCountWithClass:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.dw_loadClass(V);
-            maker.dw_conditionWith(intNum).equalTo(-100);
-        }];
-        if (result.success) {
-            NSLog(@"Query Count Success:%@",result.result);
-        } else {
-            NSLog(@"%@",result.error);
-        }
-    }
-}
+
 - (void)queryField {
     if (self.tblConf) {
         
@@ -180,26 +121,6 @@
         V * ret = result.result;
         if (result.success) {
             NSLog(@"Query ID Success:%@",[DWDatabase fetchDw_idForModel:ret]);
-        } else {
-            NSLog(@"%@",result.error);
-        }
-    }
-}
-- (void)clear {
-    if (self.tblConf) {
-        DWDatabaseResult * result = [self.db clearTableWithConfiguration:self.tblConf];
-        if (result.success) {
-            NSLog(@"Clear Success:%@",[self.db queryTableWithClass:[V class] keys:nil recursive:YES configuration:self.tblConf condition:nil]);
-        } else {
-            NSLog(@"%@",result.error);
-        }
-    }
-}
-- (void)drop {
-    if (self.tblConf) {
-        DWDatabaseResult * result = [self.db dropTableWithConfiguration:self.tblConf];
-        if (result.success) {
-            NSLog(@"Drop success:%d",[self.db isTableExistWithTableName:@"V_SQL" configuration:self.tblConf].success);
         } else {
             NSLog(@"%@",result.error);
         }
@@ -340,6 +261,105 @@
     }
 }
 
+-(void)queryAllTblInDB {
+    DWDatabaseResult * result = [self.db queryAllTableNamesInDBWithConfiguration:self.tblConf];
+    if (result.success) {
+        NSLog(@"%@",result.result);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)queryAllFieldInDB {
+    DWDatabaseResult * result = [self.db queryAllFieldInTable:YES class:[V class] configuration:self.tblConf];
+    if (result.success) {
+        NSLog(@"%@",result.result);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)clearRowsInTbl {
+    DWDatabaseResult * result = [self.db clearTableWithConfiguration:self.tblConf];
+    if (result.success) {
+        [self queryCountInTbl];
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)dropTblInDB {
+    DWDatabaseResult * result = [self.db dropTableWithConfiguration:self.tblConf];
+    if (result.success) {
+        NSLog(@"%d",[self.db isTableExistWithTableName:@"V_SQL" configuration:self.tblConf].success);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+- (void)insertModel {
+    V * v = [V new];
+    v.shortNum = -1;
+    v.unsignedShortNum = 1;
+    v.intNum = -100;
+    v.floatNum = 0.5;
+    v.doubleNum = -2002020200202;
+    v.longlongNum = 1111;
+    v.unsignedIntNum = 100;
+    v.longDoubleNum = -1010004001001;
+    v.unsignedLongLongNum = 20020200202;
+    v.chr = -'a';
+    v.uChr = 'a';
+    v.charString = "hello\0";
+    v.nsNum = @"1";
+    v.string = @[@1];
+    v.mString = [@"hello" mutableCopy];
+    v.data = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
+    v.mData = [v.data mutableCopy];
+    v.date = @"1";
+    v.url = [NSURL URLWithString:@"www.baidu.com"];
+    v.array = @"[1,2,3]";
+    v.mArray = @[@4,@5,@6].mutableCopy;
+    v.dictionary = @{@"a":@"b"};
+    v.mDictionary = @{@"c":v.array}.mutableCopy;
+    v.aSet = [NSSet setWithObjects:@7,@8,@9, nil];
+    v.mSet = [NSMutableSet setWithObjects:@10,@11,@12, nil];
+    v.cls = [v class];
+    v.sel = @selector(viewDidLoad);
+    
+    DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil recursive:YES configuration:self.tblConf];
+    if (result.success) {
+        [self queryCountInTbl];
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)batchInsertModels {
+    V * m1 = [V new];
+    m1.intNum = 2;
+    V * m2 = [V new];
+    m2.intNum = 4;
+    [self.db insertTableWithModels:@[m1,m2] keys:nil recursive:NO rollbackOnFailure:YES configuration:self.tblConf completion:^(DWDatabaseResult * _Nonnull result) {
+        if (result.success) {
+            [self queryCountInTbl];
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    }];
+}
+
+-(void)queryCountInTbl {
+    DWDatabaseResult * result = [self.db queryTableForCountWithClass:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+    }];
+    if (result.success) {
+        NSLog(@"%@",result.result);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
 #pragma mark --- tool method ---
 -(void)setupUI {
     self.view.backgroundColor = [UIColor lightGrayColor];
@@ -384,87 +404,87 @@
     switch (indexPath.row) {
         case 0:
         {
-            [self insert];
+            [self insertAutomatically];
         }
             break;
         case 1:
         {
-            [self delete];
+            [self updateAutomatically];
         }
             break;
         case 2:
         {
-            [self update];
+            [self queryAutomatically];
         }
             break;
         case 3:
         {
-            [self query];
+            [self deleteAutomatically];
         }
             break;
         case 4:
         {
-            [self queryCount];
+            [self queryAllTblInDB];
         }
             break;
         case 5:
         {
-            [self queryField];
+            [self queryAllFieldInDB];
         }
             break;
         case 6:
         {
-            [self queryID];
+            [self clearRowsInTbl];
         }
             break;
         case 7:
         {
-            [self clear];
+            [self dropTblInDB];
         }
             break;
         case 8:
         {
-            [self drop];
+            [self insertModel];
         }
             break;
         case 9:
         {
-            [self transformToDictionary];
+            [self batchInsertModels];
         }
             break;
         case 10:
         {
-            [self transformToModel];
+            [self queryID];
         }
             break;
         case 11:
         {
-            [self insertCModel];
+            
         }
             break;
         case 12:
         {
-            [self queryCModel];
+//            [self drop];
         }
             break;
         case 13:
         {
-            [self insertAutomatically];
+            [self transformToDictionary];
         }
             break;
         case 14:
         {
-            [self updateAutomatically];
+            [self transformToModel];
         }
             break;
         case 15:
         {
-            [self queryAutomatically];
+            [self insertCModel];
         }
             break;
         case 16:
         {
-            [self deleteAutomatically];
+            [self queryCModel];
         }
             break;
         default:
@@ -487,7 +507,16 @@
 -(NSMutableArray *)dataArr {
     if (!_dataArr) {
         _dataArr = @[
-            @"增",
+            @"全自动插入",
+            @"全自动更新",
+            @"全自动查询",
+            @"全自动删除",
+            @"获取库中的所有表名",
+            @"获取表中的所有字段",
+            @"清除表中的所有数据",
+            @"删除库中的指定表",
+            @"插入模型",
+            @"批量插入模型",
             @"删",
             @"改",
             @"查",
@@ -500,10 +529,6 @@
             @"字典转模型",
             @"模型嵌套插入",
             @"模型嵌套查询",
-            @"全自动插入",
-            @"全自动更新",
-            @"全自动查询",
-            @"全自动删除",
         ].mutableCopy;
     }
     return _dataArr;
