@@ -324,7 +324,9 @@
         result = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"Auto" tableName:@"Auto_V_Tbl" path:nil];
         if (result.success) {
             DWDatabaseConfiguration * tblConf = result.result;
-            result = [self.db queryTableForCountWithClass:NULL configuration:tblConf condition:nil];
+            result = [self.db queryTableForCountWithClass:NULL configuration:tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                maker.loadClass([V class]);
+            }];
             if (result.success) {
                 NSLog(@"%@",result.result);
             } else {
