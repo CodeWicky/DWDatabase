@@ -385,6 +385,7 @@ NS_ASSUME_NONNULL_BEGIN
  @return 返回是否删除成功
  
  @disc 1.此处传入表明数据库句柄
+      2.此处删除均为非递归模式删除，因为删除时并不会获取待删条目故无法知道嵌套信息
  */
 -(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition;
 

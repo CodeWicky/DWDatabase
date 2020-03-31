@@ -349,6 +349,35 @@
     }];
 }
 
+-(void)deleteRowsInTblWithCondition {
+    DWDatabaseResult * result = [self.db deleteTableWithConfiguration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_conditionWith(intNum).equalTo(4);
+    }];
+    
+    if (result.success) {
+        [self queryCountInTbl];
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)deleteRowsInTblWithModel {
+    V * model = [V new];
+    model.intNum = 255;
+    DWDatabaseResult * result = [self.db insertTableWithModel:model keys:nil recursive:NO configuration:self.tblConf];
+    if (result.success) {
+        result = [self.db deleteTableWithModel:model recursive:NO configuration:self.tblConf];
+        if (result.success) {
+            [self queryCountInTbl];
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
 -(void)queryCountInTbl {
     DWDatabaseResult * result = [self.db queryTableForCountWithClass:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
@@ -454,12 +483,12 @@
             break;
         case 10:
         {
-            [self queryID];
+            [self deleteRowsInTblWithCondition];
         }
             break;
         case 11:
         {
-            
+            [self deleteRowsInTblWithModel];
         }
             break;
         case 12:
@@ -517,7 +546,8 @@
             @"删除库中的指定表",
             @"插入模型",
             @"批量插入模型",
-            @"删",
+            @"以条件删除表中的数据",
+            @"删除表中的指定模型",
             @"改",
             @"查",
             @"查个数",
