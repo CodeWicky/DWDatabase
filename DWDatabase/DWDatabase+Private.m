@@ -250,11 +250,11 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     if (!key) {
         return nil;
     }
-    NSDictionary * infos = [self.saveInfosCache valueForKey:key];
+    NSDictionary * infos = [self.saveInfosCache objectForKey:key];
     if (!infos) {
         NSArray * saveKeys = [self propertysToSaveWithClass:cls];
         infos = [self propertyInfosWithClass:cls keys:saveKeys];
-        [self.saveInfosCache setValue:infos forKey:key];
+        [self.saveInfosCache setObject:infos forKey:key];
     }
     return infos;
 }

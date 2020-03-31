@@ -53,7 +53,7 @@
     ///先尝试取缓存的sql
     NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kCreatePrefix class:cls tblName:tblName keys:@[@"CREATE-SQL"]];
     if (cacheSqlKey.length) {
-        sql = [self.sqlsCache valueForKey:cacheSqlKey];
+        sql = [self.sqlsCache objectForKey:cacheSqlKey];
     }
     ///如果没有缓存的sql则拼装sql
     if (!sql) {
@@ -80,7 +80,7 @@
         sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (%@ INTEGER PRIMARY KEY AUTOINCREMENT,%@)",tblName,kUniqueID,[validKeys componentsJoinedByString:@","]];
         ///计算完缓存sql
         if (cacheSqlKey.length) {
-            [self.sqlsCache setValue:sql forKey:cacheSqlKey];
+            [self.sqlsCache setObject:sql forKey:cacheSqlKey];
         }
     }
     DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
