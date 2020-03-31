@@ -188,7 +188,7 @@ NS_ASSUME_NONNULL_BEGIN
 -(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
 -(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
--(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(nullable NSString *)tblName path:(NSString *)path keys:(nullable NSArray *)keys condition:(nullable DWDatabaseConditionHandler)condition;
 
 #pragma mark --- 数据库操作方法 ---
 /**
@@ -386,7 +386,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 1.此处传入表明数据库句柄
  */
--(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition;
 
 /**
  删除当前库指定表中对应的模型信息
@@ -424,7 +424,7 @@ NS_ASSUME_NONNULL_BEGIN
        8.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
  */
 
--(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**
@@ -454,8 +454,8 @@ NS_ASSUME_NONNULL_BEGIN
        11.若操作成功，result字段中将携带结果数组
  */
 
--(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
--(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
+-(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型
@@ -490,7 +490,7 @@ NS_ASSUME_NONNULL_BEGIN
        5.返回的数组中将以传入的cls的实例作为数据载体
        6.若操作成功，result字段将携带结果数组
  */
--(DWDatabaseResult *)queryTableWithClass:(nullable Class)cls keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable void (^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)cls keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**
@@ -507,7 +507,7 @@ NS_ASSUME_NONNULL_BEGIN
        4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
        5.若查询成功，result字段将携带个数（NSNumber）
  */
--(DWDatabaseResult *)queryTableForCountWithClass:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf condition:(nullable void(^)(DWDatabaseConditionMaker * maker))condition;
+-(DWDatabaseResult *)queryTableForCountWithClass:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**
@@ -559,9 +559,6 @@ NS_ASSUME_NONNULL_BEGIN
       2.具有数据表名称的模型从表中删除后会移除模型的数据表名称
 */
 +(NSString *)fetchTblNameForModel:(NSObject *)model;
-
-
-
 
 ///模型存数据库需要保存的键值
 -(NSArray *)propertysToSaveWithClass:(Class)cls;

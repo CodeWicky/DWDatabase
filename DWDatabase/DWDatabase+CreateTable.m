@@ -6,10 +6,86 @@
 //
 
 #import "DWDatabase+CreateTable.h"
+#import "DWDatabaseFunction.h"
 
-#import <AppKit/AppKit.h>
-
+#define kCreatePrefix (@"c")
 
 @implementation DWDatabase (CreateTable)
+
+#pragma mark --- interface method ---
+-(DWDatabaseResult *)dw_createTableWithClass:(Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue {
+    if (cls == Nil) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+    }
+    if (!queue) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
+    }
+    if (!tblName.length) {
+        tblName = [NSStringFromClass(cls) stringByAppendingString:@"_tbl"];
+    }
+    
+    DWDatabaseResult * result = [self createSQLFactoryWithClass:cls tableName:tblName];
+    if (!result.success) {
+        return result;
+    }
+    DWDatabaseSQLFactory * fac = result.result;
+    result.result = nil;
+    excuteOnDBOperationQueue(self, ^{
+        [queue inDatabase:^(FMDatabase * _Nonnull db) {
+            ///建表
+            result.success = [db executeUpdate:fac.sql];
+            result.error = db.lastError;
+        }];
+    });
+    
+    return result;
+}
+
+#pragma mark --- tool method ---
+-(DWDatabaseResult *)createSQLFactoryWithClass:(Class)cls tableName:(NSString *)tblName {
+    NSDictionary * props = [self propertyInfosForSaveKeysWithClass:cls];
+    if (!props.allKeys.count) {
+        NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no save key.",NSStringFromClass(cls)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10012)];
+    }
+    
+    NSString * sql = nil;
+    ///先尝试取缓存的sql
+    NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kCreatePrefix class:cls tblName:tblName keys:@[@"CREATE-SQL"]];
+    if (cacheSqlKey.length) {
+        sql = [self.sqlsCache valueForKey:cacheSqlKey];
+    }
+    ///如果没有缓存的sql则拼装sql
+    if (!sql) {
+        ///添加模型表键值转化
+        NSDictionary * map = databaseMapFromClass(cls);
+        NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
+        [props enumerateKeysAndObjectsUsingBlock:^(NSString * key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
+            ///转化完成的键名及数据类型
+            NSString * field = tblFieldStringFromPropertyInfo(obj,map);
+            if (field.length) {
+                [validKeys addObject:field];
+            }
+        }];
+        
+        if (!validKeys.count) {
+            NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to create table.",NSStringFromClass(cls)];
+            return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
+        }
+        
+        ///对表中字段名进行排序
+        [validKeys sortUsingSelector:@selector(compare:)];
+        
+        ///拼装sql语句
+        sql = [NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (%@ INTEGER PRIMARY KEY AUTOINCREMENT,%@)",tblName,kUniqueID,[validKeys componentsJoinedByString:@","]];
+        ///计算完缓存sql
+        if (cacheSqlKey.length) {
+            [self.sqlsCache setValue:sql forKey:cacheSqlKey];
+        }
+    }
+    DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
+    fac.sql = sql;
+    return [DWDatabaseResult successResultWithResult:fac];
+}
 
 @end

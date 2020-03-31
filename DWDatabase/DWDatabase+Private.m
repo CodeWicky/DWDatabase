@@ -9,6 +9,69 @@
 #import "DWDatabase.h"
 #import "DWDatabaseFunction.h"
 
+@implementation DWDatabaseInfo
+#pragma mark --- interface method ---
+///用于取表过程
+-(BOOL)configDBPath {
+    if (!self.relativePath.length) {
+        return NO;
+    }
+    if (self.relativeType == 0) {
+        self.dbPath = [NSHomeDirectory() stringByAppendingString:self.relativePath];
+    } else if (self.relativeType == 1) {
+        self.dbPath = [[NSBundle mainBundle].bundlePath stringByAppendingString:self.relativePath];
+    } else if (self.relativeType == 2) {
+        self.dbPath = self.relativePath;
+    } else {
+        return NO;
+    }
+    if (![[NSFileManager defaultManager] fileExistsAtPath:self.dbPath]) {
+        return NO;
+    }
+    return YES;
+}
+
+///用于存表过程
+-(BOOL)configRelativePath {
+    if (!self.dbPath.length) {
+        return NO;
+    }
+    if (![[NSFileManager defaultManager] fileExistsAtPath:self.dbPath]) {
+        return NO;
+    }
+    if ([self.dbPath hasPrefix:NSHomeDirectory()]) {
+        self.relativeType = 0;
+        self.relativePath = [self.dbPath stringByReplacingOccurrencesOfString:NSHomeDirectory() withString:@""];
+    } else if ([self.dbPath hasPrefix:[NSBundle mainBundle].bundlePath]) {
+        self.relativeType = 1;
+        self.relativePath = [self.dbPath stringByReplacingOccurrencesOfString:[NSBundle mainBundle].bundlePath withString:@""];
+    } else {
+        self.relativeType = 2;
+        self.relativePath = self.dbPath;
+    }
+    return YES;
+}
+
+#pragma mark --- DWDatabaseSaveProtocol ---
++(NSArray *)dw_dataBaseWhiteList {
+    static NSArray * wl = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        wl = @[@"dbName",@"relativePath",@"relativeType"];
+    });
+    return wl;
+}
+
+#pragma mark --- override ---
+-(instancetype)init {
+    if (self = [super init]) {
+        _relativeType = -1;
+    }
+    return self;
+}
+
+@end
+
 @implementation DWDatabaseOperationRecord
 
 @end
@@ -297,6 +360,20 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
         objc_setAssociatedObject(self, _cmd, cache, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
     return cache;
+}
+
+@end
+
+@implementation DWDatabaseConfiguration (Private)
+@dynamic dbName,tableName,dbQueue;
+
+-(instancetype)initWithName:(NSString *)name tblName:(NSString * )tblName dbq:(FMDatabaseQueue *)dbq {
+    if (self = [super init]) {
+        self.dbName = name;
+        self.tableName = tblName;
+        self.dbQueue = dbq;
+    }
+    return self;
 }
 
 @end

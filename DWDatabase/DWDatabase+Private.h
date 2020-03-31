@@ -17,6 +17,23 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
     DWDatabaseOperationQuery,
 };
 
+@interface DWDatabaseInfo : NSObject<DWDatabaseSaveProtocol>
+
+@property (nonatomic ,copy) NSString * dbName;
+
+@property (nonatomic ,copy) NSString * dbPath;
+
+@property (nonatomic ,copy) NSString * relativePath;
+
+///-1初始值，0沙盒，1bundle，2其他
+@property (nonatomic ,assign) int relativeType;
+
+-(BOOL)configDBPath;
+
+-(BOOL)configRelativePath;
+
+@end
+
 @interface DWDatabaseOperationRecord : NSObject
 
 @property (nonatomic ,strong) __kindof NSObject * model;
@@ -92,5 +109,17 @@ static void* dbOpQKey = "dbOperationQueueKey";
 -(DWDatabaseResult *)validateConfiguration:(DWDatabaseConfiguration *)conf considerTableName:(BOOL)consider;
 
 -(DWDatabaseResult *)supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf;
+
+@end
+
+@interface DWDatabaseConfiguration (Private)
+
+@property (nonatomic ,strong) FMDatabaseQueue * dbQueue;
+
+@property (nonatomic ,copy) NSString * dbName;
+
+@property (nonatomic ,copy) NSString * tableName;
+
+-(instancetype)initWithName:(NSString *)name tblName:(NSString * )tblName dbq:(FMDatabaseQueue *)dbq;
 
 @end
