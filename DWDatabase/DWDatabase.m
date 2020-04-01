@@ -8,7 +8,6 @@
 
 #import "DWDatabase.h"
 #import <Foundation/NSZone.h>
-#import "NSObject+PropertyInfo.h"
 #import "DWDatabaseConditionMaker.h"
 #import "DWDatabaseMacro.h"
 #import "DWDatabase+Private.h"
@@ -679,11 +678,11 @@
     return [self _entry_queryTableWithClass:clazz keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending configuration:conf queryChains:nil recursive:recursive condition:condition];
 }
 
--(void)queryTableWithClass:(Class)clazz keys:(NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition completion:(void (^)(NSArray<__kindof NSObject *> *, NSError *))completion {
+-(void)queryTableWithClass:(Class)clazz keys:(NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition completion:(void (^)(DWDatabaseResult * result))completion {
     asyncExcuteOnDBOperationQueue(self, ^{
         DWDatabaseResult * result = [self queryTableWithClass:clazz keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending recursive:recursive configuration:conf condition:condition];
         if (completion) {
-            completion(result.result,result.error);
+            completion(result);
         }
     });
 }
@@ -818,6 +817,35 @@
 }
 
 ///模型存数据库需要保存的键值
++(NSArray <DWPrefix_YYClassPropertyInfo *>*)propertysToSaveWithClass:(Class)cls {
+    return [[self shareDB] propertysToSaveWithClass:cls];
+}
+
+///获取类指定键值的propertyInfo
++(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)propertyInfosWithClass:(Class)cls keys:(NSArray *)keys {
+    if (!cls) {
+        return nil;
+    }
+    return [cls dw_propertyInfosForKeys:keys];
+}
+
+#pragma mark --- tool method ---
+-(FMDatabaseQueue *)openDBQueueWithName:(NSString *)name path:(NSString *)path private:(BOOL)private {
+    NSString * saveP = [path stringByDeletingLastPathComponent];
+    ///路径不存在先创建路径
+    if (![[NSFileManager defaultManager] fileExistsAtPath:saveP]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:saveP withIntermediateDirectories:NO attributes:nil error:nil];
+    }
+    FMDatabaseQueue * q = [FMDatabaseQueue databaseQueueWithPath:path];
+    if (q && !private) {
+        ///缓存当前数据库信息
+        [self.allDBs_prv setValue:path forKey:name];
+        [self.dbqContainer setValue:q forKey:name];
+    }
+    return q;
+}
+
+///模型存数据库需要保存的键值
 -(NSArray *)propertysToSaveWithClass:(Class)cls {
     NSString * key = NSStringFromClass(cls);
     if (!key.length) {
@@ -848,22 +876,6 @@
     tmp = tmp ? [tmp copy] :@[];
     [self.saveKeysCache setObject:tmp forKey:key];
     return tmp;
-}
-
-#pragma mark --- tool method ---
--(FMDatabaseQueue *)openDBQueueWithName:(NSString *)name path:(NSString *)path private:(BOOL)private {
-    NSString * saveP = [path stringByDeletingLastPathComponent];
-    ///路径不存在先创建路径
-    if (![[NSFileManager defaultManager] fileExistsAtPath:saveP]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:saveP withIntermediateDirectories:NO attributes:nil error:nil];
-    }
-    FMDatabaseQueue * q = [FMDatabaseQueue databaseQueueWithPath:path];
-    if (q && !private) {
-        ///缓存当前数据库信息
-        [self.allDBs_prv setValue:path forKey:name];
-        [self.dbqContainer setValue:q forKey:name];
-    }
-    return q;
 }
 
 ///获取类指定键值的propertyInfo

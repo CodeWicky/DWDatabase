@@ -52,57 +52,6 @@
     }
 }
 
-- (void)update {
-    
-    if (self.tblConf) {
-        V * newV = [V new];
-        newV.unsignedLongLongNum = 333;
-        newV.intNum = 129;
-        newV.floatNum = 3.5;
-        DWDatabaseResult * result = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.dw_loadClass(V);
-            maker.dw_conditionWith(unsignedLongLongNum).equalTo(222);
-        }];
-        
-        NSLog(@"%@",result);
-    }
-}
-
-- (void)query {
-    if (self.tblConf) {
-
-        V * v = [V new];
-        v.unsignedLongLongNum = 20020200202;
-        v.intNum = -100;
-        v.array = @[@1,@2,@3];
-        
-        [self.db queryTableWithClass:nil keys:nil limit:0 offset:0 orderKey:nil ascending:YES recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.dw_loadClass(V);
-            maker.dw_conditionWith(floatNum).equalTo(0.5);
-            maker.dw_conditionWith(chr).isNull();
-            maker.dw_conditionWith(intNum).equalTo(1);
-        } completion:^(NSArray<__kindof NSObject *> * _Nonnull results, NSError * _Nonnull error) {
-            if (results.count) {
-                NSLog(@"Async Query Success:%@",results);
-            } else {
-                NSLog(@"Async %@",error);
-            }
-        }];
-        
-    
-        DWDatabaseResult * result = [self.db queryTableWithClass:nil keys:@[keyPathString(v, floatNum)] limit:0 offset:0 orderKey:nil ascending:YES recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.loadClass([V class]);
-            maker.conditionWith(kUniqueID).greaterThanOrEqualTo(@"2");
-        }];
-        NSArray <V *>* ret = result.result;
-        if (ret.count) {
-            NSLog(@"Query Success:%@",ret);
-        } else {
-            NSLog(@"%@",result.error);
-        }
-    }
-}
-
 - (void)queryField {
     if (self.tblConf) {
         
@@ -378,6 +327,64 @@
     }
 }
 
+- (void)updateModel {
+    
+    V * newV = [V new];
+    newV.unsignedLongLongNum = 333;
+    newV.intNum = 129;
+    newV.floatNum = 3.5;
+    DWDatabaseResult * result = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_conditionWith(intNum).equalTo(2);
+    }];
+    
+    if (result.success) {
+        result = [self.db queryTableForCountWithClass:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.dw_loadClass(V);
+            maker.dw_conditionWith(intNum).equalTo(129);
+        }];
+        if (result.success) {
+            NSLog(@"%@",result.result);
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)queryTblWithParam {
+    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil limit:3 offset:8 orderKey:nil ascending:NO recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_conditionWith(intNum).equalTo(129);
+    }];
+    
+    if (result.success) {
+        NSArray <V *>* results = result.result;
+        [results enumerateObjectsUsingBlock:^(V * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            NSLog(@"%@",[DWDatabase fetchDw_idForModel:obj]);
+        }];
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)queryModel {
+    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_conditionWith(intNum).equalTo(129);
+    }];
+    
+    if (result.success) {
+        NSArray <V *>* results = result.result;
+        [results enumerateObjectsUsingBlock:^(V * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            NSLog(@"%@",[DWDatabase fetchDw_idForModel:obj]);
+        }];
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
 -(void)queryCountInTbl {
     DWDatabaseResult * result = [self.db queryTableForCountWithClass:nil configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
@@ -387,6 +394,26 @@
     } else {
         NSLog(@"%@",result.error);
     }
+}
+
+-(void)queryModelByID {
+    DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(3) keys:nil recursive:NO configuration:self.tblConf];
+    if (result.success) {
+        V * model = result.result;
+        NSLog(@"%@,%@,%@",[DWDatabase fetchDw_idForModel:model],[DWDatabase fetchDbNameForModel:model],[DWDatabase fetchTblNameForModel:model]);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)querySavePropertyInfos {
+    NSArray <DWPrefix_YYClassPropertyInfo *>* saveProps = [DWDatabase propertysToSaveWithClass:[V class]];
+    NSLog(@"%@",saveProps);
+}
+
+-(void)queryPropertyInfosWithKeys {
+    NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *> * props = [DWDatabase propertyInfosWithClass:[V class] keys:@[@"intNum"]];
+    NSLog(@"%@",props);
 }
 
 #pragma mark --- tool method ---
@@ -493,27 +520,37 @@
             break;
         case 12:
         {
-//            [self drop];
+            [self updateModel];
         }
             break;
         case 13:
         {
-            [self transformToDictionary];
+            [self queryTblWithParam];
         }
             break;
         case 14:
         {
-            [self transformToModel];
+            [self queryModel];
         }
             break;
         case 15:
         {
-            [self insertCModel];
+            [self queryCountInTbl];
         }
             break;
         case 16:
         {
-            [self queryCModel];
+            [self queryModelByID];
+        }
+            break;
+        case 17:
+        {
+            [self querySavePropertyInfos];
+        }
+            break;
+        case 18:
+        {
+            [self queryPropertyInfosWithKeys];
         }
             break;
         default:
@@ -548,13 +585,13 @@
             @"批量插入模型",
             @"以条件删除表中的数据",
             @"删除表中的指定模型",
-            @"改",
-            @"查",
-            @"查个数",
-            @"查字段",
-            @"查ID",
-            @"清表",
-            @"删表",
+            @"更新模型",
+            @"定制不同参数查询模型",
+            @"查询模型",
+            @"查询符合条件的模型的个数",
+            @"以Dw_id进行查询模型",
+            @"查询指定类需要落库的属性信息",
+            @"查询指定类指定的属性信息",
             @"模型转字典",
             @"字典转模型",
             @"模型嵌套插入",

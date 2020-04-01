@@ -87,6 +87,7 @@
 #import "DWDatabaseConditionMaker.h"
 #import "DWDatabaseMacro.h"
 #import "DWDatabaseResult.h"
+#import "NSObject+PropertyInfo.h"
 
 /**
  模型数据表转换协议
@@ -446,7 +447,7 @@ NS_ASSUME_NONNULL_BEGIN
        2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
        3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_dataBaseWhiteList 和 +dw_dataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        4.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
-       5.当offset为大于0的数是将作为查询的起始点，即从第几条开始查询数据
+       5.当offset为大于0的数是将作为查询的起始点，例如offset为10，当查询结果有20条符合条件的数据，将返回后10条数据。
        6.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
        7.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
        8.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
@@ -456,7 +457,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 -(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
--(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition completion:(nullable void(^)(NSArray <__kindof NSObject *>* results,NSError * error))completion;
+-(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition completion:(nullable void(^)(DWDatabaseResult * result))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型
@@ -562,9 +563,9 @@ NS_ASSUME_NONNULL_BEGIN
 +(NSString *)fetchTblNameForModel:(NSObject *)model;
 
 ///模型存数据库需要保存的键值
--(NSArray *)propertysToSaveWithClass:(Class)cls;
++(NSArray <DWPrefix_YYClassPropertyInfo *>*)propertysToSaveWithClass:(Class)cls;
 
 ///获取类指定键值的propertyInfo
--(NSDictionary *)propertyInfosWithClass:(Class)cls keys:(NSArray *)keys;
++(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)propertyInfosWithClass:(Class)cls keys:(NSArray *)keys;
 @end
 NS_ASSUME_NONNULL_END

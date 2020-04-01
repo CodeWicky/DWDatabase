@@ -104,7 +104,7 @@
         ///此处要按支持的key做sql
         keys = [self validKeysIn:keys forClass:cls];
         if (keys.count) {
-            infos = [self propertyInfosWithClass:cls keys:keys];
+            infos = [DWDatabase propertyInfosWithClass:cls keys:keys];
         }
     } else {
         infos = [self propertyInfosForSaveKeysWithClass:cls];

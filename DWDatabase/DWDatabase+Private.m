@@ -242,7 +242,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     if (!keys.count) {
         return nil;
     }
-    NSArray * saveKeys = [self propertysToSaveWithClass:clazz];
+    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:clazz];
     return intersectionOfArray(keys,saveKeys);
 }
 
@@ -254,8 +254,8 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     }
     NSDictionary * infos = [self.saveInfosCache objectForKey:key];
     if (!infos) {
-        NSArray * saveKeys = [self propertysToSaveWithClass:cls];
-        infos = [self propertyInfosWithClass:cls keys:saveKeys];
+        NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
+        infos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
         [self.saveInfosCache setObject:infos forKey:key];
     }
     return infos;
@@ -304,7 +304,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     }
     
     NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:clazz configuration:conf].result;
-    NSArray * propertyToSaveKey = [self propertysToSaveWithClass:clazz];
+    NSArray * propertyToSaveKey = [DWDatabase propertysToSaveWithClass:clazz];
     NSArray * saveProArray = minusArray(propertyToSaveKey, allKeysInTbl);
     if (saveProArray.count == 0) {
         [DWMetaClassInfo validedFieldSupplyForClass:clazz withValidKey:validKey];
@@ -312,7 +312,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     } else {
         DWDatabaseResult * result = [DWDatabaseResult successResultWithResult:nil];
         NSDictionary * map = databaseMapFromClass(clazz);
-        NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [self propertyInfosWithClass:clazz keys:saveProArray];
+        NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [DWDatabase propertyInfosWithClass:clazz keys:saveProArray];
         [propertys enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             ///转化完成的键名及数据类型
             NSString * field = tblFieldStringFromPropertyInfo(obj,map);

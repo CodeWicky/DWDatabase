@@ -134,7 +134,7 @@
     if (keys.count) {
         keys = [self validKeysIn:keys forClass:cls];
         if (keys.count) {
-            infos = [self propertyInfosWithClass:cls keys:keys];
+            infos = [DWDatabase propertyInfosWithClass:cls keys:keys];
         }
     } else {
         infos = [self propertyInfosForSaveKeysWithClass:cls];
@@ -148,9 +148,9 @@
     NSMutableArray * conditionArgs = @[].mutableCopy;
     NSMutableArray * conditionStrings = @[].mutableCopy;
     NSMutableArray * validConditionKeys = @[].mutableCopy;
-    NSArray * saveKeys = [self propertysToSaveWithClass:cls];
+    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
     NSDictionary * databaseMap = databaseMapFromClass(cls);
-    NSDictionary * propertyInfos = [self propertyInfosWithClass:cls keys:saveKeys];
+    NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
     [maker configWithPropertyInfos:propertyInfos databaseMap:databaseMap];
     [maker make];
     [conditionArgs addObjectsFromArray:[maker fetchArguments]];

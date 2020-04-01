@@ -115,9 +115,9 @@
     NSMutableArray * conditionStrings = @[].mutableCopy;
     NSMutableArray * validConditionKeys = @[].mutableCopy;
     
-    NSArray * saveKeys = [self propertysToSaveWithClass:cls];
+    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
     NSDictionary * map = databaseMapFromClass(cls);
-    NSDictionary * propertyInfos = [self propertyInfosWithClass:cls keys:saveKeys];
+    NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
     [maker configWithPropertyInfos:propertyInfos databaseMap:map];
     [maker make];
     [args addObjectsFromArray:[maker fetchArguments]];

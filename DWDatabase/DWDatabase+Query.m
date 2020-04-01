@@ -325,9 +325,9 @@
         if (!cls) {
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
         }
-        saveKeys = [self propertysToSaveWithClass:cls];
+        saveKeys = [DWDatabase propertysToSaveWithClass:cls];
         map = databaseMapFromClass(cls);
-        NSDictionary * propertyInfos = [self propertyInfosWithClass:cls keys:saveKeys];
+        NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
         [maker configWithPropertyInfos:propertyInfos databaseMap:map];
         [maker make];
         [args addObjectsFromArray:[maker fetchArguments]];
@@ -340,7 +340,7 @@
     BOOL queryAll = NO;
     ///如果keys为空则试图查询cls与表对应的所有键值
     if (!keys.count) {
-        keys = [self propertysToSaveWithClass:cls];
+        keys = [DWDatabase propertysToSaveWithClass:cls];
         ///如果所有键值为空则返回空
         if (!keys.count) {
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008)];
@@ -355,7 +355,7 @@
     }
     
     NSMutableArray * validQueryKeys = [NSMutableArray arrayWithCapacity:0];
-    NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos = [self propertyInfosWithClass:cls keys:keys];
+    NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos = [DWDatabase propertyInfosWithClass:cls keys:keys];
     
     if (!queryKeysProInfos.allKeys.count) {
         NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid key to query.",NSStringFromClass(cls)];
@@ -392,7 +392,7 @@
     ///有排序添加排序
     NSString * orderField = nil;
     if (orderKey.length && [saveKeys containsObject:orderKey]) {
-        DWPrefix_YYClassPropertyInfo * prop = [[self propertyInfosWithClass:cls keys:@[orderKey]] valueForKey:orderKey];
+        DWPrefix_YYClassPropertyInfo * prop = [[DWDatabase propertyInfosWithClass:cls keys:@[orderKey]] valueForKey:orderKey];
         if (prop) {
             NSString * field = propertyInfoTblName(prop, map);
             if (field.length) {
@@ -453,9 +453,9 @@
     ///获取带转换的属性
     NSDictionary * validPropertyInfo = nil;
     if (queryAll) {
-        validPropertyInfo = [self propertyInfosWithClass:cls keys:saveKeys];
+        validPropertyInfo = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
     } else {
-        validPropertyInfo = [self propertyInfosWithClass:cls keys:validKeys];
+        validPropertyInfo = [DWDatabase propertyInfosWithClass:cls keys:validKeys];
     }
     
     DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
