@@ -38,44 +38,6 @@
     [self configDB];
 }
 
-
-- (void)delete {
-    DWDatabaseResult * result = [self.db deleteTableAutomaticallyWithModel:nil name:@"V_SQL" tableName:@"V_tbl" path:@"/Users/Wicky/Desktop/a.sqlite3" condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-        maker.dw_loadClass(V);
-        maker.dw_conditionWith(intNum).equalTo(-100);
-        maker.dw_conditionWith(unsignedLongLongNum).equalTo(20020200202);
-    }];
-    if (result.success) {
-        NSLog(@"Delete Success:%@",[self.db queryTableAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath keys:nil condition:nil]);
-    } else {
-        NSLog(@"%@",result.error);
-    }
-}
-
-- (void)queryField {
-    if (self.tblConf) {
-        
-        DWDatabaseResult * result = [self.db queryAllFieldInTable:NO class:Nil configuration:self.tblConf];
-        NSArray * ret = result.result;
-        if (ret) {
-            NSLog(@"Query Field Success:%@",ret);
-        } else {
-            NSLog(@"%@",result.error);
-        }
-    }
-}
-- (void)queryID {
-    if (self.tblConf) {
-        DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(7) keys:nil recursive:YES configuration:self.tblConf];
-        V * ret = result.result;
-        if (result.success) {
-            NSLog(@"Query ID Success:%@",[DWDatabase fetchDw_idForModel:ret]);
-        } else {
-            NSLog(@"%@",result.error);
-        }
-    }
-}
-
 -(void)transformToDictionary {
     C * classC = [C new];
     classC.a = @"hello";
@@ -104,29 +66,6 @@
     
     
     NSLog(@"%@",model);
-}
-
--(void)insertCModel {
-    C * model = [C new];
-    model.classB = [B new];
-    model.classB.b = 10;
-    model.array = @[[A new]];
-    
-    DWDatabaseResult * result = [self.db insertTableWithModel:model keys:@[keyPathString(model, array)] recursive:YES configuration:self.cTblConf];
-    if (!result.success) {
-        NSLog(@"error = %@",result.error);
-    } else {
-        NSLog(@"success = %@",result.result);
-    }
-}
-
--(void)queryCModel {
-    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:self.cTblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-        maker.dw_loadClass(C);
-        maker.dw_conditionWith(a).equalTo(@"aaa");
-    }];
-    
-    NSLog(@"%@",result.result);
 }
 
 -(void)insertAutomatically {
@@ -416,6 +355,34 @@
     NSLog(@"%@",props);
 }
 
+-(void)insertModelRecursiveLy {
+    C * cModel = [C new];
+    cModel.dic = @{@"key":@"value"};
+    cModel.classC = cModel;
+    
+    B * bModel = [B new];
+    bModel.b = 100;
+    cModel.classB = bModel;
+    
+    A * aModel = [A new];
+    aModel.a = @[@1,@2];
+    aModel.classC = cModel;
+    bModel.classA = aModel;
+    
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+    if (result.success) {
+        DWDatabaseConfiguration * conf = result.result;
+        result = [self.db insertTableWithModel:cModel keys:nil recursive:YES configuration:conf];
+        if (result.success) {
+            NSLog(@"%@",[DWDatabase fetchDw_idForModel:cModel]);
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
 #pragma mark --- tool method ---
 -(void)setupUI {
     self.view.backgroundColor = [UIColor lightGrayColor];
@@ -553,6 +520,11 @@
             [self queryPropertyInfosWithKeys];
         }
             break;
+        case 19:
+        {
+            [self insertModelRecursiveLy];
+        }
+            break;
         default:
             break;
     }
@@ -592,6 +564,7 @@
             @"以Dw_id进行查询模型",
             @"查询指定类需要落库的属性信息",
             @"查询指定类指定的属性信息",
+            @"递归插入模型",
             @"模型转字典",
             @"字典转模型",
             @"模型嵌套插入",

@@ -25,4 +25,6 @@
 
 @property (nonatomic ,strong) NSObject * obj;
 
+@property (nonatomic ,strong) C * classC;
+
 @end

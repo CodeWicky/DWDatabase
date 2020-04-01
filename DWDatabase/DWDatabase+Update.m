@@ -38,10 +38,10 @@
         condition(maker);
     }
     
-    return [self dw_updateTableWithModel:model dbName:conf.dbName tableName:conf.tableName keys:keys inQueue:conf.dbQueue updateChains:updateChains recursive:recursive conditionMaker:maker];
+    return [self dw_updateTableWithModel:model dbName:conf.dbName tableName:conf.tableName keys:keys inQueue:conf.dbQueue updateChains:updateChains recursive:recursive updateObjectID:NO conditionMaker:maker];
 }
 
--(DWDatabaseResult *)dw_updateTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
+-(DWDatabaseResult *)dw_updateTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive updateObjectID:(BOOL)updateObjectID conditionMaker:(DWDatabaseConditionMaker *)maker {
     if (!queue) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
     }
@@ -74,7 +74,7 @@
             [updateChains addRecord:record];
         }
         
-        __block DWDatabaseResult * result = [self updateSQLFactoryWithModel:model dbName:dbName tableName:tblName keys:keys updateChains:updateChains recursive:recursive conditionMaker:maker];
+        __block DWDatabaseResult * result = [self updateSQLFactoryWithModel:model dbName:dbName tableName:tblName keys:keys updateChains:updateChains recursive:recursive updateObjectID:updateObjectID conditionMaker:maker];
         if (!result.success) {
             return result;
         }
@@ -91,7 +91,7 @@
                         [model setValue:obj forKey:key];
                     }];
                     
-                    result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO conditionMaker:nil];
+                    result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO updateObjectID:YES conditionMaker:nil];
                 }
                 return result;
             }
@@ -114,7 +114,7 @@
 }
 
 #pragma mark --- tool method ---
--(DWDatabaseResult *)updateSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray<NSString *> *)keys updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
+-(DWDatabaseResult *)updateSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray<NSString *> *)keys updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive updateObjectID:(BOOL)updateObjectID conditionMaker:(DWDatabaseConditionMaker *)maker {
     NSDictionary * infos = nil;
     
     if (!maker) {
@@ -172,7 +172,7 @@
     }
     
     ///获取更新sql相关参数
-    [self handleUpdateArgumentsWithPropertyInfos:infos dbName:dbName tblName:tblName model:model updateChains:updateChains recursive:recursive validKeysContainer:validUpdateKeys argumentsContaienr:updateArgs objMap:objMap];
+    [self handleUpdateArgumentsWithPropertyInfos:infos dbName:dbName tblName:tblName model:model updateChains:updateChains recursive:recursive updateObjectID:updateObjectID validKeysContainer:validUpdateKeys argumentsContaienr:updateArgs objMap:objMap];
     
     ///无有效插入值
     if (!updateArgs.count) {
@@ -212,7 +212,7 @@
     return [DWDatabaseResult successResultWithResult:fac];
 }
 
--(void)handleUpdateArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName model:(NSObject *)model updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
+-(void)handleUpdateArgumentsWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName model:(NSObject *)model updateChains:(DWDatabaseOperationChain *)updateChains recursive:(BOOL)recursive updateObjectID:(BOOL)updateObjectID validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
     Class cls = [model class];
     NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
     NSDictionary * dbTransformMap = databaseMapFromClass(cls);
@@ -233,7 +233,7 @@
                                     ///如果未完成，有存在，证明此次作为子节点递归存在，故不需要再次递归更新，仅更新本层即可
                                     DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
                                     if (tblConf) {
-                                        DWDatabaseResult * result = [self dw_updateTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue updateChains:updateChains recursive:NO conditionMaker:nil];
+                                        DWDatabaseResult * result = [self dw_updateTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue updateChains:updateChains recursive:NO updateObjectID:NO conditionMaker:nil];
                                         if (result.success) {
                                             name = [name stringByAppendingString:@" = ?"];
                                             [validKeys addObject:name];
@@ -285,6 +285,11 @@
                                     }
                                 }
                             }
+                        } else if (updateObjectID && [value isKindOfClass:[NSNumber class]]) {
+                            ///updateObjectID这个标志位是用来标识是否是嵌套插入或者更新后用来更新ID的标志位。因为这种情况下为非嵌套模式，且对应属性是对象类型
+                            name = [name stringByAppendingString:@" = ?"];
+                            [validKeys addObject:name];
+                            [args addObject:value];
                         }
                     } else {
                         name = [name stringByAppendingString:@" = ?"];

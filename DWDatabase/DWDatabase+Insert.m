@@ -63,15 +63,26 @@
     if (recursive) {
         DWDatabaseOperationRecord * record = [insertChains recordInChainWithModel:model];
         if (record.finishOperationInChain) {
+            NSNumber * Dw_id = Dw_idFromModel(model);
             if (fac.objMap.allKeys.count) {
                 
                 [fac.objMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
                     [model setValue:obj forKey:key];
                 }];
                 
-                result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO conditionMaker:nil];
+                DWDatabaseConditionMaker * maker = nil;
+                if (Dw_id) {
+                    DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
+                        maker.loadClass([model class]);
+                        maker.conditionWith(kUniqueID).equalTo(Dw_id);
+                    };
+                    maker = [DWDatabaseConditionMaker new];
+                    condition(maker);
+                }
+                
+                result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO updateObjectID:YES conditionMaker:maker];
             }
-            result.result = Dw_idFromModel(model);
+            result.result = Dw_id;
             return result;
         }
     }

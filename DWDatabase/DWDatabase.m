@@ -197,7 +197,7 @@
         maker = [DWDatabaseConditionMaker new];
         condition(maker);
     }
-    return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES conditionMaker:maker];
+    return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES updateObjectID:NO conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray *)keys condition:(DWDatabaseConditionHandler)condition {
