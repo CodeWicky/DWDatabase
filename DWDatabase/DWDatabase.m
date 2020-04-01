@@ -145,18 +145,7 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which both are nil.", 10016)];
     }
     
-    NSNumber * Dw_id = nil;
-    if (!condition) {
-        Dw_id = Dw_idFromModel(model);
-        if (!Dw_id) {
-            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
-        }
-        
-        condition = ^(DWDatabaseConditionMaker * maker) {
-            maker.loadClass([model class]);
-            maker.conditionWith(kUniqueID).equalTo(Dw_id);
-        };
-    }
+    
     
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     condition(maker);
@@ -169,13 +158,29 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
     }
     
-    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:cls name:name tableName:tblName path:path];
-    if (!result.success) {
-        return result;
+
+    if (model) {
+        DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
+        if (!result.success) {
+            return result;
+        }
+        DWDatabaseConfiguration * conf = result.result;
+        return [self deleteTableWithModel:model recursive:YES configuration:conf];
+    } else {
+        
+        DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+        Class cls = [maker fetchQueryClass];
+        if (!cls) {
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
+        }
+        DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:cls name:name tableName:tblName path:path];
+        if (!result.success) {
+            return result;
+        }
+        DWDatabaseConfiguration * conf = result.result;
+        return [self dw_deleteTableWithModel:nil dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:nil recursive:NO conditionMaker:maker];
     }
-    
-    DWDatabaseConfiguration * conf = result.result;
-    return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:nil recursive:YES conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys condition:(DWDatabaseConditionHandler)condition {
