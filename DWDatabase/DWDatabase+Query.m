@@ -60,7 +60,7 @@
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     condition(maker);
     
-    result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+    result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:validProInfos databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:YES];
         if (result.success) {
             return nil;
@@ -213,10 +213,11 @@
                 ///这里考虑对象嵌套
                 if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
                     if (recursive && [value isKindOfClass:[NSNumber class]]) {
-                        DWDatabaseResult * existRecord = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
+                        DWDatabaseResult * existRecordResult = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
                         ///这个数据查过，直接赋值
-                        if (existRecord.success) {
-                            [tmp setValue:existRecord.result forKey:obj.name];
+                        if (existRecordResult.success) {
+                            DWDatabaseOperationRecord * existRecord = existRecordResult.result;
+                            [tmp setValue:existRecord.model forKey:obj.name];
                             validValue = YES;
                             ///借用这个标志位记录至少有一个可选值
                             record.operation = DWDatabaseOperationQuery;

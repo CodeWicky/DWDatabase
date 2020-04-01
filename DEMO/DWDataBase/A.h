@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-//#import "C.h"
+@class C;
 @interface A : NSObject
 {
     float c;
@@ -15,6 +15,6 @@
 
 @property (nonatomic ,strong) NSArray * a;
 
-@property (nonatomic ,strong) NSObject * classC;
+@property (nonatomic ,strong) C * classC;
 
 @end

@@ -359,6 +359,7 @@
     C * cModel = [C new];
     cModel.dic = @{@"key":@"value"};
     cModel.classC = cModel;
+    cModel.aNum = 12;
     
     B * bModel = [B new];
     bModel.b = 100;
@@ -380,6 +381,37 @@
         }
     } else {
         NSLog(@"%@",result.error);
+    }
+}
+
+-(void)deleteModelRecursively {
+    
+}
+
+-(void)updateModelRecursively {
+    
+}
+
+-(DWDatabaseResult *)queryModelRecursively {
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+    if (result.success) {
+        DWDatabaseConfiguration * conf = result.result;
+        result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.dw_loadClass(C);
+            maker.dw_conditionWith(aNum).equalTo(12);
+        }];
+        
+        if (result.success) {
+            NSLog(@"%@",result.result);
+            return result.result;
+        } else {
+            NSLog(@"%@",result.error);
+            return nil;
+        }
+        
+    } else {
+        NSLog(@"%@",result.error);
+        return nil;
     }
 }
 
@@ -525,6 +557,21 @@
             [self insertModelRecursiveLy];
         }
             break;
+        case 20:
+        {
+            
+        }
+            break;
+        case 21:
+        {
+            
+        }
+            break;
+        case 22:
+        {
+            [self queryModelRecursively];
+        }
+            break;
         default:
             break;
     }
@@ -565,10 +612,9 @@
             @"查询指定类需要落库的属性信息",
             @"查询指定类指定的属性信息",
             @"递归插入模型",
-            @"模型转字典",
-            @"字典转模型",
-            @"模型嵌套插入",
-            @"模型嵌套查询",
+            @"递归删除模型",
+            @"递归更新模型",
+            @"递归查询模型",
         ].mutableCopy;
     }
     return _dataArr;
