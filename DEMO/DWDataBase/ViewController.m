@@ -38,36 +38,6 @@
     [self configDB];
 }
 
--(void)transformToDictionary {
-    C * classC = [C new];
-    classC.a = @"hello";
-    classC.aNum = 1.f;
-    B * classB = [B new];
-    classB.b = 100;
-    classB.str = [B class];
-    classC.classB = classB;
-    A * classA = [A new];
-    classA.a = @[@1,@2,@3];
-    classB.classA = classA;
-    classC.obj = [NSObject new];
-    classC.array = @[classB];
-    NSDictionary * dic = [classC dw_transformToDictionary];
-    NSLog(@"%@",dic);
-}
-
--(void)transformToModel {
-    C * model = [C dw_modelFromDictionary:@{@"a":@"hello",@"aNum":@(1.f),@"classB":@{@"b":@"100",@"str":@"B",@"classA":@{@"a":@[@1,@2,@3]}},@"array":@[@{@"a":@[@1,@2,@3]},@{@"a":@[@1,@2,@3,@4]}],@"dic":@{@"a":@[@1]},@"modelDic":@{@"a":@{@"a":@[@1,@2,@3,@4]},@"b":@1,@"c":@[@{@"a":@[@1,@2,@3,@4]},@2,@{@"a":@[@1,@2,@3,@4]}]},@"dicFromArray":@[@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]}]}];
-    
-    DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath].result;
-    if (CTblConf) {
-        BOOL success = [self.db insertTableWithModel:model keys:nil recursive:YES configuration:CTblConf];
-        NSLog(@"Insert Success:%d",success);
-    }
-    
-    
-    NSLog(@"%@",model);
-}
-
 -(void)insertAutomatically {
     V * model = [V new];
     model.intNum = -100;
@@ -385,14 +355,69 @@
 }
 
 -(void)deleteModelRecursively {
-    
+    NSArray <C *>* result = [self queryModelRecursively];
+    if (result.count) {
+        C * cModel = result.firstObject;
+        DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+        if (result.success) {
+            DWDatabaseConfiguration * conf = result.result;
+            result = [self.db deleteTableWithModel:cModel recursive:YES configuration:conf];
+            if (result.success) {
+                NSLog(@"%@",result.result);
+            } else {
+                NSLog(@"%@",result.error);
+            }
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    }
 }
 
 -(void)updateModelRecursively {
+    NSArray <C *>* result = [self queryModelRecursively];
+    if (result.count) {
+        C * cModel = result.firstObject;
+        cModel.classB.classA.classC = nil;
+        C * newCModel = [C new];
+        newCModel.a = @"newCModel";
+        cModel.classC = newCModel;
+        DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+        if (result.success) {
+            DWDatabaseConfiguration * conf = result.result;
+            result = [self.db updateTableWithModel:cModel keys:nil recursive:YES configuration:conf condition:nil];
+            if (result.success) {
+                cModel = [self queryModelRecursively].firstObject;
+                NSLog(@"%@",cModel);
+            } else {
+                NSLog(@"%@",result.error);
+            }
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    }
+}
+
+-(void)updateModelRecursivelyWithCondition {
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+    if (result.success) {
+        C * cModel = [self queryModelRecursively].firstObject;
+        cModel.classC = cModel;
+        result = [self.db updateTableWithModel:cModel keys:@[keyPathString(cModel, classC)] recursive:YES configuration:result.result condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.conditionWith(@"classC").equalTo(2);
+        }];
+        
+        if (result.success) {
+            NSLog(@"%@",result.result);
+        } else {
+            NSLog(@"%@",result.error);
+        }
+    } else {
+        NSLog(@"%@",result.error);
+    }
     
 }
 
--(DWDatabaseResult *)queryModelRecursively {
+-(NSArray <C *>*)queryModelRecursively {
     DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
@@ -402,8 +427,11 @@
         }];
         
         if (result.success) {
-            NSLog(@"%@",result.result);
-            return result.result;
+            NSArray <C *>* models = result.result;
+            [models enumerateObjectsUsingBlock:^(C * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                NSLog(@"%@",[DWDatabase fetchDw_idForModel:obj]);
+            }];
+            return models;
         } else {
             NSLog(@"%@",result.error);
             return nil;
@@ -413,6 +441,36 @@
         NSLog(@"%@",result.error);
         return nil;
     }
+}
+
+-(void)transformToModel {
+    C * model = [C dw_modelFromDictionary:@{@"a":@"hello",@"aNum":@(1.f),@"classB":@{@"b":@"100",@"str":@"B",@"classA":@{@"a":@[@1,@2,@3]}},@"array":@[@{@"a":@[@1,@2,@3]},@{@"a":@[@1,@2,@3,@4]}],@"dic":@{@"a":@[@1]},@"modelDic":@{@"a":@{@"a":@[@1,@2,@3,@4]},@"b":@1,@"c":@[@{@"a":@[@1,@2,@3,@4]},@2,@{@"a":@[@1,@2,@3,@4]}]},@"dicFromArray":@[@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]},@{@"a":@[@1,@2,@3,@4]}]}];
+    
+    DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath].result;
+    if (CTblConf) {
+        BOOL success = [self.db insertTableWithModel:model keys:nil recursive:YES configuration:CTblConf];
+        NSLog(@"Insert Success:%d",success);
+    }
+    
+    
+    NSLog(@"%@",model);
+}
+
+-(void)transformToDictionary {
+    C * classC = [C new];
+    classC.a = @"hello";
+    classC.aNum = 1.f;
+    B * classB = [B new];
+    classB.b = 100;
+    classB.str = [B class];
+    classC.classB = classB;
+    A * classA = [A new];
+    classA.a = @[@1,@2,@3];
+    classB.classA = classA;
+    classC.obj = [NSObject new];
+    classC.array = @[classB];
+    NSDictionary * dic = [classC dw_transformToDictionary];
+    NSLog(@"%@",dic);
 }
 
 #pragma mark --- tool method ---
@@ -559,17 +617,32 @@
             break;
         case 20:
         {
-            
+            [self deleteModelRecursively];
         }
             break;
         case 21:
         {
-            
+            [self updateModelRecursively];
         }
             break;
         case 22:
         {
+            [self updateModelRecursivelyWithCondition];
+        }
+            break;
+        case 23:
+        {
             [self queryModelRecursively];
+        }
+            break;
+        case 24:
+        {
+            [self transformToModel];
+        }
+            break;
+        case 25:
+        {
+            [self transformToDictionary];
         }
             break;
         default:
@@ -614,7 +687,10 @@
             @"递归插入模型",
             @"递归删除模型",
             @"递归更新模型",
+            @"以条件递归更新模型",
             @"递归查询模型",
+            @"字典转模型",
+            @"模型转字典",
         ].mutableCopy;
     }
     return _dataArr;

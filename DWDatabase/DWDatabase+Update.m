@@ -92,6 +92,12 @@
                     }];
                     
                     result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO updateObjectID:YES conditionMaker:nil];
+                } else {
+                    NSNumber * Dw_id = nil;
+                    if (model) {
+                        Dw_id = Dw_idFromModel(model);
+                    }
+                    return [DWDatabaseResult successResultWithResult:Dw_id];
                 }
                 return result;
             }
@@ -233,7 +239,16 @@
                                     ///如果未完成，有存在，证明此次作为子节点递归存在，故不需要再次递归更新，仅更新本层即可
                                     DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
                                     if (tblConf) {
-                                        DWDatabaseResult * result = [self dw_updateTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue updateChains:updateChains recursive:NO updateObjectID:NO conditionMaker:nil];
+                                        DWDatabaseConditionMaker * maker = nil;
+                                        if (Dw_id) {
+                                            DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
+                                                maker.conditionWith(kUniqueID).equalTo(Dw_id);
+                                            };
+                                            maker = [DWDatabaseConditionMaker new];
+                                            condition(maker);
+                                        }
+                                        
+                                        DWDatabaseResult * result = [self dw_updateTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue updateChains:updateChains recursive:NO updateObjectID:YES conditionMaker:maker];
                                         if (result.success) {
                                             name = [name stringByAppendingString:@" = ?"];
                                             [validKeys addObject:name];
@@ -285,11 +300,20 @@
                                     }
                                 }
                             }
-                        } else if (updateObjectID && [value isKindOfClass:[NSNumber class]]) {
+                        } else if (updateObjectID) {
                             ///updateObjectID这个标志位是用来标识是否是嵌套插入或者更新后用来更新ID的标志位。因为这种情况下为非嵌套模式，且对应属性是对象类型
-                            name = [name stringByAppendingString:@" = ?"];
-                            [validKeys addObject:name];
-                            [args addObject:value];
+                            if ([value isKindOfClass:[NSNumber class]]) {
+                                name = [name stringByAppendingString:@" = ?"];
+                                [validKeys addObject:name];
+                                [args addObject:value];
+                            } else {
+                                NSNumber * Dw_id = Dw_idFromModel(value);
+                                if (Dw_id) {
+                                    name = [name stringByAppendingString:@" = ?"];
+                                    [validKeys addObject:name];
+                                    [args addObject:Dw_id];
+                                }
+                            }
                         }
                     } else {
                         name = [name stringByAppendingString:@" = ?"];

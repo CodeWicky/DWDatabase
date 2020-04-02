@@ -261,7 +261,7 @@
 -(DWDatabaseResult *)handleQueryRecursiveResultWithDbName:(NSString *)dbName tblName:(NSString *)tblName resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive {
     if (recursive) {
         NSMutableArray * tmp = [NSMutableArray arrayWithCapacity:resultArr.count];
-        for (NSInteger i = resultArr.count - 1; i >= 0; i--) {
+        for (NSInteger i = 0; i < resultArr.count; i++) {
             DWDatabaseOperationRecord * obj = resultArr[i];
             NSObject * model = obj.model;
             if (obj.finishOperationInChain) {

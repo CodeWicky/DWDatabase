@@ -282,7 +282,11 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
             } else {
                 ///尝试做自动类型转换
                 DWPrefix_YYClassPropertyInfo * propertyInfo = self.maker.propertyInfos[key];
-                value = transformValueWithPropertyInfo(self.value, propertyInfo);
+                if (propertyInfo.type == DWPrefix_YYEncodingTypeObject && propertyInfo.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
+                    value = transformValueWithType(self.value, DWPrefix_YYEncodingTypeObject, DWPrefix_YYEncodingTypeNSNumber);
+                } else {
+                    value = transformValueWithPropertyInfo(self.value, propertyInfo);
+                }
             }
             
             if (value) {
@@ -290,7 +294,6 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
             }
             return nil;
         }
-            
     }
 }
 

@@ -166,35 +166,37 @@
         [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             if (obj.name && obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
                 id value = [model dw_valueForPropertyInfo:obj];
-                NSNumber * Dw_id = Dw_idFromModel(value);
-                if (Dw_id) {
-                    NSString * name = propertyInfoTblName(obj, dbTransformMap);
-                    if (name.length) {
-                        DWDatabaseResult * existResult =  [deleteChains existRecordWithModel:value];
-                        if (existResult.success) {
-                            DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
-                            ///如果还没有完成，说明作为子节点，直接以非递归模式删除即可。如果完成了，跳过即可。
-                            if (!operation.finishOperationInChain) {
-                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
-                                if (tblConf) {
-                                    DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO conditionMaker:nil];
-                                    
-                                    if (result.success) {
-                                        operation.finishOperationInChain = YES;
+                if (value) {
+                    NSNumber * Dw_id = Dw_idFromModel(value);
+                    if (Dw_id) {
+                        NSString * name = propertyInfoTblName(obj, dbTransformMap);
+                        if (name.length) {
+                            DWDatabaseResult * existResult =  [deleteChains existRecordWithModel:value];
+                            if (existResult.success) {
+                                DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
+                                ///如果还没有完成，说明作为子节点，直接以非递归模式删除即可。如果完成了，跳过即可。
+                                if (!operation.finishOperationInChain) {
+                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
+                                    if (tblConf) {
+                                        DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO conditionMaker:nil];
+                                        
+                                        if (result.success) {
+                                            operation.finishOperationInChain = YES;
+                                        }
                                     }
                                 }
-                            }
-                        } else {
-                            ///如果不存在，直接走递归删除逻辑
-                            NSString * existTblName = [deleteChains anyRecordInChainWithClass:obj.cls].tblName;
-                            NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
-                            if (inlineTblName.length) {
-                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
-                                if (tblConf) {
-                                    DWDatabaseResult * result = [self _entry_deleteTableWithModel:value configuration:tblConf deleteChains:deleteChains recursive:recursive condition:nil];
-                                    if (result.success) {
-                                        DWDatabaseOperationRecord * record = [deleteChains recordInChainWithModel:value];
-                                        record.finishOperationInChain = YES;
+                            } else {
+                                ///如果不存在，直接走递归删除逻辑
+                                NSString * existTblName = [deleteChains anyRecordInChainWithClass:obj.cls].tblName;
+                                NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
+                                if (inlineTblName.length) {
+                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
+                                    if (tblConf) {
+                                        DWDatabaseResult * result = [self _entry_deleteTableWithModel:value configuration:tblConf deleteChains:deleteChains recursive:recursive condition:nil];
+                                        if (result.success) {
+                                            DWDatabaseOperationRecord * record = [deleteChains recordInChainWithModel:value];
+                                            record.finishOperationInChain = YES;
+                                        }
                                     }
                                 }
                             }
