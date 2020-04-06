@@ -801,21 +801,32 @@
         return result;
     }
     
-    NSString * sql = @"PRAGMA user_version";
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            FMResultSet * set = [db executeQuery:sql];
+            NSNumber * dbVersion = @([db userVersion]);
             result.error = db.lastError;
             ///获取带转换的属性
-            NSNumber * dbVersion = nil;
-            while ([set next] && !dbVersion) {
-                dbVersion = [set objectForColumn:@"user_version"];
-            }
             result.result = dbVersion;
             result.success = dbVersion != nil;
-            [set close];
         }];
     });
+    
+//    NSString * sql = @"PRAGMA user_version";
+//    excuteOnDBOperationQueue(self, ^{
+//        [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+//            [db userVersion];
+//            FMResultSet * set = [db executeQuery:sql];
+//            result.error = db.lastError;
+//            ///获取带转换的属性
+//            NSNumber * dbVersion = nil;
+//            while ([set next] && !dbVersion) {
+//                dbVersion = [set objectForColumn:@"user_version"];
+//            }
+//            result.result = dbVersion;
+//            result.success = dbVersion != nil;
+//            [set close];
+//        }];
+//    });
     return result;
 }
 
@@ -837,16 +848,23 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a the same version as current version:%ld",newVersion], 10024)];
     }
     
-    NSString * sql = [NSString stringWithFormat:@"PRAGMA user_version = %ld",newVersion];
     excuteOnDBOperationQueue(self, ^{
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            FMResultSet * set = [db executeQuery:sql];
+            [db setUserVersion:(uint32_t)newVersion];
             result.error = db.lastError;
+            result.success =  (result.error.code == 0);
             result.result = @(newVersion);
-            result.success = result.error != nil;
-            [set close];
         }];
     });
+    
+//    NSString * sql = [NSString stringWithFormat:@"PRAGMA user_version = %ld",newVersion];
+//    excuteOnDBOperationQueue(self, ^{
+//        [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+//            result.success = [db executeUpdate:sql];
+//            result.error = db.lastError;
+//            result.result = @(newVersion);
+//        }];
+//    });
     
     return result;
 }
