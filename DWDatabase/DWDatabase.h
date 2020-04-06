@@ -522,13 +522,45 @@ NS_ASSUME_NONNULL_BEGIN
  @param conf 数据库句柄
  @return 返回对应数据的模型
  
- @disc 1.此处应传入表名数据库，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）,若操作成功，result字段将携带指定模型
+ @disc 1.此处传入表名数据库句柄，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）,若操作成功，result字段将携带指定模型
      2.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
  */
 -(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
 
 
 #pragma mark ------ 其他 ------
+
+/**
+ 获取指定数据库版本
+ 
+ @param conf 数据库句柄
+ @return 返回查询结果，若查询成功，result中将携带数据库当前版本
+ 
+ @disc 1.此处应传库名数据库句柄
+ */
+-(DWDatabaseResult *)fetchDBVersionWithConfiguration:(DWDatabaseConfiguration *)conf;
+
+/**
+ 升级回调
+ 
+ @param db 待升级的数据库
+ @param currentVersion 指定数据库当前版本
+ @param targetVersion 指定升级到的数据库版本
+ @return 升级后的数据库版本
+ */
+typedef NSInteger(^DWDatabaseUpgradeDBVersionHandler)(DWDatabase * db,NSInteger currentVersion,NSInteger targetVersion);
+/**
+ 升级数据库至指定版本
+ 
+ @param DBVersion 指定升级到的数据库版本
+ @param conf 数据库句柄
+ @param handler 升级回调
+ @return 升级是否成功的结果
+ 
+ @disc 1.此处应传库名数据库句柄
+ */
+-(DWDatabaseResult *)upgradeDBVersion:(NSInteger)DBVersion configuration:(DWDatabaseConfiguration *)conf handler:(DWDatabaseUpgradeDBVersionHandler)handler;
+
 /**
  获取模型的Dw_id，与表中id一一对应。
 
@@ -549,7 +581,7 @@ NS_ASSUME_NONNULL_BEGIN
 @disc 1.只有由框架查询得到的或者是插入到表中成功的model才会存在数据库名称
       2.具有数据库名称的模型从表中删除后会移除模型的数据库名称
 */
-+(NSString *)fetchDbNameForModel:(NSObject *)model;
++(NSString *)fetchDBNameForModel:(NSObject *)model;
 
 /**
 获取模型所在的数据表名称。

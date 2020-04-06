@@ -795,6 +795,62 @@
     return [self _entry_queryTableWithClass:cls Dw_id:Dw_id keys:keys queryChains:nil recursive:recursive configuration:conf];
 }
 
+-(DWDatabaseResult *)fetchDBVersionWithConfiguration:(DWDatabaseConfiguration *)conf {
+    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:NO];
+    if (!result.success) {
+        return result;
+    }
+    
+    NSString * sql = @"PRAGMA user_version";
+    excuteOnDBOperationQueue(self, ^{
+        [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+            FMResultSet * set = [db executeQuery:sql];
+            result.error = db.lastError;
+            ///获取带转换的属性
+            NSNumber * dbVersion = nil;
+            while ([set next] && !dbVersion) {
+                dbVersion = [set objectForColumn:@"user_version"];
+            }
+            result.result = dbVersion;
+            result.success = dbVersion != nil;
+            [set close];
+        }];
+    });
+    return result;
+}
+
+-(DWDatabaseResult *)upgradeDBVersion:(NSInteger)DBVersion configuration:(DWDatabaseConfiguration *)conf handler:(DWDatabaseUpgradeDBVersionHandler)handler {
+    if (!handler) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Upgrade DB fail for sending nil handler.", 10022)];
+    }
+    DWDatabaseResult * result = [self fetchDBVersionWithConfiguration:conf];
+    if (!result.success) {
+        return result;
+    }
+    
+    NSInteger newVersion = handler(self,[result.result integerValue],DBVersion);
+    if (newVersion < 0) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a invalid version:%ld",newVersion], 10023)];
+    }
+    
+    if ([result.result integerValue] == newVersion) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a the same version as current version:%ld",newVersion], 10024)];
+    }
+    
+    NSString * sql = [NSString stringWithFormat:@"PRAGMA user_version = %ld",newVersion];
+    excuteOnDBOperationQueue(self, ^{
+        [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+            FMResultSet * set = [db executeQuery:sql];
+            result.error = db.lastError;
+            result.result = @(newVersion);
+            result.success = result.error != nil;
+            [set close];
+        }];
+    });
+    
+    return result;
+}
+
 +(NSNumber *)fetchDw_idForModel:(NSObject *)model {
     if (!model) {
         return nil;

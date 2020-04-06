@@ -309,7 +309,7 @@
     DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(3) keys:nil recursive:NO configuration:self.tblConf];
     if (result.success) {
         V * model = result.result;
-        NSLog(@"%@,%@,%@",[DWDatabase fetchDw_idForModel:model],[DWDatabase fetchDbNameForModel:model],[DWDatabase fetchTblNameForModel:model]);
+        NSLog(@"%@,%@,%@",[DWDatabase fetchDw_idForModel:model],[DWDatabase fetchDBNameForModel:model],[DWDatabase fetchTblNameForModel:model]);
     } else {
         NSLog(@"%@",result.error);
     }
@@ -440,6 +440,45 @@
     } else {
         NSLog(@"%@",result.error);
         return nil;
+    }
+}
+
+-(void)fetchDBInlineVersion {
+    DWDatabaseResult * result = [self.db fetchDBVersionWithConfiguration:self.tblConf];
+    if (result.success) {
+        NSLog(@"%@",result.result);
+    } else {
+        NSLog(@"%@",result.error);
+    }
+}
+
+-(void)upgradeDBInlineVersion {
+    DWDatabaseResult * result = [self.db upgradeDBVersion:3 configuration:self.tblConf handler:^NSInteger(DWDatabase * _Nonnull db, NSInteger currentVersion, NSInteger targetVersion) {
+        switch (currentVersion) {
+            case 0:
+            {
+                ///这里写0升级至1的代码
+                NSLog(@"升级至1级");
+            }
+            case 1:
+            {
+                NSLog(@"升级至2级");
+            }
+            case 2:
+            {
+                NSLog(@"升级至3级");
+            }
+            default:
+            {
+                return targetVersion;
+            }
+        }
+    }];
+    
+    if (result.success) {
+        NSLog(@"%@",result.result);
+    } else {
+        NSLog(@"%@",result.error);
     }
 }
 
@@ -637,10 +676,20 @@
             break;
         case 24:
         {
-            [self transformToModel];
+            [self fetchDBInlineVersion];
         }
             break;
         case 25:
+        {
+            [self upgradeDBInlineVersion];
+        }
+            break;
+        case 26:
+        {
+            [self transformToModel];
+        }
+            break;
+        case 27:
         {
             [self transformToDictionary];
         }
@@ -689,6 +738,8 @@
             @"递归更新模型",
             @"以条件递归更新模型",
             @"递归查询模型",
+            @"获取数据库内部版本",
+            @"更新数据库内部版本",
             @"字典转模型",
             @"模型转字典",
         ].mutableCopy;
