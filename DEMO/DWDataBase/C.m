@@ -8,6 +8,7 @@
 
 #import "C.h"
 #import <DWDatabase/NSObject+PropertyInfo.h>
+#import <DWDatabase/DWDatabase.h>
 
 @implementation C
 
@@ -18,6 +19,12 @@
         @"array":[A class],
         @"modelDic":[A class],
         @"dicFromArray":@"A",
+    };
+}
+
++(NSDictionary *)dw_databaseFieldDefaultValueMap {
+    return @{
+        @"a":@"hello world",
     };
 }
 

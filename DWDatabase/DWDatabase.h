@@ -114,6 +114,9 @@ NS_ASSUME_NONNULL_BEGIN
 ///模型嵌套对应的表名
 +(nullable NSDictionary *)dw_inlineModelTableNameMap;
 
+///模型建表及自动补充字段时，字段的默认值。字典中key为模型属性名，value为属性建表默认值。
++(nullable NSDictionary *)dw_databaseFieldDefaultValueMap;
+
 @end
 
 @interface DWDatabase : NSObject

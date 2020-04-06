@@ -59,10 +59,11 @@
     if (!sql) {
         ///添加模型表键值转化
         NSDictionary * map = databaseMapFromClass(cls);
+        NSDictionary * defaultValueMap = databaseFieldDefaultValueMapFromClass(cls);
         NSMutableArray * validKeys = [NSMutableArray arrayWithCapacity:0];
         [props enumerateKeysAndObjectsUsingBlock:^(NSString * key, DWPrefix_YYClassPropertyInfo * obj, BOOL * _Nonnull stop) {
             ///转化完成的键名及数据类型
-            NSString * field = tblFieldStringFromPropertyInfo(obj,map);
+            NSString * field = tblFieldStringFromPropertyInfo(obj,map,defaultValueMap);
             if (field.length) {
                 [validKeys addObject:field];
             }

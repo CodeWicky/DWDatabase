@@ -453,7 +453,7 @@
 }
 
 -(void)upgradeDBInlineVersion {
-    DWDatabaseResult * result = [self.db upgradeDBVersion:3 configuration:self.tblConf handler:^NSInteger(DWDatabase * _Nonnull db, NSInteger currentVersion, NSInteger targetVersion) {
+    DWDatabaseResult * result = [self.db upgradeDBVersion:5 configuration:self.tblConf handler:^NSInteger(DWDatabase * _Nonnull db, NSInteger currentVersion, NSInteger targetVersion) {
         switch (currentVersion) {
             case 0:
             {

@@ -312,10 +312,11 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     } else {
         DWDatabaseResult * result = [DWDatabaseResult successResultWithResult:nil];
         NSDictionary * map = databaseMapFromClass(clazz);
+        NSDictionary * defaultValueMap = databaseFieldDefaultValueMapFromClass(clazz);
         NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [DWDatabase propertyInfosWithClass:clazz keys:saveProArray];
         [propertys enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             ///转化完成的键名及数据类型
-            NSString * field = tblFieldStringFromPropertyInfo(obj,map);
+            NSString * field = tblFieldStringFromPropertyInfo(obj,map,defaultValueMap);
             if (field.length) {
                 NSString * sql = [NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@",conf.tableName,field];
                 [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {

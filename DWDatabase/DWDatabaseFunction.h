@@ -14,8 +14,11 @@ NSDictionary * databaseMapFromClass(Class cls);
 ///获取property对应的表名
 NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NSDictionary * databaseMap);
 
+///获取默认字段值对应表
+NSDictionary * databaseFieldDefaultValueMapFromClass(Class cls);
+
 ///以propertyInfo生成对应字段信息
-NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * property,NSDictionary * databaseMap);
+NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * property,NSDictionary * databaseMap,NSDictionary * defaultValueMap);
 
 ///获取键值转换表
 NSDictionary * inlineModelTblNameMapFromClass(Class cls);

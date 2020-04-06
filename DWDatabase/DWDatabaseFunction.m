@@ -37,8 +37,16 @@ NSString * propertyInfoTblName(DWPrefix_YYClassPropertyInfo * property,NSDiction
     return name;
 }
 
+NSDictionary * databaseFieldDefaultValueMapFromClass(Class cls) {
+    NSDictionary * map = nil;
+    if ([cls respondsToSelector:@selector(dw_databaseFieldDefaultValueMap)]) {
+        map = [cls dw_databaseFieldDefaultValueMap];
+    }
+    return map;
+}
+
 ///以propertyInfo生成对应字段信息
-NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * property,NSDictionary * databaseMap) {
+NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * property,NSDictionary * databaseMap,NSDictionary * defaultValueMap) {
     ///如果属性类型不在支持类型中，则返回nil
     if (!supportSavingWithPropertyInfo(property)) {
         return nil;
@@ -47,6 +55,17 @@ NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * propert
     NSString * name = propertyInfoTblName(property, databaseMap);
     if (!name.length) {
         return nil;
+    }
+    
+    id value = nil;
+    if (property.name.length && [defaultValueMap.allKeys containsObject:property.name]) {
+        value = defaultValueMap[property.name];
+        if (value) {
+            value = transformValueWithType(value, property.type, property.nsType);
+            if (value && [value isKindOfClass:[NSData class]]) {
+                value = [[NSString alloc] initWithData:value encoding:(NSUTF8StringEncoding)];
+            }
+        }
     }
 
     ///根据不同类型分配不同的数据类型
@@ -61,13 +80,19 @@ NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * propert
         case DWPrefix_YYEncodingTypeInt64:
         case DWPrefix_YYEncodingTypeUInt64:
         {
-            return [NSString stringWithFormat:@"%@ INTEGER",name];
+            if (!value) {
+                return [NSString stringWithFormat:@"%@ INTEGER",name];
+            }
+            return [NSString stringWithFormat:@"%@ INTEGER DEFAULT %@",name,[value stringValue]];
         }
         case DWPrefix_YYEncodingTypeFloat:
         case DWPrefix_YYEncodingTypeDouble:
         case DWPrefix_YYEncodingTypeLongDouble:
         {
-            return [NSString stringWithFormat:@"%@ REAL",name];
+            if (!value) {
+                return [NSString stringWithFormat:@"%@ REAL",name];
+            }
+            return [NSString stringWithFormat:@"%@ REAL DEFAULT %@",name,[value stringValue]];
         }
         case DWPrefix_YYEncodingTypeObject:
         {
@@ -77,12 +102,18 @@ NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * propert
                 case DWPrefix_YYEncodingTypeNSDate:
                 case DWPrefix_YYEncodingTypeNSURL:
                 {
-                    return [NSString stringWithFormat:@"%@ TEXT",name];
+                    if (!value) {
+                        return [NSString stringWithFormat:@"%@ TEXT",name];
+                    }
+                    return [NSString stringWithFormat:@"%@ TEXT DEFAULT '%@'",name,value];
                 }
                 ///由于建表过程中NSNumber具体值尚未确定，无法推断出整形或浮点型，故此处统一转换为浮点型（因此不推荐使用NSNumber类型数据，建议直接使用基本类型数据）
                 case DWPrefix_YYEncodingTypeNSNumber:
                 {
-                    return [NSString stringWithFormat:@"%@ REAL",name];
+                    if (!value) {
+                        return [NSString stringWithFormat:@"%@ REAL",name];
+                    }
+                    return [NSString stringWithFormat:@"%@ REAL DEFAULT %@",name,[value stringValue]];
                 }
                 case DWPrefix_YYEncodingTypeNSData:
                 case DWPrefix_YYEncodingTypeNSMutableData:
@@ -93,7 +124,10 @@ NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * propert
                 case DWPrefix_YYEncodingTypeNSSet:
                 case DWPrefix_YYEncodingTypeNSMutableSet:
                 {
-                    return [NSString stringWithFormat:@"%@ BLOB",name];
+                    if (!value) {
+                        return [NSString stringWithFormat:@"%@ BLOB",name];
+                    }
+                    return [NSString stringWithFormat:@"%@ BLOB DEFAULT '%@'",name,value];
                 }
                 default:
                     ///此时考虑模型嵌套，直接以index保存另一张表中
@@ -106,7 +140,10 @@ NSString * tblFieldStringFromPropertyInfo(DWPrefix_YYClassPropertyInfo * propert
         case DWPrefix_YYEncodingTypeSEL:
         case DWPrefix_YYEncodingTypeCString:
         {
-            return [NSString stringWithFormat:@"%@ TEXT",name];
+            if (!value) {
+                return [NSString stringWithFormat:@"%@ TEXT",name];
+            }
+            return [NSString stringWithFormat:@"%@ TEXT DEFAULT '%@'",name,value];
         }
         default:
             break;
