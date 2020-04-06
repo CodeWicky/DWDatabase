@@ -340,7 +340,7 @@
     aModel.classC = cModel;
     bModel.classA = aModel;
     
-    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db insertTableWithModel:cModel keys:nil recursive:YES configuration:conf];
@@ -358,7 +358,7 @@
     NSArray <C *>* result = [self queryModelRecursively];
     if (result.count) {
         C * cModel = result.firstObject;
-        DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+        DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
         if (result.success) {
             DWDatabaseConfiguration * conf = result.result;
             result = [self.db deleteTableWithModel:cModel recursive:YES configuration:conf];
@@ -379,9 +379,9 @@
         C * cModel = result.firstObject;
         cModel.classB.classA.classC = nil;
         C * newCModel = [C new];
-        newCModel.a = @"newCModel";
+//        newCModel.a = @"newCModel";
         cModel.classC = newCModel;
-        DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+        DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
         if (result.success) {
             DWDatabaseConfiguration * conf = result.result;
             result = [self.db updateTableWithModel:cModel keys:nil recursive:YES configuration:conf condition:nil];
@@ -398,7 +398,7 @@
 }
 
 -(void)updateModelRecursivelyWithCondition {
-    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
         C * cModel = [self queryModelRecursively].firstObject;
         cModel.classC = cModel;
@@ -418,7 +418,7 @@
 }
 
 -(NSArray <C *>*)queryModelRecursively {
-    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:nil];
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
@@ -497,7 +497,7 @@
 
 -(void)transformToDictionary {
     C * classC = [C new];
-    classC.a = @"hello";
+//    classC.a = @"hello";
     classC.aNum = 1.f;
     B * classB = [B new];
     classB.b = 100;

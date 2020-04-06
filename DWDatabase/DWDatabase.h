@@ -565,6 +565,17 @@ typedef NSInteger(^DWDatabaseUpgradeDBVersionHandler)(DWDatabase * db,NSInteger 
 -(DWDatabaseResult *)upgradeDBVersion:(NSInteger)DBVersion configuration:(DWDatabaseConfiguration *)conf handler:(DWDatabaseUpgradeDBVersionHandler)handler;
 
 /**
+为已存在的数据表增加字段
+
+@param keys 要增加的字段在模型中的属性名
+@param conf 数据库句柄
+@return 字段增加是否成功的结果
+
+@disc 1.此处应传表名数据库句柄
+*/
+-(DWDatabaseResult *)addFieldsToTableWithKeys:(NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
+
+/**
  获取模型的Dw_id，与表中id一一对应。
 
  @param model 指定模型
