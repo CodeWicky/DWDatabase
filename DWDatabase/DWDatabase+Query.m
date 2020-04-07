@@ -423,7 +423,12 @@
         ///条件查询模式，所有值均为查询值，故将条件值加至查询数组
         NSMutableArray * actualQueryKeys = [NSMutableArray arrayWithArray:validQueryKeys];
         if (!queryAll) {
-            [actualQueryKeys addObjectsFromArray:validConditionKeys];
+            ///去重添加
+            [validConditionKeys enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                if (![actualQueryKeys containsObject:obj]) {
+                    [actualQueryKeys addObject:obj];
+                }
+            }];
         }
         
         ///先配置更新值得sql
