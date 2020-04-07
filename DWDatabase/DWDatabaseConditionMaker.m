@@ -499,6 +499,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value,DWDatabaseValueRelation relation) {
     if (!value) {
         NSLog(@"Attemp to create an invalid condition whose value is nil.");
+        maker.currentCondition = nil;
         return maker.conditions.lastObject;
     }
     
