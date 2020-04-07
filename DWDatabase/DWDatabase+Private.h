@@ -108,8 +108,6 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(DWDatabaseResult *)validateConfiguration:(DWDatabaseConfiguration *)conf considerTableName:(BOOL)consider;
 
--(DWDatabaseResult *)supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf;
-
 @end
 
 @interface DWDatabaseConfiguration (Private)

@@ -297,46 +297,6 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     return [self isTableExistWithTableName:conf.tableName configuration:conf];
 }
 
--(DWDatabaseResult *)supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf {
-    NSString * validKey = [NSString stringWithFormat:@"%@%@",conf.dbName,conf.tableName];
-    if ([DWMetaClassInfo hasValidFieldSupplyForClass:clazz withValidKey:validKey]) {
-        return [DWDatabaseResult successResultWithResult:nil];
-    }
-    
-    NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:clazz configuration:conf].result;
-    NSArray * propertyToSaveKey = [DWDatabase propertysToSaveWithClass:clazz];
-    NSArray * saveProArray = minusArray(propertyToSaveKey, allKeysInTbl);
-    if (saveProArray.count == 0) {
-        [DWMetaClassInfo validedFieldSupplyForClass:clazz withValidKey:validKey];
-        return [DWDatabaseResult successResultWithResult:nil];
-    } else {
-        DWDatabaseResult * result = [DWDatabaseResult successResultWithResult:nil];
-        NSDictionary * map = databaseMapFromClass(clazz);
-        NSDictionary * defaultValueMap = databaseFieldDefaultValueMapFromClass(clazz);
-        NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [DWDatabase propertyInfosWithClass:clazz keys:saveProArray];
-        [propertys enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-            ///转化完成的键名及数据类型
-            NSString * field = tblFieldStringFromPropertyInfo(obj,map,defaultValueMap);
-            if (field.length) {
-                NSString * sql = [NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@",conf.tableName,field];
-                [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-                    result.success = [db executeUpdate:sql] && result.success;
-                    result.error = db.lastError;
-                }];
-            } else {
-                result.success = NO;
-                *stop = YES;
-            }
-        }];
-        
-        if (result.success) {
-            [DWMetaClassInfo validedFieldSupplyForClass:clazz withValidKey:validKey];
-        }
-        
-        return result;
-    }
-}
-
 #pragma mark --- setter/getter ---
 -(NSMutableDictionary *)dbqContainer {
     NSMutableDictionary * ctn = objc_getAssociatedObject(self, _cmd);

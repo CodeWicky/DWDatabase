@@ -555,25 +555,40 @@ typedef NSInteger(^DWDatabaseUpgradeDBVersionHandler)(DWDatabase * db,NSInteger 
 /**
  升级数据库至指定版本
  
- @param DBVersion 指定升级到的数据库版本
+ @param targetVersion 指定升级到的数据库版本
  @param conf 数据库句柄
  @param handler 升级回调
  @return 升级是否成功的结果
  
  @disc 1.此处应传库名数据库句柄
  */
--(DWDatabaseResult *)upgradeDBVersion:(NSInteger)DBVersion configuration:(DWDatabaseConfiguration *)conf handler:(DWDatabaseUpgradeDBVersionHandler)handler;
+-(DWDatabaseResult *)upgradeDBVersion:(NSInteger)targetVersion configuration:(DWDatabaseConfiguration *)conf handler:(DWDatabaseUpgradeDBVersionHandler)handler;
 
 /**
-为已存在的数据表增加字段
+ 为指定数据表补充其对应类上缺少的属性字段
+ 
+ @param clazz 数据表对应的类
+ @param conf 数据库句柄
+ @return 补充是否成功结果
+ 
+ @disc 1.此处应传表名数据库句柄
+      2.内部将遍历所有需入库属性，自动补充，任意一个补充失败时立即停止。
+ */
+-(DWDatabaseResult *)supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf;
 
-@param keys 要增加的字段在模型中的属性名
-@param conf 数据库句柄
-@return 字段增加是否成功的结果
-
-@disc 1.此处应传表名数据库句柄
-*/
--(DWDatabaseResult *)addFieldsToTableWithKeys:(NSArray <NSString *>*)keys configuration:(DWDatabaseConfiguration *)conf;
+/**
+ 为指定数据表补充其对应类上指定的属性字段
+ 
+ @param clazz 数据表对应的类
+ @param keys 需补充的属性字段
+ @param conf 数据库句柄
+ @return 补充是否成功结果
+ 
+ @disc 1.此处应传表名数据库句柄
+      2.内部将遍历所有需入库属性，自动补充，任意一个补充失败时立即停止。
+      3.keys中传入的应该是模型的属性名。
+ */
+-(DWDatabaseResult *)addFieldsToTableWithClass:(Class)clazz keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf;
 
 /**
  获取模型的Dw_id，与表中id一一对应。

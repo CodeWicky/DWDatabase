@@ -777,22 +777,6 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
     return info;
 }
 
-+(BOOL)hasValidFieldSupplyForClass:(Class)cls withValidKey:(NSString *)validKey {
-    if (validKey.length == 0) {
-        return NO;
-    }
-    DWMetaClassInfo * classInfo = [self classInfoFromClass:cls];
-    return [classInfo.fieldSupplyValidedSet containsObject:validKey];
-}
-
-+(void)validedFieldSupplyForClass:(Class)cls withValidKey:(NSString *)validKey {
-    if (validKey.length == 0) {
-        return ;
-    }
-    DWMetaClassInfo * classInfo = [self classInfoFromClass:cls];
-    [classInfo.fieldSupplyValidedSet addObject:validKey];
-}
-
 -(void)setupInfoWithClass:(Class)cls {
     if (!cls || !NSStringFromClass(cls)) {
         return;
@@ -861,14 +845,6 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
         }
     }
     return allPropertysInfo;
-}
-
-#pragma mark --- setter/getter ---
--(NSMutableSet *)fieldSupplyValidedSet {
-    if (!_fieldSupplyValidedSet) {
-        _fieldSupplyValidedSet = [NSMutableSet set];
-    }
-    return _fieldSupplyValidedSet;
 }
 
 @end

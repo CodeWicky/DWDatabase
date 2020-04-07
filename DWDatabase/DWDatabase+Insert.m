@@ -8,6 +8,7 @@
 #import "DWDatabase+Insert.h"
 #import "DWDatabaseFunction.h"
 #import "DWDatabase+Update.h"
+#import "DWDatabase+Supply.h"
 
 #define kInsertPrefix (@"i")
 
@@ -19,7 +20,7 @@
     if (!result.success) {
         return result;
     }
-    [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
+
     return [self dw_insertTableWithModel:model dbName:conf.dbName tableName:conf.tableName keys:keys inQueue:conf.dbQueue insertChains:insertChains recursive:recursive];
 }
 

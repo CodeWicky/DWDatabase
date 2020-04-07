@@ -95,15 +95,10 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 @property (nullable, nonatomic, assign, readonly) Class cls;      ///< class object
 @property (nonatomic, strong, readonly) NSString *name; ///< class name
 @property (nullable, nonatomic, strong, readonly) DWMetaClassInfo *superClassInfo; ///< super class's class info
-@property (nonatomic ,strong) NSMutableSet * fieldSupplyValidedSet;
 
 +(instancetype)classInfoFromClass:(Class)cls;
 
 -(NSDictionary<NSString *, DWPrefix_YYClassPropertyInfo *> *)allPropertyInfos;
-
-+(BOOL)hasValidFieldSupplyForClass:(Class)cls withValidKey:(NSString *)validKey;
-
-+(void)validedFieldSupplyForClass:(Class)cls withValidKey:(NSString *)validKey;
 
 @end
 

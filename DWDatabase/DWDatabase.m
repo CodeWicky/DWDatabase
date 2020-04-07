@@ -17,6 +17,7 @@
 #import "DWDatabase+Delete.h"
 #import "DWDatabase+Update.h"
 #import "DWDatabase+Query.h"
+#import "DWDatabase+Supply.h"
 
 
 #define kSqlSetDbName (@"sql_set")
@@ -590,7 +591,6 @@
             }
         } else {
             [factorys addObject:fac];
-            [self supplyFieldIfNeededWithClass:[fac.model class] configuration:conf];
         }
     }];
     
@@ -830,7 +830,7 @@
     return result;
 }
 
--(DWDatabaseResult *)upgradeDBVersion:(NSInteger)DBVersion configuration:(DWDatabaseConfiguration *)conf handler:(DWDatabaseUpgradeDBVersionHandler)handler {
+-(DWDatabaseResult *)upgradeDBVersion:(NSInteger)targetVersion configuration:(DWDatabaseConfiguration *)conf handler:(DWDatabaseUpgradeDBVersionHandler)handler {
     if (!handler) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Upgrade DB fail for sending nil handler.", 10022)];
     }
@@ -839,7 +839,12 @@
         return result;
     }
     
-    NSInteger newVersion = handler(self,[result.result integerValue],DBVersion);
+    NSInteger currentVersion = [result.result integerValue];
+    if (currentVersion <= targetVersion) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Upgrade DB fail for sending the same targetVersion as currentVersion.", 10022)];
+    }
+    
+    NSInteger newVersion = handler(self,currentVersion,targetVersion);
     if (newVersion < 0) {
         return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a invalid version:%ld",newVersion], 10023)];
     }
@@ -869,6 +874,14 @@
     return result;
 }
 
+-(DWDatabaseResult *)supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf {
+    return [self _entry_supplyFieldIfNeededWithClass:clazz configuration:conf];
+}
+
+-(DWDatabaseResult *)addFieldsToTableWithClass:(Class)clazz keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf {
+    return [self _entry_addFieldsToTableWithClass:clazz keys:keys configuration:conf];
+}
+
 +(NSNumber *)fetchDw_idForModel:(NSObject *)model {
     if (!model) {
         return nil;
@@ -876,7 +889,7 @@
     return Dw_idFromModel(model);
 }
 
-+(NSString *)fetchDbNameForModel:(NSObject *)model {
++(NSString *)fetchDBNameForModel:(NSObject *)model {
     if (!model) {
         return nil;
     }

@@ -32,6 +32,8 @@
 		93F4CD3A58916FF087762E1FCB5393BA /* FMResultSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 04B39DCD8C0CC1DBBC41AEB2315AFD00 /* FMResultSet.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		95F24D5773588C131BC55E169AFCDA6C /* DWDatabaseResult.h in Headers */ = {isa = PBXBuildFile; fileRef = 68E0C5E6B1FFEC5DCC831598AFD3411A /* DWDatabaseResult.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		9A9985F822BDDF2234E72BE2A3BAE632 /* DWDatabaseConfiguration.h in Headers */ = {isa = PBXBuildFile; fileRef = D3807FB07A208737F7C02592E5B72F10 /* DWDatabaseConfiguration.h */; settings = {ATTRIBUTES = (Project, ); }; };
+		9B6A9125243C1F09008038D4 /* DWDatabase+Supply.h in Headers */ = {isa = PBXBuildFile; fileRef = 9B6A9123243C1F09008038D4 /* DWDatabase+Supply.h */; };
+		9B6A9126243C1F09008038D4 /* DWDatabase+Supply.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B6A9124243C1F09008038D4 /* DWDatabase+Supply.m */; };
 		A0AD3AFF5408FC7CBF178D8843AC817A /* FMDatabase.h in Headers */ = {isa = PBXBuildFile; fileRef = 7472174DAF6BBEF7F12750C6D7BEBBAF /* FMDatabase.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		AAC8F937C0006F554DC711CD3391784C /* DWDatabase+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = 90B60F3CDABB2A416034128930B1263A /* DWDatabase+Private.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		ACA21161826763706993903D1ECBCB62 /* DWDatabaseHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = 77A854BA998D905C42E4E89945562415 /* DWDatabaseHeader.h */; settings = {ATTRIBUTES = (Project, ); }; };
@@ -82,7 +84,7 @@
 		16D88CC6CB35C4A1C6D492A194345562 /* DWDatabaseConfiguration.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DWDatabaseConfiguration.m; path = DWDatabase/DWDatabaseConfiguration.m; sourceTree = "<group>"; };
 		1A4C6B646B2C4DBD0D304D0118A2B2F5 /* Pods-DWDataBase-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-DWDataBase-dummy.m"; sourceTree = "<group>"; };
 		1F25EFD6E34F93317C91836B265F5D6E /* Pods-DWDataBase-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-DWDataBase-acknowledgements.markdown"; sourceTree = "<group>"; };
-		23CF41B246D7DCC7B0050AB639FE7353 /* libPods-DWDataBase.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "libPods-DWDataBase.a"; path = "libPods-DWDataBase.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		23CF41B246D7DCC7B0050AB639FE7353 /* libPods-DWDataBase.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DWDataBase.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A5EB3E31727185845FB3DEBB229D6E4 /* DWDatabaseConditionMaker.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DWDatabaseConditionMaker.m; path = DWDatabase/DWDatabaseConditionMaker.m; sourceTree = "<group>"; };
 		2AFC221BCDC59C8F261883A739C19CD8 /* DWDatabase.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DWDatabase.m; path = DWDatabase/DWDatabase.m; sourceTree = "<group>"; };
 		2C311051858747D8820BA37D337DFFFE /* NSObject+PropertyInfo.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = "NSObject+PropertyInfo.m"; path = "DWDatabase/NSObject+PropertyInfo.m"; sourceTree = "<group>"; };
@@ -103,7 +105,7 @@
 		77A854BA998D905C42E4E89945562415 /* DWDatabaseHeader.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = DWDatabaseHeader.h; path = DWDatabase/DWDatabaseHeader.h; sourceTree = "<group>"; };
 		793905B05D6A0709443AA12CE7C25F69 /* FMDB-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "FMDB-dummy.m"; sourceTree = "<group>"; };
 		7A4D9B4792096C1F9F9C12E35043E46A /* DWDatabase.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = DWDatabase.h; path = DWDatabase/DWDatabase.h; sourceTree = "<group>"; };
-		7D4DC227730C65075DAAF642130B4503 /* DWDatabase.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; path = DWDatabase.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		7D4DC227730C65075DAAF642130B4503 /* DWDatabase.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = DWDatabase.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		81604AA8C3FCBA861EC72D36F9D69622 /* DWDatabaseMacro.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = DWDatabaseMacro.h; path = DWDatabase/DWDatabaseMacro.h; sourceTree = "<group>"; };
 		90B60F3CDABB2A416034128930B1263A /* DWDatabase+Private.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "DWDatabase+Private.h"; path = "DWDatabase/DWDatabase+Private.h"; sourceTree = "<group>"; };
 		92DE83CFC4AD965441F9AF7CF161BCEA /* FMDatabasePool.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = FMDatabasePool.h; path = src/fmdb/FMDatabasePool.h; sourceTree = "<group>"; };
@@ -111,9 +113,11 @@
 		98C13B78721B1EAE7EB73BB93E94D59B /* NSObject+PropertyInfo.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "NSObject+PropertyInfo.h"; path = "DWDatabase/NSObject+PropertyInfo.h"; sourceTree = "<group>"; };
 		99F594A48CEFF6BC872630519AD75037 /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = FMDatabaseAdditions.h; path = src/fmdb/FMDatabaseAdditions.h; sourceTree = "<group>"; };
 		9A6BFB13779D4D0D3B767EE8E9DADCD7 /* DWDatabase+Insert.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = "DWDatabase+Insert.m"; path = "DWDatabase/DWDatabase+Insert.m"; sourceTree = "<group>"; };
-		9D940727FF8FB9C785EB98E56350EF41 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
-		A3A80BA70CFB7F75C5391BEBBBA8C9DA /* libFMDB.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libFMDB.a; path = libFMDB.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		AC98F580131B71C7B3D3C71855BA843E /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; path = LICENSE; sourceTree = "<group>"; };
+		9B6A9123243C1F09008038D4 /* DWDatabase+Supply.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "DWDatabase+Supply.h"; path = "DWDatabase/DWDatabase+Supply.h"; sourceTree = "<group>"; };
+		9B6A9124243C1F09008038D4 /* DWDatabase+Supply.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "DWDatabase+Supply.m"; path = "DWDatabase/DWDatabase+Supply.m"; sourceTree = "<group>"; };
+		9D940727FF8FB9C785EB98E56350EF41 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		A3A80BA70CFB7F75C5391BEBBBA8C9DA /* libFMDB.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libFMDB.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC98F580131B71C7B3D3C71855BA843E /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		B77BCD5A4D892DFD64B2EED65D5AD70F /* FMDatabaseQueue.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = FMDatabaseQueue.m; path = src/fmdb/FMDatabaseQueue.m; sourceTree = "<group>"; };
 		BB78117E3180C3C71E13BCFE94F3F7CF /* Pods-DWDataBase.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-DWDataBase.release.xcconfig"; sourceTree = "<group>"; };
 		BB94DB4323DD462EF1BD54A960C5F8F4 /* FMDatabasePool.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = FMDatabasePool.m; path = src/fmdb/FMDatabasePool.m; sourceTree = "<group>"; };
@@ -123,12 +127,12 @@
 		CED1A9E0311E260A3634D3A9D0C0550D /* FMDB.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = FMDB.h; path = src/fmdb/FMDB.h; sourceTree = "<group>"; };
 		D3807FB07A208737F7C02592E5B72F10 /* DWDatabaseConfiguration.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = DWDatabaseConfiguration.h; path = DWDatabase/DWDatabaseConfiguration.h; sourceTree = "<group>"; };
 		D477AD583D740D44C422FCB68BADDFAF /* DWDatabase+Update.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "DWDatabase+Update.h"; path = "DWDatabase/DWDatabase+Update.h"; sourceTree = "<group>"; };
-		E505B21495A50C083DDF842125F8457D /* libDWDatabase.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libDWDatabase.a; path = libDWDatabase.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		E505B21495A50C083DDF842125F8457D /* libDWDatabase.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libDWDatabase.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF7C8504890B6BA06DF61EE6AA96D619 /* FMDB.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = FMDB.xcconfig; sourceTree = "<group>"; };
 		F5155D5FC9872C13802F4550D40019D3 /* DWDatabase+CreateTable.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = "DWDatabase+CreateTable.h"; path = "DWDatabase/DWDatabase+CreateTable.h"; sourceTree = "<group>"; };
 		F584754D18C77DD6A37A3FE5C10BF868 /* DWDatabaseFunction.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DWDatabaseFunction.m; path = DWDatabase/DWDatabaseFunction.m; sourceTree = "<group>"; };
 		F6AA36B01C8F569431011A8C82BD75F8 /* DWDatabase+Query.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = "DWDatabase+Query.m"; path = "DWDatabase/DWDatabase+Query.m"; sourceTree = "<group>"; };
-		F7953B99955DD78BF13470F58320D383 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; path = README.md; sourceTree = "<group>"; };
+		F7953B99955DD78BF13470F58320D383 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -180,7 +184,6 @@
 				5BD47F4415FE534B8495A748025B75DD /* standard */,
 				9571596E789F53AB471B80B60FBE0140 /* Support Files */,
 			);
-			name = FMDB;
 			path = FMDB;
 			sourceTree = "<group>";
 		};
@@ -265,6 +268,8 @@
 				9A6BFB13779D4D0D3B767EE8E9DADCD7 /* DWDatabase+Insert.m */,
 				90B60F3CDABB2A416034128930B1263A /* DWDatabase+Private.h */,
 				0FF8C88B86D55C2CB3C4930FBE94AC98 /* DWDatabase+Private.m */,
+				9B6A9123243C1F09008038D4 /* DWDatabase+Supply.h */,
+				9B6A9124243C1F09008038D4 /* DWDatabase+Supply.m */,
 				4298514056263C80231B43CCE8085895 /* DWDatabase+Query.h */,
 				F6AA36B01C8F569431011A8C82BD75F8 /* DWDatabase+Query.m */,
 				D477AD583D740D44C422FCB68BADDFAF /* DWDatabase+Update.h */,
@@ -345,6 +350,7 @@
 				ACA21161826763706993903D1ECBCB62 /* DWDatabaseHeader.h in Headers */,
 				7A5C32117D1B88E5C98CD7A99BA4B1D5 /* DWDatabaseMacro.h in Headers */,
 				95F24D5773588C131BC55E169AFCDA6C /* DWDatabaseResult.h in Headers */,
+				9B6A9125243C1F09008038D4 /* DWDatabase+Supply.h in Headers */,
 				3260235B48229F59AEB42C4CB61B6894 /* NSObject+PropertyInfo.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -473,6 +479,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9B6A9126243C1F09008038D4 /* DWDatabase+Supply.m in Sources */,
 				7196DCC7C3626B4779FC522B8953A95D /* DWDatabase+CreateTable.m in Sources */,
 				093873153419C95192189C05E85B802F /* DWDatabase+Delete.m in Sources */,
 				13D88C8711EBFA701E65851F61B57A34 /* DWDatabase+Insert.m in Sources */,

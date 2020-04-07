@@ -453,30 +453,39 @@
 }
 
 -(void)upgradeDBInlineVersion {
-    DWDatabaseResult * result = [self.db upgradeDBVersion:5 configuration:self.tblConf handler:^NSInteger(DWDatabase * _Nonnull db, NSInteger currentVersion, NSInteger targetVersion) {
-        switch (currentVersion) {
-            case 0:
-            {
-                ///这里写0升级至1的代码
-                NSLog(@"升级至1级");
-            }
-            case 1:
-            {
-                NSLog(@"升级至2级");
-            }
-            case 2:
-            {
-                NSLog(@"升级至3级");
-            }
-            default:
-            {
-                return targetVersion;
-            }
-        }
-    }];
-    
+    __block DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
-        NSLog(@"%@",result.result);
+        result = [self.db upgradeDBVersion:1 configuration:result.result handler:^NSInteger(DWDatabase * _Nonnull db, NSInteger currentVersion, NSInteger targetVersion) {
+            switch (currentVersion) {
+                case 0:
+                {
+                    ///这里写0升级至1的代码
+                    result = [db addFieldsToTableWithClass:[C class] keys:@[@"a"] configuration:result.result];
+                    if (!result.success) {
+                        NSLog(@"%@",result.error);
+                        return 0;
+                    }
+                }
+                case 1:
+                {
+                    NSLog(@"升级至2级");
+                }
+                case 2:
+                {
+                    NSLog(@"升级至3级");
+                }
+                default:
+                {
+                    return targetVersion;
+                }
+            }
+        }];
+        
+        if (result.success) {
+            NSLog(@"%@",result.result);
+        } else {
+            NSLog(@"%@",result.error);
+        }
     } else {
         NSLog(@"%@",result.error);
     }

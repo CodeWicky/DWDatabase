@@ -9,6 +9,7 @@
 #import "DWDatabaseFunction.h"
 #import "DWDatabase+Insert.h"
 #import "DWDatabase.h"
+#import "DWDatabase+Supply.h"
 
 #define kUpdatePrefix (@"u")
 
@@ -20,7 +21,6 @@
     if (!result.success) {
         return result;
     }
-    [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
     
     if (!condition) {
         NSNumber * Dw_id = Dw_idFromModel(model);
