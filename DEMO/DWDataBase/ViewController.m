@@ -12,6 +12,7 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
+
 #define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
 //#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
@@ -521,6 +522,18 @@
     NSLog(@"%@",dic);
 }
 
+-(void)test {
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+    maker.dw_loadClass(C);
+    maker.dw_conditionWith(classB.classA.classC).equalTo(1);
+    Class cls = [maker fetchQueryClass];
+    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
+    NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
+    [maker configWithPropertyInfos:propertyInfos databaseMap:nil];
+    [maker make];
+    NSLog(@"%@",[maker fetchConditions]);
+}
+
 #pragma mark --- tool method ---
 -(void)setupUI {
     self.view.backgroundColor = [UIColor lightGrayColor];
@@ -704,6 +717,9 @@
         }
             break;
         default:
+        {
+            [self test];
+        }
             break;
     }
 }
@@ -751,6 +767,7 @@
             @"更新数据库内部版本",
             @"字典转模型",
             @"模型转字典",
+            @"测试",
         ].mutableCopy;
     }
     return _dataArr;

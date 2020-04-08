@@ -367,7 +367,9 @@
     if (queryAll) {
         [validQueryKeys addObject:@"*"];
     } else {
-        [validQueryKeys addObject:kUniqueID];
+        if (![validQueryKeys containsObject:kUniqueID]) {
+            [validQueryKeys addObject:kUniqueID];
+        }
         [self handleQueryValidKeysWithPropertyInfos:queryKeysProInfos map:map validKeysContainer:validQueryKeys];
         if (validQueryKeys.count == 1) {
             NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to query.",NSStringFromClass(cls)];
