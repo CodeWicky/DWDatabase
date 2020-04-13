@@ -118,7 +118,7 @@
     NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
     NSDictionary * map = databaseMapFromClass(cls);
     NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
-    [maker configWithTblName:tblName propertyInfos:propertyInfos databaseMap:map];
+    [maker configWithTblName:tblName propertyInfos:propertyInfos databaseMap:map enableSubProperty:NO];
     [maker make];
     [args addObjectsFromArray:[maker fetchArguments]];
     [conditionStrings addObjectsFromArray:[maker fetchConditions]];

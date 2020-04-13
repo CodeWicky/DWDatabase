@@ -109,6 +109,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 
 @property (nonatomic ,strong) NSMutableDictionary * inlineTblDataBaseMap;
 
+@property (nonatomic ,assign) BOOL subPropertyEnabled;
+
 @end
 
 @implementation DWDatabaseCondition
@@ -124,16 +126,17 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
     [self.validKeys removeAllObjects];
     NSMutableArray * conditionStrings = @[].mutableCopy;
     __block BOOL hasSubProperty = self.maker.hasSubProperty;
+    BOOL subPropertyEnabled = self.maker.subPropertyEnabled;
     
     ///不包含副属性的话，要先检测是否包含，包含的话就不用检测了。第一个condition就包含副属性的话，能优化后续条件的组装过程
-    if (hasSubProperty) {
+    if (!subPropertyEnabled || hasSubProperty) {
         [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
             DWDatabaseConditionValueWrapper * wrapper = [self conditionValuesWithKey:obj];
             if (!wrapper) {
                 return ;
             }
             ///如果当前记录
-            if (!hasSubProperty && wrapper.subProperty) {
+            if (subPropertyEnabled && !hasSubProperty && wrapper.subProperty) {
                 hasSubProperty = YES;
             }
             wrapper.key = obj;
@@ -394,7 +397,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
                     ///一级属性
                     return [self valueWithPropertyInfo:propertyInfo subProperty:NO tblName:self.maker.tblName fieldName:fieldName];
                 } else {
-                    if (self.maker.clazz) {
+                    if (self.maker.subPropertyEnabled && self.maker.clazz) {
                         ///二级属性
                         return [self subPropertyValueWithKey:key tblName:self.maker.tblName];
                     }
@@ -854,10 +857,11 @@ NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * make
 
 @implementation DWDatabaseConditionMaker (Private)
 
--(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap {
+-(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty {
     _tblName = tblName;
     _propertyInfos = [propertyInfos copy];
     _databaseMap = [databaseMap copy];
+    _subPropertyEnabled = enableSubProperty;
 }
 
 -(void)make {

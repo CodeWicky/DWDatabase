@@ -528,12 +528,7 @@
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
-            maker.dw_conditionWith(classB.classA.classC).equalTo(1);
-        }];
-        
-        result = [self.db deleteTableWithConfiguration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.dw_loadClass(C);
-            maker.dw_conditionWith(classB.classA.classC).equalTo(1);
+            maker.dw_conditionWith(classB.classA.classC).equalTo(2);
         }];
         
         if (result.success) {

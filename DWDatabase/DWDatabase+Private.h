@@ -134,7 +134,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 @interface DWDatabaseConditionMaker (Private)
 
--(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)propertyInfos databaseMap:(NSDictionary *)databaseMap;
+-(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty;
 
 -(void)make;
 
