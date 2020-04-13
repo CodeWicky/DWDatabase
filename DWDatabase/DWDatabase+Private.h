@@ -121,3 +121,47 @@ static void* dbOpQKey = "dbOperationQueueKey";
 -(instancetype)initWithName:(NSString *)name tblName:(NSString * )tblName dbq:(FMDatabaseQueue *)dbq;
 
 @end
+
+@interface DWPrefix_YYClassPropertyInfo (Private)
+
+@property (nonatomic ,weak) NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* subPropertyInfos;
+
+@end
+
+@interface DWDatabaseConditionMaker (Private)
+
+-(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)propertyInfos databaseMap:(NSDictionary *)databaseMap;
+
+-(void)make;
+
+-(NSArray *)fetchValidKeys;
+
+-(NSArray *)fetchArguments;
+
+-(NSArray *)fetchConditions;
+
+-(NSArray *)fetchJoinTables;
+
+-(Class)fetchQueryClass;
+
+@end
+
+@interface DWDatabaseConditionValueWrapper : NSObject
+
+@property (nonatomic ,strong) DWPrefix_YYClassPropertyInfo * propertyInfo;
+
+@property (nonatomic ,strong) id value;
+
+@property (nonatomic ,assign) BOOL subProperty;
+
+@property (nonatomic ,assign) BOOL multiValue;
+
+@property (nonatomic ,assign ,readonly) NSInteger valueCount;
+
+@property (nonatomic ,copy) NSString * tblName;
+
+@property (nonatomic ,copy) NSString * fieldName;
+
+@property (nonatomic ,copy) NSString * key;
+
+@end

@@ -12,6 +12,7 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
+#import <DWDatabase/DWDatabase+Private.h>
 
 #define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
@@ -523,15 +524,26 @@
 }
 
 -(void)test {
-    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-    maker.dw_loadClass(C);
-    maker.dw_conditionWith(classB.classA.classC).equalTo(1);
-    Class cls = [maker fetchQueryClass];
-    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
-    NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
-    [maker configWithPropertyInfos:propertyInfos databaseMap:nil];
-    [maker make];
-    NSLog(@"%@",[maker fetchConditions]);
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
+    if (result.success) {
+        DWDatabaseConfiguration * conf = result.result;
+        result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.dw_loadClass(C);
+            maker.dw_conditionWith(classB.classA.classC).equalTo(1);
+        }];
+        
+        if (result.success) {
+            NSArray <C *>* models = result.result;
+            [models enumerateObjectsUsingBlock:^(C * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                NSLog(@"%@",[DWDatabase fetchDw_idForModel:obj]);
+            }];
+        } else {
+            NSLog(@"%@",result.error);
+        }
+        
+    } else {
+        NSLog(@"%@",result.error);
+    }
 }
 
 #pragma mark --- tool method ---

@@ -8,6 +8,8 @@
 #import "DWDatabaseConditionMaker.h"
 #import "DWDatabaseMacro.h"
 #import "DWDatabaseFunction.h"
+#import <objc/runtime.h>
+#import "DWDatabase+Private.h"
 
 typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
     DWDatabaseValueRelationEqual,
@@ -36,7 +38,15 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 
 @interface DWDatabaseCondition ()
 
+@property (nonatomic ,copy) NSString * conditionString;
+
+@property (nonatomic ,strong) NSMutableArray <NSString *>* validKeys;
+
+@property (nonatomic ,strong) NSMutableArray * arguments;
+
 @property (nonatomic ,strong) NSMutableArray <NSString *>* conditionKeys;
+
+@property (nonatomic ,strong) NSMutableSet * joinTables;
 
 @property (nonatomic ,assign) DWDatabaseValueRelation relation;
 
@@ -77,6 +87,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 
 @property (nonatomic ,assign) DWDatabaseConditionLogicalOperator conditionOperator;
 
+@property (nonatomic ,strong) NSString * tblName;
+
 @property (nonatomic ,copy ,readonly) NSDictionary * propertyInfos;
 
 @property (nonatomic ,strong) NSDictionary * databaseMap;
@@ -86,6 +98,16 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 @property (nonatomic ,strong) NSMutableArray * arguments;
 
 @property (nonatomic ,strong) NSMutableArray * conditionStrings;
+
+@property (nonatomic ,strong) NSMutableSet * joinTables;
+
+@property (nonatomic ,assign) BOOL hasSubProperty;
+
+@property (nonatomic ,strong) NSMutableDictionary * inlineTblNameMap;
+
+@property (nonatomic ,strong) NSMutableDictionary * inlineTblMapCtn;
+
+@property (nonatomic ,strong) NSMutableDictionary * inlineTblDataBaseMap;
 
 @end
 
@@ -101,44 +123,98 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 -(void)make {
     [self.validKeys removeAllObjects];
     NSMutableArray * conditionStrings = @[].mutableCopy;
-    [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSArray * values = [self conditionValuesWithKey:obj];
-        
-        if (!values.count) {
-            return ;
-        }
-        
-        NSString * conditionString = [self conditioinStringWithKey:obj valueCount:values.count];
-        
-        if (!conditionString) {
-            return ;
-        }
-        
-        NSString * tblName = nil;
-        if ([obj isEqualToString:kUniqueID]) {
-            tblName = kUniqueID;
-        } else {
-            DWPrefix_YYClassPropertyInfo * property = self.maker.propertyInfos[obj];
-            tblName = propertyInfoTblName(property, self.maker.databaseMap);
-        }
-        
+    __block BOOL hasSubProperty = self.maker.hasSubProperty;
+    
+    ///不包含副属性的话，要先检测是否包含，包含的话就不用检测了。第一个condition就包含副属性的话，能优化后续条件的组装过程
+    if (hasSubProperty) {
+        [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            DWDatabaseConditionValueWrapper * wrapper = [self conditionValuesWithKey:obj];
+            if (!wrapper) {
+                return ;
+            }
+            ///如果当前记录
+            if (!hasSubProperty && wrapper.subProperty) {
+                hasSubProperty = YES;
+            }
+            wrapper.key = obj;
+            
+            NSString * conditionString = [self conditioinStringWithPropertyWrapper:wrapper valueCount:wrapper.valueCount hasSubProperty:hasSubProperty];
+            
+            if (!conditionString) {
+                return ;
+            }
+            
+            if (!wrapper.subProperty) {
+                ///目前validKeys进查询的时候用，为了合并查询键值。所以这里如果是副属性，不添加至validKeys，因为查询的时候也用不到
 
-        if (!tblName.length) {
-            return;
-        }
-
-        [self.validKeys addObject:tblName];
-        ///Null不需要添加参数
-        if (self.relation != DWDatabaseValueRelationIsNull && self.relation != DWDatabaseValueRelationNotNull) {
-            [self.arguments addObjectsFromArray:values];
-        }
-        [conditionStrings addObject:conditionString];
-
-    }];
+                if (!wrapper.fieldName.length) {
+                    return;
+                }
+                
+                [self.validKeys addObject:wrapper.fieldName];
+            }
+            ///Null不需要添加参数
+            if (self.relation != DWDatabaseValueRelationIsNull && self.relation != DWDatabaseValueRelationNotNull) {
+                if (wrapper.multiValue) {
+                    [self.arguments addObjectsFromArray:wrapper.value];
+                } else {
+                    [self.arguments addObject:wrapper.value];
+                }
+            }
+            [conditionStrings addObject:conditionString];
+        }];
+    } else {
+        NSMutableArray <DWDatabaseConditionValueWrapper *>* wrappers = @[].mutableCopy;
+        ///现根据propertyValue的状态获取所有合法的value及对应的wrapper
+        [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            DWDatabaseConditionValueWrapper * wrapper = [self conditionValuesWithKey:obj];
+            if (!wrapper) {
+                return ;
+            }
+            ///如果当前记录
+            if (!hasSubProperty && wrapper.subProperty) {
+                hasSubProperty = YES;
+            }
+            wrapper.key = obj;
+            [wrappers addObject:wrapper];
+        }];
+        
+        ///根据wrapper获取条件字符串
+        [wrappers enumerateObjectsUsingBlock:^(DWDatabaseConditionValueWrapper * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            NSString * conditionString = [self conditioinStringWithPropertyWrapper:obj valueCount:obj.valueCount hasSubProperty:hasSubProperty];
+            
+            if (!conditionString) {
+                return ;
+            }
+            
+            if (!obj.subProperty) {
+                ///目前validKeys进查询的时候用，为了合并查询键值。所以这里如果是副属性，不添加至validKeys，因为查询的时候也用不到
+                if (!obj.fieldName.length) {
+                    return;
+                }
+                
+                [self.validKeys addObject:obj.fieldName];
+            }
+            ///Null不需要添加参数
+            if (self.relation != DWDatabaseValueRelationIsNull && self.relation != DWDatabaseValueRelationNotNull) {
+                if (obj.multiValue) {
+                    [self.arguments addObjectsFromArray:obj.value];
+                } else {
+                    [self.arguments addObject:obj.value];
+                }
+            }
+            [conditionStrings addObject:conditionString];
+        }];
+    }
+    
     if (conditionStrings.count) {
         _conditionString = [conditionStrings componentsJoinedByString:@" AND "];
     } else {
         _conditionString = @"";
+    }
+    
+    if (!self.maker.hasSubProperty && hasSubProperty) {
+        self.maker.hasSubProperty = YES;
     }
 }
 
@@ -186,28 +262,33 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 }
 
 #pragma mark --- tool method ---
--(NSString *)conditioinStringWithKey:(NSString *)key valueCount:(NSInteger)valueCount {
-    ///如果在属性列表中或者是dw_id都视为合法
-    if (![self.maker.propertyInfos.allKeys containsObject:key] && ![key isEqualToString:kUniqueID]) {
+-(NSString *)conditioinStringWithPropertyWrapper:(DWDatabaseConditionValueWrapper *)wrapper valueCount:(NSInteger)valueCount hasSubProperty:(BOOL)hasSubProperty  {
+    if (!wrapper) {
         return nil;
     }
+
+    NSString * fieldName = wrapper.fieldName;
+    if (hasSubProperty) {
+        fieldName = [wrapper.tblName stringByAppendingFormat:@".%@",fieldName];
+    }
+    
     switch (self.relation) {
         case DWDatabaseValueRelationEqual:
-            return [NSString stringWithFormat:@"%@ = ?",key];
+            return [NSString stringWithFormat:@"%@ = ?",fieldName];
         case DWDatabaseValueRelationNotEqual:
-            return [NSString stringWithFormat:@"%@ != ?",key];
+            return [NSString stringWithFormat:@"%@ != ?",fieldName];
         case DWDatabaseValueRelationGreater:
-            return [NSString stringWithFormat:@"%@ > ?",key];
+            return [NSString stringWithFormat:@"%@ > ?",fieldName];
         case DWDatabaseValueRelationLess:
-            return [NSString stringWithFormat:@"%@ < ?",key];
+            return [NSString stringWithFormat:@"%@ < ?",fieldName];
         case DWDatabaseValueRelationGreaterOrEqual:
-            return [NSString stringWithFormat:@"%@ >= ?",key];
+            return [NSString stringWithFormat:@"%@ >= ?",fieldName];
         case DWDatabaseValueRelationLessOrEqual:
-            return [NSString stringWithFormat:@"%@ <= ?",key];
+            return [NSString stringWithFormat:@"%@ <= ?",fieldName];
         case DWDatabaseValueRelationInValues:
         {
             if (valueCount > 0) {
-                NSString * tmp = [NSString stringWithFormat:@"%@ IN (",key];
+                NSString * tmp = [NSString stringWithFormat:@"%@ IN (",fieldName];
                 for (int i = 0; i < valueCount; ++i) {
                     tmp = [tmp stringByAppendingString:@"?,"];
                 }
@@ -220,7 +301,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
         case DWDatabaseValueRelationNotInValues:
         {
             if (valueCount > 0) {
-                NSString * tmp = [NSString stringWithFormat:@"%@ NOT IN (",key];
+                NSString * tmp = [NSString stringWithFormat:@"%@ NOT IN (",fieldName];
                 for (int i = 0; i < valueCount; ++i) {
                     tmp = [tmp stringByAppendingString:@"?,"];
                 }
@@ -231,34 +312,50 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
             return nil;
         }
         case DWDatabaseValueRelationLike:
-            return [NSString stringWithFormat:@"%@ LIKE ?",key];
+            return [NSString stringWithFormat:@"%@ LIKE ?",fieldName];
         case DWDatabaseValueRelationBetween:
-            return [NSString stringWithFormat:@"%@ BETWEEN ? AND ?",key];
+            return [NSString stringWithFormat:@"%@ BETWEEN ? AND ?",fieldName];
         case DWDatabaseValueRelationIsNull:
-            return [NSString stringWithFormat:@"%@ IS NULL",key];
+            return [NSString stringWithFormat:@"%@ IS NULL",fieldName];
         case DWDatabaseValueRelationNotNull:
-            return [NSString stringWithFormat:@"%@ IS NOT NULL",key];
+            return [NSString stringWithFormat:@"%@ IS NOT NULL",fieldName];
         default:
             return nil;
     }
 }
 
--(NSArray *)conditionValuesWithKey:(NSString *)key {
+-(DWDatabaseConditionValueWrapper *)conditionValuesWithKey:(NSString *)key {
     if (!self.value || !key.length) {
         return nil;
     }
+    DWPrefix_YYClassPropertyInfo * propertyInfo = self.maker.propertyInfos[key];
+    DWDatabaseConditionValueWrapper * wrapper = nil;
+    NSString * fieldName = [self tblFieldNameForKey:key dataBaseMap:self.maker.databaseMap propertyInfo:propertyInfo];
     switch (self.relation) {
         case DWDatabaseValueRelationBetween:
         {
+            if (!propertyInfo) {
+                return nil;
+            }
+            wrapper = [DWDatabaseConditionValueWrapper new];
+            wrapper.propertyInfo = propertyInfo;
             if ([self.value isKindOfClass:[NSValue class]]) {
                 if (strcmp([self.value objCType], @encode(DWBetweenFloatValue)) == 0) {
                     DWBetweenFloatValue betweenValue;
                     [self.value getValue:&betweenValue];
-                    return @[@(betweenValue.start),@(betweenValue.end)];
+                    wrapper.value = @[@(betweenValue.start),@(betweenValue.end)];
+                    wrapper.multiValue = YES;
+                    wrapper.tblName = self.maker.tblName;
+                    wrapper.fieldName = fieldName;
+                    return wrapper;
                 } else if (strcmp([self.value objCType], @encode(DWBetweenIntegerValue)) == 0) {
                     DWBetweenIntegerValue betweenValue;
                     [self.value getValue:&betweenValue];
-                    return @[@(betweenValue.start),@(betweenValue.end)];
+                    wrapper.value = @[@(betweenValue.start),@(betweenValue.end)];
+                    wrapper.multiValue = YES;
+                    wrapper.tblName = self.maker.tblName;
+                    wrapper.fieldName = fieldName;
+                    return wrapper;
                 } else {
                     return nil;
                 }
@@ -268,35 +365,189 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
         case DWDatabaseValueRelationInValues:
         case DWDatabaseValueRelationNotInValues:
         {
+            if (!propertyInfo) {
+                return nil;
+            }
             if ([self.value isKindOfClass:[NSArray class]] && [self.value count] > 0) {
-                return self.value;
+                wrapper = [DWDatabaseConditionValueWrapper new];
+                wrapper.propertyInfo = propertyInfo;
+                wrapper.value = self.value;
+                wrapper.multiValue = YES;
+                wrapper.tblName = self.maker.tblName;
+                wrapper.fieldName = fieldName;
+                return wrapper;
             }
             return nil;
         }
         default:
         {
-            id value = nil;
             ///转换成number
             if ([key isEqualToString:kUniqueID]) {
-                value = transformValueWithType(self.value, DWPrefix_YYEncodingTypeObject, DWPrefix_YYEncodingTypeNSNumber);
+                DWDatabaseConditionValueWrapper * wrapper = [DWDatabaseConditionValueWrapper new];
+                wrapper.value = transformValueWithType(self.value, DWPrefix_YYEncodingTypeObject, DWPrefix_YYEncodingTypeNSNumber);
+                wrapper.tblName = self.maker.tblName;
+                wrapper.fieldName = fieldName;
+                return wrapper;
             } else {
                 ///尝试做自动类型转换
-                DWPrefix_YYClassPropertyInfo * propertyInfo = self.maker.propertyInfos[key];
-                if (propertyInfo.type == DWPrefix_YYEncodingTypeObject && propertyInfo.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                    value = transformValueWithType(self.value, DWPrefix_YYEncodingTypeObject, DWPrefix_YYEncodingTypeNSNumber);
+                if (propertyInfo) {
+                    ///一级属性
+                    return [self valueWithPropertyInfo:propertyInfo subProperty:NO tblName:self.maker.tblName fieldName:fieldName];
                 } else {
-                    value = transformValueWithPropertyInfo(self.value, propertyInfo);
+                    if (self.maker.clazz) {
+                        ///二级属性
+                        return [self subPropertyValueWithKey:key tblName:self.maker.tblName];
+                    }
+                    ///没有class的话，无法构建二级条件
+                    return nil;
                 }
             }
-            
-            if (value) {
-                return @[value];
-            }
-            return nil;
         }
     }
 }
 
+-(DWDatabaseConditionValueWrapper *)valueWithPropertyInfo:(DWPrefix_YYClassPropertyInfo *)propertyInfo subProperty:(BOOL)subPropertyInfo tblName:(NSString *)tblName fieldName:(NSString *)fieldName {
+    DWDatabaseConditionValueWrapper * wrapper = [DWDatabaseConditionValueWrapper new];
+    wrapper.propertyInfo = propertyInfo;
+    wrapper.subProperty = subPropertyInfo;
+    wrapper.tblName = tblName;
+    wrapper.fieldName = fieldName;
+    if (propertyInfo.type == DWPrefix_YYEncodingTypeObject && propertyInfo.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
+        wrapper.value = transformValueWithType(self.value, DWPrefix_YYEncodingTypeObject, DWPrefix_YYEncodingTypeNSNumber);
+    } else {
+        wrapper.value = transformValueWithPropertyInfo(self.value, propertyInfo);
+    }
+    return wrapper;
+}
+
+-(DWDatabaseConditionValueWrapper *)subPropertyValueWithKey:(NSString *)key tblName:(NSString *)tblName {
+    
+    if (![self validateSubPropertyInfoKey:key]) {
+        return nil;
+    }
+    
+    NSArray * seperatedKeys = [self seperatePropertyKey:key];
+    NSString * mainPropertyKey = seperatedKeys.firstObject;
+    NSString * subPropertyKey = seperatedKeys.lastObject;
+    
+    DWPrefix_YYClassPropertyInfo * propertyInfo = self.maker.propertyInfos[mainPropertyKey];
+    if (!propertyInfo) {
+        return nil;
+    }
+    
+    return [self subPropertyValueWithMainProperty:propertyInfo dataBaseMap:self.maker.databaseMap subPropertyKey:subPropertyKey tblName:tblName];
+}
+
+-(DWDatabaseConditionValueWrapper *)subPropertyValueWithMainProperty:(DWPrefix_YYClassPropertyInfo *)mainPropertyInfo dataBaseMap:(NSDictionary *)dataBaseMap subPropertyKey:(NSString *)subPropertyKey tblName:(NSString *)tblName {
+    if (!mainPropertyInfo) {
+        return nil;
+    }
+    if (!subPropertyKey.length) {
+        return nil;
+    }
+    
+    NSString * classkey = NSStringFromClass(mainPropertyInfo.cls);///此处取嵌套模型对应地表名
+    NSDictionary * inlineTblNameMap = self.maker.inlineTblMapCtn[classkey];
+    if (!inlineTblNameMap) {
+        inlineTblNameMap = inlineModelTblNameMapFromClass(mainPropertyInfo.cls);
+        self.maker.inlineTblMapCtn[classkey] = inlineTblNameMap;
+    }
+    
+    NSString * inlineTblName = self.maker.inlineTblNameMap[classkey];
+    if (!inlineTblName) {
+        inlineTblName = inlineModelTblName(mainPropertyInfo, inlineTblNameMap, tblName,nil);
+        self.maker.inlineTblNameMap[classkey] = inlineTblName;
+    }
+    
+    if (!inlineTblName.length) {
+        return nil;
+    }
+    
+    NSString * joinFieldName = propertyInfoTblName(mainPropertyInfo, dataBaseMap);
+    if (!joinFieldName.length) {
+        return nil;
+    }
+    
+    if ([subPropertyKey isEqualToString:kUniqueID]) {
+        DWDatabaseConditionValueWrapper * wrapper = [DWDatabaseConditionValueWrapper new];
+        wrapper.value = transformValueWithType(self.value, DWPrefix_YYEncodingTypeObject, DWPrefix_YYEncodingTypeNSNumber);
+        wrapper.subProperty = YES;
+        wrapper.tblName = inlineTblName;
+        wrapper.fieldName = kUniqueID;
+        [self.joinTables addObject:[NSString stringWithFormat:@"LEFT JOIN %@ ON %@.%@ = %@.%@",inlineTblName,inlineTblName,kUniqueID,tblName,joinFieldName]];
+        return wrapper;
+    }
+    
+    NSDictionary * subPropertyInfos = mainPropertyInfo.subPropertyInfos;
+    if (!subPropertyInfos) {
+        subPropertyInfos = [[DWDatabase shareDB] propertyInfosForSaveKeysWithClass:mainPropertyInfo.cls];
+        mainPropertyInfo.subPropertyInfos = subPropertyInfos;
+    }
+    
+    if (!subPropertyInfos) {
+        return nil;
+    }
+    
+    DWPrefix_YYClassPropertyInfo * propertyInfo = subPropertyInfos[subPropertyKey];
+    dataBaseMap = self.maker.inlineTblDataBaseMap[classkey];
+    if (!dataBaseMap) {
+        dataBaseMap = databaseMapFromClass(mainPropertyInfo.cls);
+        self.maker.inlineTblDataBaseMap[classkey] = dataBaseMap;
+    }
+    
+    if (propertyInfo) {
+        NSString * fieldName = propertyInfoTblName(propertyInfo, dataBaseMap);
+        [self.joinTables addObject:[NSString stringWithFormat:@"LEFT JOIN %@ ON %@.%@ = %@.%@",inlineTblName,inlineTblName,kUniqueID,tblName,joinFieldName]];
+        return [self valueWithPropertyInfo:propertyInfo subProperty:YES tblName:inlineTblName fieldName:fieldName];
+    }
+    
+    if (![self validateSubPropertyInfoKey:subPropertyKey]) {
+        return nil;
+    }
+    
+    NSArray * seperatedKeys = [self seperatePropertyKey:subPropertyKey];
+    NSString * mainPropertyKey = seperatedKeys.firstObject;
+    subPropertyKey = seperatedKeys.lastObject;
+    
+    propertyInfo = subPropertyInfos[mainPropertyKey];
+    if (!propertyInfo) {
+        return nil;
+    }
+    [self.joinTables addObject:[NSString stringWithFormat:@"LEFT JOIN %@ ON %@.%@ = %@.%@",inlineTblName,inlineTblName,kUniqueID,tblName,joinFieldName]];
+    return [self subPropertyValueWithMainProperty:propertyInfo dataBaseMap:dataBaseMap subPropertyKey:subPropertyKey tblName:inlineTblName];
+}
+
+-(BOOL)validateSubPropertyInfoKey:(NSString *)key {
+    ///不包含子属性，所以不可能取到转换value
+    if (![key containsString:@"."]) {
+        return NO;
+    }
+    
+    ///头部或尾部是点，也不是合法的子属性
+    if ([key hasPrefix:@"."] || [key hasSuffix:@"."]) {
+        return NO;
+    }
+    
+    return YES;
+}
+
+-(NSArray <NSString *>*)seperatePropertyKey:(NSString *)key {
+    NSArray * components = [key componentsSeparatedByString:@"."];
+    NSString * mainPropertyKey = components.firstObject;
+    NSString * subPropertyKey = [key substringFromIndex:mainPropertyKey.length + 1];
+    return @[mainPropertyKey,subPropertyKey];
+}
+
+-(NSString *)tblFieldNameForKey:(NSString *)key dataBaseMap:(NSDictionary *)dataBaseMap propertyInfo:(DWPrefix_YYClassPropertyInfo *)propertyInfo {
+    if (!key.length) {
+        return nil;
+    }
+    if ([key isEqualToString:kUniqueID]) {
+        return key;
+    }
+    
+    return propertyInfoTblName(propertyInfo, dataBaseMap);
+}
 
 #pragma mark --- override ---
 -(NSString *)description {
@@ -326,6 +577,13 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
     return _arguments;
 }
 
+-(NSMutableSet *)joinTables {
+    if (!_joinTables) {
+        _joinTables = [NSMutableSet set];
+    }
+    return _joinTables;
+}
+
 @end
 
 @implementation DWDatabaseOperateCondition
@@ -346,6 +604,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
         [self.validKeys addObjectsFromArray:self.conditionA.validKeys];
         [self.arguments addObjectsFromArray:self.conditionA.arguments];
         [self.arguments addObjectsFromArray:self.conditionB.arguments];
+        [self.joinTables addObjectsFromArray:[self.conditionA.joinTables allObjects]];
+        [self.joinTables addObjectsFromArray:[self.conditionB.joinTables allObjects]];
         _conditionString = [NSString stringWithFormat:@"(%@ %@ %@)",conditionString1,self.combineOperator == DWDatabaseConditionLogicalOperatorAnd?@"AND":@"OR",conditionString2];
     } else {
         _conditionString = @"";
@@ -569,11 +829,33 @@ NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * make
     return _currentCondition;
 }
 
+-(NSMutableDictionary *)inlineTblNameMap {
+    if (!_inlineTblNameMap) {
+        _inlineTblNameMap = [NSMutableDictionary dictionary];
+    }
+    return _inlineTblNameMap;
+}
+
+-(NSMutableDictionary *)inlineTblMapCtn {
+    if (!_inlineTblMapCtn) {
+        _inlineTblMapCtn = [NSMutableDictionary dictionary];
+    }
+    return _inlineTblMapCtn;
+}
+
+-(NSMutableDictionary *)inlineTblDataBaseMap {
+    if (_inlineTblDataBaseMap) {
+        _inlineTblDataBaseMap = [NSMutableDictionary dictionary];
+    }
+    return _inlineTblDataBaseMap;
+}
+
 @end
 
 @implementation DWDatabaseConditionMaker (Private)
 
--(void)configWithPropertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(nonnull NSDictionary *)databaseMap {
+-(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap {
+    _tblName = tblName;
     _propertyInfos = [propertyInfos copy];
     _databaseMap = [databaseMap copy];
 }
@@ -582,6 +864,12 @@ NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * make
     self.validKeys = nil;
     self.arguments = nil;
     self.conditionStrings = nil;
+    self.inlineTblNameMap = nil;
+    self.inlineTblDataBaseMap = nil;
+    self.inlineTblMapCtn = nil;
+    NSString * classString = NSStringFromClass(self.clazz);
+    self.inlineTblDataBaseMap[classString] = self.databaseMap;
+    self.inlineTblNameMap[classString] = self.tblName;
     __block BOOL initialized = NO;
     [self.conditions enumerateObjectsUsingBlock:^(DWDatabaseCondition * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         [obj make];
@@ -591,10 +879,12 @@ NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * make
                 self.validKeys = @[].mutableCopy;
                 self.arguments = @[].mutableCopy;
                 self.conditionStrings = @[].mutableCopy;
+                self.joinTables = [NSMutableSet set];
             }
             [self.conditionStrings addObject:obj.conditionString];
             [self.arguments addObjectsFromArray:obj.arguments];
             [self.validKeys addObjectsFromArray:obj.validKeys];
+            [self.joinTables addObjectsFromArray:[obj.joinTables allObjects]];
         }
     }];
     
@@ -618,6 +908,10 @@ NS_INLINE DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * make
 
 -(Class)fetchQueryClass {
     return self.clazz;
+}
+
+-(NSArray *)fetchJoinTables {
+    return [self.joinTables allObjects];
 }
 
 @end

@@ -314,29 +314,25 @@
 #pragma mark --- tool method ---
 -(DWDatabaseResult *)querySQLFactoryWithTblName:(NSString *)tblName keys:(NSArray *)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending conditionMaker:(DWDatabaseConditionMaker *)maker {
     
-    ///获取条件字段组并获取本次的class
-    NSMutableArray * args = @[].mutableCopy;
-    NSMutableArray * conditionStrings = @[].mutableCopy;
-    NSMutableArray * validConditionKeys = @[].mutableCopy;
-    Class cls;
-    NSArray * saveKeys = nil;
-    NSDictionary * map = nil;
-    if (maker) {
-        cls = [maker fetchQueryClass];
-        if (!cls) {
-            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
-        }
-        saveKeys = [DWDatabase propertysToSaveWithClass:cls];
-        map = databaseMapFromClass(cls);
-        NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
-        [maker configWithPropertyInfos:propertyInfos databaseMap:map];
-        [maker make];
-        [args addObjectsFromArray:[maker fetchArguments]];
-        [conditionStrings addObjectsFromArray:[maker fetchConditions]];
-        [validConditionKeys addObjectsFromArray:[maker fetchValidKeys]];
-    } else {
+    if (!maker) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
+    
+    ///获取条件字段组并获取本次的class
+    Class cls = [maker fetchQueryClass];
+    if (!cls) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+    }
+    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
+    NSDictionary * map = databaseMapFromClass(cls);
+    NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
+    [maker configWithTblName:tblName propertyInfos:propertyInfos databaseMap:map];
+    [maker make];
+    
+    NSArray * args = [maker fetchArguments];
+    NSArray * conditionStrings = [maker fetchConditions];
+    NSArray * validConditionKeys = [maker fetchValidKeys];
+    NSArray * joinTables = [maker fetchJoinTables];
     
     BOOL queryAll = NO;
     ///如果keys为空则试图查询cls与表对应的所有键值
@@ -390,6 +386,9 @@
     ///先尝试取缓存的sql(这里要考虑数组顺序的影响，由于validQueryKeys是由字典遍历后过滤得来的，所以顺序可以保证。conditionStrings为查询条件字段，由于目前只能从maker中获取，故顺序收maker中编写顺序影响，故应对conditionStrings做排序后再行拼装)
     ///获取sql拼装数组
     NSArray * sqlCombineArray = combineArrayWithExtraToSort(validQueryKeys,conditionStrings);
+    if (joinTables.count) {
+        sqlCombineArray = combineArrayWithExtraToSort(sqlCombineArray, joinTables);
+    }
     NSString * cacheSqlKey = [self sqlCacheKeyWithPrefix:kQueryPrefix class:cls tblName:tblName keys:sqlCombineArray];
     
     ///有排序添加排序
@@ -408,6 +407,11 @@
     if (!orderField.length) {
         orderField = kUniqueID;
     }
+    
+    if (joinTables.count) {
+        orderField = [NSString stringWithFormat:@"%@.%@",tblName,orderField];
+    }
+    
     cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-%@-%@",orderField,ascending?@"ASC":@"DESC"]];
     
     if (limit > 0) {
@@ -433,8 +437,20 @@
             }];
         }
         
+        if (joinTables.count > 0) {
+            NSMutableArray * tmp = [NSMutableArray arrayWithCapacity:actualQueryKeys.count];
+            [actualQueryKeys enumerateObjectsUsingBlock:^(NSString * obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                [tmp addObject:[NSString stringWithFormat:@"%@.%@",tblName,obj]];
+            }];
+            actualQueryKeys = tmp;
+        }
+        
         ///先配置更新值得sql
         sql = [NSString stringWithFormat:@"SELECT %@ FROM %@",[actualQueryKeys componentsJoinedByString:@","],tblName];
+        
+        if (joinTables.count > 0) {
+            sql = [sql stringByAppendingFormat:@" %@",[joinTables componentsJoinedByString:@" "]];
+        }
         
         ///如果有有效条件时拼装条件值，若无有效条件时且有有效条件字典时拼装有效条件字符串
         if (conditionStrings.count) {

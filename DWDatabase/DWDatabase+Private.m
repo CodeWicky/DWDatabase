@@ -340,3 +340,26 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
 }
 
 @end
+
+@implementation DWPrefix_YYClassPropertyInfo (Maker)
+
+-(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)subPropertyInfos {
+    return objc_getAssociatedObject(self, _cmd);
+}
+
+-(void)setSubPropertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)subPropertyInfos {
+    objc_setAssociatedObject(self, @selector(subPropertyInfos), subPropertyInfos, OBJC_ASSOCIATION_ASSIGN);
+}
+
+@end
+
+@implementation DWDatabaseConditionValueWrapper
+
+-(NSInteger)valueCount {
+    if (self.multiValue && [self.value isKindOfClass:[NSArray class]]) {
+        return [self.value count];
+    }
+    return 1;
+}
+
+@end

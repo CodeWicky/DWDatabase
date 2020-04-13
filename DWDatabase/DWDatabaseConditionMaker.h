@@ -19,12 +19,6 @@ typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 
 @interface DWDatabaseCondition : NSObject
 
-@property (nonatomic ,copy) NSString * conditionString;
-
-@property (nonatomic ,strong) NSMutableArray <NSString *>* validKeys;
-
-@property (nonatomic ,strong) NSMutableArray * arguments;
-
 ///以就近原则按照先前指定的逻辑关系组合调用此函数处之前的两个条件
 @property (nonatomic ,copy) DWDatabaseConditionCombine combine;
 
@@ -87,23 +81,7 @@ typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 
 @end
 
-@interface DWDatabaseConditionMaker (Private)
-
--(void)configWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)propertyInfos databaseMap:(NSDictionary *)databaseMap;
-
--(void)make;
-
--(NSArray *)fetchValidKeys;
-
--(NSArray *)fetchArguments;
-
--(NSArray *)fetchConditions;
-
--(Class)fetchQueryClass;
-
-@end
-
-///没后实际意义，只为了提供自动提示
+///没有实际意义，只为了提供自动提示
 @interface DWDatabaseConditionMaker (AutoTip)
 
 @property (nonatomic ,copy) DWDatabaseConditionClass dw_loadClass;

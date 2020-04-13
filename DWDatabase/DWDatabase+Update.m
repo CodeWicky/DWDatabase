@@ -130,6 +130,7 @@
     Class cls = [maker fetchQueryClass];
     if (!cls && model) {
         cls = [model class];
+        maker.loadClass(cls);
     }
     
     if (!cls) {
@@ -153,15 +154,13 @@
     ///配置查询条件
     NSMutableArray * conditionArgs = @[].mutableCopy;
     NSMutableArray * conditionStrings = @[].mutableCopy;
-    NSMutableArray * validConditionKeys = @[].mutableCopy;
     NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
     NSDictionary * databaseMap = databaseMapFromClass(cls);
     NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
-    [maker configWithPropertyInfos:propertyInfos databaseMap:databaseMap];
+    [maker configWithTblName:tblName propertyInfos:propertyInfos databaseMap:databaseMap];
     [maker make];
     [conditionArgs addObjectsFromArray:[maker fetchArguments]];
     [conditionStrings addObjectsFromArray:[maker fetchConditions]];
-    [validConditionKeys addObjectsFromArray:[maker fetchValidKeys]];
     
     ///无有效插入值
     if (!conditionStrings.count) {
