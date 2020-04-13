@@ -341,7 +341,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
 
 @end
 
-@implementation DWPrefix_YYClassPropertyInfo (Maker)
+@implementation DWPrefix_YYClassPropertyInfo (Private)
 
 -(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)subPropertyInfos {
     return objc_getAssociatedObject(self, _cmd);
@@ -349,6 +349,22 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
 
 -(void)setSubPropertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)subPropertyInfos {
     objc_setAssociatedObject(self, @selector(subPropertyInfos), subPropertyInfos, OBJC_ASSOCIATION_ASSIGN);
+}
+
+-(NSString *)tblName {
+    return objc_getAssociatedObject(self, _cmd);
+}
+
+-(void)setTblName:(NSString *)tblName {
+    objc_setAssociatedObject(self, @selector(tblName), tblName, OBJC_ASSOCIATION_COPY_NONATOMIC);
+}
+
+-(NSString *)inlineModelTblName {
+    return objc_getAssociatedObject(self, _cmd);
+}
+
+-(void)setInlineModelTblName:(NSString *)inlineModelTblName {
+    objc_setAssociatedObject(self, @selector(inlineModelTblName), inlineModelTblName, OBJC_ASSOCIATION_COPY_NONATOMIC);
 }
 
 @end

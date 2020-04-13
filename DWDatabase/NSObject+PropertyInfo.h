@@ -80,10 +80,6 @@ typedef NS_ENUM (NSUInteger, DWPrefix_YYEncodingNSType) {
 
 @property (nullable, nonatomic ,assign ,readonly) Class genericClass;///< indicates the container property's generic Class if you have set.
 
-@property (nonatomic ,copy) NSString * tblName;                   ///<property name in table
-
-@property (nonatomic ,copy) NSString * inlineModelTblName;///<table name for inline model
-
 - (instancetype)initWithProperty:(objc_property_t)property;
 
 @end

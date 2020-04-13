@@ -126,6 +126,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 @property (nonatomic ,weak) NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* subPropertyInfos;
 
+@property (nonatomic ,copy) NSString * tblName;
+
+@property (nonatomic ,copy) NSString * inlineModelTblName;
+
 @end
 
 @interface DWDatabaseConditionMaker (Private)
