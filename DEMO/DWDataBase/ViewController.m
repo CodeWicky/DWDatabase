@@ -12,7 +12,6 @@
 #import "C.h"
 
 #import <DWDatabase/DWDatabaseHeader.h>
-#import <DWDatabase/DWDatabase+Private.h>
 
 #define dbPath @"/Users/momo/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
@@ -528,6 +527,11 @@
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.dw_loadClass(C);
+            maker.dw_conditionWith(classB.classA.classC).equalTo(1);
+        }];
+        
+        result = [self.db deleteTableWithConfiguration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(classB.classA.classC).equalTo(1);
         }];
