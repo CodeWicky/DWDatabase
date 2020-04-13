@@ -457,7 +457,7 @@ NS_ASSUME_NONNULL_BEGIN
  @return 返回查询结果
  
  @disc 1.此处传入表名数据库句柄
-       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
+       2.keys中均应该是查询类对应模型的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
        3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_dataBaseWhiteList 和 +dw_dataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        4.当limit为大于0的数是将作为查询条数上限，为0时查询条数无上限
        5.当offset为大于0的数是将作为查询的起始点，例如offset为10，当查询结果有20条符合条件的数据，将返回后10条数据。
@@ -465,8 +465,18 @@ NS_ASSUME_NONNULL_BEGIN
        7.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
        8.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
        9.condition为构造查询条件的构造器，condition与clazz不能同时为空
-       10.返回的数组中将以传入的clazz的实例作为数据载体
-       11.若操作成功，result字段中将携带结果数组
+       10.condition中支持副属性作为条件查询，具体见如下示例代码
+       11.返回的数组中将以传入的clazz的实例作为数据载体
+       12.若操作成功，result字段中将携带结果数组
+ 
+ @eg. :
+       [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+           maker.dw_loadClass(A);
+           maker.dw_conditionWith(ObjectProp.intNum).equalTo(2);
+       }];
+ 
+    示例中查询模型类为A，类A包含一个ObjectProp属性，属性的类为B。B包含一个intNum属性，属性的类型为整形。
+    示例中查询嵌套表中，所有A中ObjectProp对应的B表中，intNum为2的A的结果集合。
  */
 
 -(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
@@ -499,7 +509,7 @@ NS_ASSUME_NONNULL_BEGIN
  @return 返回查询结果
  
  @disc 1.此处传入表名数据库句柄
-       2.keys中均应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
+       2.keys中均应该是查询类对应模型的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
        3.将从数据表中查询keys中指定的字段的数据信息，当其为nil时将把根据 +dw_dataBaseWhiteList 和 +dw_dataBaseBlackList 计算出的所有落库字段的数据信息均查询出来
        4.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
        5.返回的数组中将以传入的cls的实例作为数据载体
@@ -517,10 +527,8 @@ NS_ASSUME_NONNULL_BEGIN
  @return 返回是否查询成功
  
  @disc 1.此处传入表名数据库句柄
-       2.model将作为数据承载的载体
-       3.conditionKeys应该是model的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
-       4.将根据conditionKeys从model中取出对应数值作为查询条件，当其为nil时将返回整个数据表中指定字段的信息
-       5.若查询成功，result字段将携带个数（NSNumber）
+      2.condition中的key应该是查询类对应模型的属性的字段名，框架内部将根据 +dw_modelKeyToDataBaseMap  自动将其转化为对应表中相应的字段名，若model未实现 +dw_modelKeyToDataBaseMap 协议方法则字段名不做转化
+      3.若查询成功，result字段将携带个数（NSNumber）
  */
 -(DWDatabaseResult *)queryTableForCountWithClass:(nullable Class)cls configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
