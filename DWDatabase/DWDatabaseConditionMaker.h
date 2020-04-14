@@ -28,8 +28,6 @@ typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 ///添加一个或条件（下一个添加的条件与当前条件为或 关系）
 -(DWDatabaseConditionMaker *)or;
 
--(void)make;
-
 @end
 
 @interface DWDatabaseConditionMaker : NSObject

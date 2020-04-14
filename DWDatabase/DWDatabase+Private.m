@@ -368,14 +368,3 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
 }
 
 @end
-
-@implementation DWDatabaseConditionValueWrapper
-
--(NSInteger)valueCount {
-    if (self.multiValue && [self.value isKindOfClass:[NSArray class]]) {
-        return [self.value count];
-    }
-    return 1;
-}
-
-@end

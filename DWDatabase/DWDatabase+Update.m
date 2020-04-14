@@ -10,6 +10,7 @@
 #import "DWDatabase+Insert.h"
 #import "DWDatabase.h"
 #import "DWDatabase+Supply.h"
+#import "DWDatabaseConditionMaker+Private.h"
 
 #define kUpdatePrefix (@"u")
 

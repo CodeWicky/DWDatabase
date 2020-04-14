@@ -18,6 +18,7 @@
 #import "DWDatabase+Update.h"
 #import "DWDatabase+Query.h"
 #import "DWDatabase+Supply.h"
+#import "DWDatabaseConditionMaker+Private.h"
 
 
 #define kSqlSetDbName (@"sql_set")

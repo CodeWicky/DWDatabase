@@ -7,6 +7,7 @@
 
 #import "DWDatabase+Delete.h"
 #import "DWDatabaseFunction.h"
+#import "DWDatabaseConditionMaker+Private.h"
 
 #define kDeletePrefix (@"d")
 

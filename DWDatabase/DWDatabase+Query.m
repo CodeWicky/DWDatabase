@@ -7,7 +7,7 @@
 
 #import "DWDatabase+Query.h"
 #import "DWDatabaseFunction.h"
-
+#import "DWDatabaseConditionMaker+Private.h"
 #define kQueryPrefix (@"q")
 
 @implementation DWDatabase (Query)
