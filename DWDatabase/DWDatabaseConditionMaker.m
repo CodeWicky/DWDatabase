@@ -89,7 +89,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseConditionLogicalOperator) {
 
 @property (nonatomic ,strong) NSString * tblName;
 
-@property (nonatomic ,copy ,readonly) NSDictionary * propertyInfos;
+@property (nonatomic ,strong) NSDictionary * propertyInfos;
 
 @property (nonatomic ,strong) NSDictionary * databaseMap;
 
