@@ -69,7 +69,7 @@
 @end
 
 @implementation DWDatabaseConditionMaker (Private)
-@dynamic conditions;
+@dynamic conditions,bindKeys;
 
 #pragma mark --- interface method ---
 -(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty {
@@ -328,6 +328,10 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 
 -(void)setInlineTblDataBaseMap:(NSMutableDictionary *)inlineTblDataBaseMap {
     DWDatabaseSetValue(inlineTblDataBaseMap);
+}
+
+-(NSMutableArray *)bindKeys {
+    return DWDatabaseLazyValue(bindKeys, NSMutableArray, array);
 }
 
 @end

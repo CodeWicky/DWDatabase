@@ -195,9 +195,18 @@
     };
 }
 
+-(DWDatabaseBindKey)bindKey {
+    return ^(NSString * key) {
+        if (key.length) {
+            [self.bindKeys addObject:key];
+        }
+        return self;
+    };
+}
+
 @end
 
 @implementation DWDatabaseConditionMaker (AutoTip)
-@dynamic dw_loadClass,dw_conditionWith;
+@dynamic dw_loadClass,dw_conditionWith,dw_bindKey;
 
 @end

@@ -529,6 +529,7 @@
         result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(aNum).equalTo(12).or.dw_conditionWith(classB).equalTo(1).combine();
+            maker.dw_bindKey(aNum);
         }];
         
         

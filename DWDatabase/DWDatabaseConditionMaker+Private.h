@@ -66,6 +66,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 @property (nonatomic ,strong) NSMutableDictionary * inlineTblDataBaseMap;
 
+@property (nonatomic ,strong) NSMutableArray * bindKeys;
+
 -(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty;
 
 -(void)make;

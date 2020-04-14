@@ -16,6 +16,7 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionValue)(id value);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionVoidValue)(void);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
+typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKey)(NSString * key);
 
 @interface DWDatabaseCondition : NSObject
 
@@ -77,6 +78,14 @@ typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 ///指定当前条件为非Null值字段
 @property (nonatomic ,copy) DWDatabaseConditionVoidValue notNull;
 
+///4.绑定操作键值
+///为后续操作绑定相关键值。例如：
+///(1).插入方法中，指定需要插入表的属性名
+///(2).更新方法中，指定需要更新表的属性名
+///(3).查询方法中，指定需要查询表的属性名
+///若不绑定键值，将默认操作表中所有的字段
+@property (nonatomic ,copy) DWDatabaseBindKey bindKey;
+
 @end
 
 ///没有实际意义，只为了提供自动提示
@@ -85,6 +94,8 @@ typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 @property (nonatomic ,copy) DWDatabaseConditionClass dw_loadClass;
 
 @property (nonatomic ,copy) DWDatabaseConditionKey dw_conditionWith;
+
+@property (nonatomic ,copy) DWDatabaseBindKey dw_bindKey;
 
 @end
 

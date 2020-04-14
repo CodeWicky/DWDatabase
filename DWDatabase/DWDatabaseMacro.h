@@ -154,4 +154,7 @@ loadClass = nil
 ///快速为创建的条件添加一个非空值
 #define notNull() notNull()
 
+///快速为当前操作绑定操作键值
+#define dw_bindKey(key) bindKey(keyPathString(loadClass,key))
+
 #endif /* DWDatabaseMacro_h */
