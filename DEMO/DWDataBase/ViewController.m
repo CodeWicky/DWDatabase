@@ -531,6 +531,9 @@
             maker.dw_conditionWith(classB.classA.classC).equalTo(2);
         }];
         
+        
+        NSLog(@"aaa");
+        NSLog(@"bbbb");
         if (result.success) {
             NSArray <C *>* models = result.result;
             [models enumerateObjectsUsingBlock:^(C * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
