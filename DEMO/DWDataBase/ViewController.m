@@ -528,8 +528,9 @@
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
-            maker.dw_conditionWith(aNum).equalTo(12).or.dw_conditionWith(classB).equalTo(1);
+            maker.dw_conditionWith(aNum).equalTo(12).or.dw_conditionWith(classB).equalTo(1).combine();
         }];
+        
         
         if (result.success) {
             NSArray <C *>* models = result.result;
