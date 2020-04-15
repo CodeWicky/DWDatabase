@@ -133,6 +133,10 @@
     return [self.joinTables allObjects];
 }
 
+-(NSArray *)fetchBindKeys {
+    return [self.bindKeys copy];
+}
+
 -(DWDatabaseCondition *)installConditionWithValue:(id)value relation:(DWDatabaseValueRelation)relation {
     return installCondition(self, value, relation);
 }

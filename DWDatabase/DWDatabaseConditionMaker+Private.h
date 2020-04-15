@@ -82,6 +82,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 -(Class)fetchQueryClass;
 
+-(NSArray *)fetchBindKeys;
+
 -(DWDatabaseCondition *)installConditionWithValue:(id)value relation:(DWDatabaseValueRelation)relation;
 
 @end
