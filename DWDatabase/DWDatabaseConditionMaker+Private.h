@@ -86,6 +86,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 -(DWDatabaseCondition *)installConditionWithValue:(id)value relation:(DWDatabaseValueRelation)relation;
 
+-(void)reset;
+
 @end
 
 @interface DWDatabaseCondition (Private)

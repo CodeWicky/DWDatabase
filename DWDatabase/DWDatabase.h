@@ -536,7 +536,6 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param cls 承载数据的模型类
  @param Dw_id 指定ID
- @param keys 查询的键值
  @param recursive 是否递归查询
  @param conf 数据库句柄
  @return 返回对应数据的模型
@@ -544,7 +543,7 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 1.此处传入表名数据库句柄，此方法更适用于在确定某条数据的ID后要对此条数据进行追踪的情景，避免了每次查询并筛选的过程（如通过年龄查询出一批人后选中其中一个人，以后要针对这个人做操作，即可在本次记下ID后以后通过ID查询）,若操作成功，result字段将携带指定模型
      2.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
  */
--(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 #pragma mark ------ 其他 ------

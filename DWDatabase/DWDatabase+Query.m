@@ -39,7 +39,7 @@
     return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker];
 }
 
--(DWDatabaseResult *)_entry_queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf {
+-(DWDatabaseResult *)_entry_queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
     if (!Dw_id) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Dw_id who is Nil.", 10018)];
     }
@@ -53,13 +53,16 @@
         return result;
     }
     
-    DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
-        maker.loadClass(cls);
-        maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    };
+    ///如果外部传入，则获取外部传入需要获取的key，其他细节抛弃即可
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-    condition(maker);
-    [maker.bindKeys addObjectsFromArray:keys];
+    if (condition) {
+        condition(maker);
+    }
+    NSMutableArray * bindKeys = maker.bindKeys;
+    [maker reset];
+    maker.loadClass(cls);
+    maker.conditionWith(kUniqueID).equalTo(Dw_id);
+    maker.bindKeys = bindKeys;
     
     result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:validProInfos databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:YES];
@@ -289,7 +292,7 @@
                         DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:key].result;
                         if (tblConf) {
                             ///插入
-                            DWDatabaseResult * result = [self _entry_queryTableWithClass:prop.cls Dw_id:value keys:nil queryChains:queryChains recursive:recursive configuration:tblConf];
+                            DWDatabaseResult * result = [self _entry_queryTableWithClass:prop.cls Dw_id:value queryChains:queryChains recursive:recursive configuration:tblConf condition:nil];
                             if (result.success && result.result) {
                                 [model setValue:result.result forKey:prop.name];
                                 hasValue = YES;

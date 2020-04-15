@@ -792,8 +792,8 @@
     return [self dw_queryTableForCountWithDbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue conditionMaker:maker];
 }
 
--(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf {
-    return [self _entry_queryTableWithClass:cls Dw_id:Dw_id keys:keys queryChains:nil recursive:recursive configuration:conf];
+-(DWDatabaseResult *)queryTableWithClass:(Class)cls Dw_id:(NSNumber *)Dw_id recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition {
+    return [self _entry_queryTableWithClass:cls Dw_id:Dw_id queryChains:nil recursive:recursive configuration:conf condition:condition];
 }
 
 -(DWDatabaseResult *)fetchDBVersionWithConfiguration:(DWDatabaseConfiguration *)conf {

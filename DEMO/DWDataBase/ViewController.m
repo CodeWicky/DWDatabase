@@ -308,7 +308,7 @@
 }
 
 -(void)queryModelByID {
-    DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(3) keys:nil recursive:NO configuration:self.tblConf];
+    DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(3) recursive:NO configuration:self.tblConf condition:nil];
     if (result.success) {
         V * model = result.result;
         NSLog(@"%@,%@,%@",[DWDatabase fetchDw_idForModel:model],[DWDatabase fetchDBNameForModel:model],[DWDatabase fetchTblNameForModel:model]);

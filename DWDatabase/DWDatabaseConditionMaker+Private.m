@@ -69,7 +69,6 @@
 @end
 
 @implementation DWDatabaseConditionMaker (Private)
-@dynamic conditions,bindKeys;
 
 #pragma mark --- interface method ---
 -(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty {
@@ -83,6 +82,7 @@
     self.validKeys = nil;
     self.arguments = nil;
     self.conditionStrings = nil;
+    self.joinTables = nil;
     self.inlineTblNameMap = nil;
     self.inlineTblDataBaseMap = nil;
     self.inlineTblMapCtn = nil;
@@ -139,6 +139,21 @@
 
 -(DWDatabaseCondition *)installConditionWithValue:(id)value relation:(DWDatabaseValueRelation)relation {
     return installCondition(self, value, relation);
+}
+
+-(void)reset {
+    self.conditions = nil;
+    self.currentCondition = nil;
+    self.conditionOperator = DWDatabaseConditionLogicalOperatorNone;
+    self.validKeys = nil;
+    self.arguments = nil;
+    self.joinTables = nil;
+    self.conditionStrings = nil;
+    self.inlineTblNameMap = nil;
+    self.inlineTblDataBaseMap = nil;
+    self.inlineTblMapCtn = nil;
+    self.bindKeys = nil;
+    self.hasSubProperty = NO;
 }
 
 #pragma mark --- tool func ---
@@ -212,6 +227,10 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 
 -(NSMutableArray<DWDatabaseCondition *> *)conditions {
     return DWDatabaseLazyValue(conditions, NSMutableArray, array);
+}
+
+-(void)setConditions:(NSMutableArray<DWDatabaseCondition *> *)conditions {
+    DWDatabaseSetValue(conditions);
 }
 
 -(DWDatabaseCondition *)currentCondition {
@@ -336,6 +355,10 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 
 -(NSMutableArray *)bindKeys {
     return DWDatabaseLazyValue(bindKeys, NSMutableArray, array);
+}
+
+-(void)setBindKeys:(NSMutableArray *)bindKeys {
+    DWDatabaseSetValue(bindKeys);
 }
 
 @end
