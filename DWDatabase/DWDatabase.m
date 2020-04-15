@@ -72,7 +72,7 @@
     };
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     condition(maker);
-    NSArray <DWDatabaseInfo *>* res = [self dw_queryTableWithDbName:kSqlSetDbName tableName:kSqlSetTblName keys:nil limit:0 offset:0 orderKey:nil ascending:YES inQueue:self.privateQueue queryChains:nil recursive:NO conditionMaker:maker].result;
+    NSArray <DWDatabaseInfo *>* res = [self dw_queryTableWithDbName:kSqlSetDbName tableName:kSqlSetTblName limit:0 offset:0 orderKey:nil ascending:YES inQueue:self.privateQueue queryChains:nil recursive:NO conditionMaker:maker].result;
     if (res.count) {
         ///取出以后配置数据库完整地址
         [res enumerateObjectsUsingBlock:^(DWDatabaseInfo * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -202,7 +202,7 @@
     return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES updateObjectID:NO conditionMaker:maker];
 }
 
--(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray *)keys condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
     
     if (!clazz && !condition) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid class and condition which both are nil.", 10017)];
@@ -226,7 +226,7 @@
         return result;
     }
     DWDatabaseConfiguration * conf = result.result;
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:YES conditionMaker:maker];
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:YES conditionMaker:maker];
 }
 
 ///配置数据库
@@ -675,13 +675,13 @@
     return [self _entry_updateTableWithModel:model keys:keys configuration:conf updateChains:nil recursive:recursive condition:condition];
 }
 
--(DWDatabaseResult *)queryTableWithClass:(Class)clazz keys:(NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
-    return [self _entry_queryTableWithClass:clazz keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending configuration:conf queryChains:nil recursive:recursive condition:condition];
+-(DWDatabaseResult *)queryTableWithClass:(Class)clazz  limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
+    return [self _entry_queryTableWithClass:clazz limit:limit offset:offset orderKey:orderKey ascending:ascending configuration:conf queryChains:nil recursive:recursive condition:condition];
 }
 
--(void)queryTableWithClass:(Class)clazz keys:(NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition completion:(void (^)(DWDatabaseResult * result))completion {
+-(void)queryTableWithClass:(Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition completion:(void (^)(DWDatabaseResult * result))completion {
     asyncExcuteOnDBOperationQueue(self, ^{
-        DWDatabaseResult * result = [self queryTableWithClass:clazz keys:keys limit:limit offset:offset orderKey:orderKey ascending:ascending recursive:recursive configuration:conf condition:condition];
+        DWDatabaseResult * result = [self queryTableWithClass:clazz limit:limit offset:offset orderKey:orderKey ascending:ascending recursive:recursive configuration:conf condition:condition];
         if (completion) {
             completion(result);
         }
@@ -746,7 +746,7 @@
     });
 }
 
--(DWDatabaseResult *)queryTableWithClass:(Class)cls keys:(NSArray *)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)queryTableWithClass:(Class)cls recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
     
     if (!cls && !condition) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
@@ -766,7 +766,7 @@
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     condition(maker);
     
-    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName keys:keys limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:recursive conditionMaker:maker];
+    return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:nil recursive:recursive conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)queryTableForCountWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {

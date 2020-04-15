@@ -202,7 +202,7 @@ NS_ASSUME_NONNULL_BEGIN
 -(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
 -(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys condition:(nullable DWDatabaseConditionHandler)condition;
--(DWDatabaseResult *)queryTableAutomaticallyWithClass:(nullable Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray *)keys condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)queryTableAutomaticallyWithClass:(nullable Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 
 #pragma mark --- 数据库操作方法 ---
 /**
@@ -446,7 +446,6 @@ NS_ASSUME_NONNULL_BEGIN
  根据指定条件在当前库指定表中查询指定条数数据
 
  @param clazz 作为数据承载的模型类
- @param keys 想要查询的键值
  @param limit 查询的最大条数
  @param offset 查询的起始点
  @param orderKey 指定的排序的key
@@ -479,8 +478,8 @@ NS_ASSUME_NONNULL_BEGIN
     示例中查询嵌套表中，所有A中ObjectProp对应的B表中，intNum为2的A的结果集合。
  */
 
--(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
--(void)queryTableWithClass:(nullable Class)clazz keys:(nullable NSArray <NSString *>*)keys limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition completion:(nullable void(^)(DWDatabaseResult * result))completion;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
+-(void)queryTableWithClass:(nullable Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition completion:(nullable void(^)(DWDatabaseResult * result))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型
@@ -502,7 +501,6 @@ NS_ASSUME_NONNULL_BEGIN
  根据指定条件在当前库指定表中查询数据
 
  @param cls 作为数据承载的模型类
- @param keys 想要查询的键值
  @param recursive 是否递归查询
  @param conf 数据库句柄
  @param condition 指定查询条件的构造器
@@ -515,7 +513,7 @@ NS_ASSUME_NONNULL_BEGIN
        5.返回的数组中将以传入的cls的实例作为数据载体
        6.若操作成功，result字段将携带结果数组
  */
--(DWDatabaseResult *)queryTableWithClass:(nullable Class)cls keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)cls recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**

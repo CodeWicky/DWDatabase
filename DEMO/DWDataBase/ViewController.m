@@ -82,9 +82,10 @@
 }
 
 -(void)queryAutomatically {
-    DWDatabaseResult * result = [self.db queryTableAutomaticallyWithClass:NULL name:@"Auto" tableName:@"Auto_V_Tbl" path:nil keys:@[@"string"] condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db queryTableAutomaticallyWithClass:NULL name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(string).equalTo(@"456");
+        maker.dw_bindKey(string);
     }];
     
     if (result.success) {
@@ -264,7 +265,7 @@
 }
 
 -(void)queryTblWithParam {
-    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil limit:3 offset:8 orderKey:nil ascending:NO recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db queryTableWithClass:NULL limit:3 offset:8 orderKey:nil ascending:NO recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(intNum).equalTo(129);
     }];
@@ -280,7 +281,7 @@
 }
 
 -(void)queryModel {
-    DWDatabaseResult * result = [self.db queryTableWithClass:NULL keys:nil recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db queryTableWithClass:NULL recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(intNum).equalTo(129);
     }];
@@ -422,7 +423,7 @@
     DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
-        result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        result = [self.db queryTableWithClass:NULL recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(aNum).equalTo(12);
         }];
@@ -526,7 +527,7 @@
     DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
-        result = [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        result = [self.db queryTableWithClass:NULL recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(aNum).equalTo(12).or.dw_conditionWith(classB).equalTo(1).combine();
             maker.dw_bindKey(aNum);
