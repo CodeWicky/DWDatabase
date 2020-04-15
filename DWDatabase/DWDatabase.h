@@ -201,7 +201,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 -(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
 -(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
--(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(nullable Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 
 #pragma mark --- 数据库操作方法 ---
@@ -423,7 +423,6 @@ NS_ASSUME_NONNULL_BEGIN
  更新当前库指定表中对应的模型指定属性的数据信息
 
  @param model 指定模型
- @param keys 指定属性数组
  @param recursive 是否递归更新
  @param conf 数据库句柄
  @param condition 更新模型的条件
@@ -439,7 +438,7 @@ NS_ASSUME_NONNULL_BEGIN
        8.若传入keys为空或者nil时则以全部对应落库属性作为更新数据
  */
 
--(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)updateTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**

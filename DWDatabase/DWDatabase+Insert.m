@@ -9,6 +9,7 @@
 #import "DWDatabaseFunction.h"
 #import "DWDatabase+Update.h"
 #import "DWDatabase+Supply.h"
+#import "DWDatabaseConditionMaker+Private.h"
 
 #define kInsertPrefix (@"i")
 
@@ -79,9 +80,10 @@
                     };
                     maker = [DWDatabaseConditionMaker new];
                     condition(maker);
+                    [maker.bindKeys addObjectsFromArray:fac.objMap.allKeys];
                 }
                 
-                result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName keys:fac.objMap.allKeys inQueue:queue updateChains:nil recursive:NO updateObjectID:YES conditionMaker:maker];
+                result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName inQueue:queue updateChains:nil recursive:NO updateObjectID:YES conditionMaker:maker];
             }
             result.result = Dw_id;
             return result;

@@ -56,9 +56,10 @@
     V * model = [V new];
     model.intNum = 100;
     model.string = @"456";
-    DWDatabaseResult * result = [self.db updateTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil keys:@[keyPathString(model, intNum),keyPathString(model, string)] condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db updateTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(floatNum).between(DWApproximateFloatValue(3.14));
+        maker.dw_bindKey(intNum).dw_bindKey(string);
     }];
     if (result.success) {
         result = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"Auto" tableName:@"Auto_V_Tbl" path:nil];
@@ -244,9 +245,10 @@
     newV.unsignedLongLongNum = 333;
     newV.intNum = 129;
     newV.floatNum = 3.5;
-    DWDatabaseResult * result = [self.db updateTableWithModel:newV keys:@[keyPathString(newV, intNum),keyPathString(newV, floatNum)] recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db updateTableWithModel:newV recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(intNum).equalTo(2);
+        maker.dw_bindKey(intNum).dw_bindKey(floatNum);
     }];
     
     if (result.success) {
@@ -386,7 +388,7 @@
         DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
         if (result.success) {
             DWDatabaseConfiguration * conf = result.result;
-            result = [self.db updateTableWithModel:cModel keys:nil recursive:YES configuration:conf condition:nil];
+            result = [self.db updateTableWithModel:cModel recursive:YES configuration:conf condition:nil];
             if (result.success) {
                 cModel = [self queryModelRecursively].firstObject;
                 NSLog(@"%@",cModel);
@@ -404,8 +406,9 @@
     if (result.success) {
         C * cModel = [self queryModelRecursively].firstObject;
         cModel.classC = cModel;
-        result = [self.db updateTableWithModel:cModel keys:@[keyPathString(cModel, classC)] recursive:YES configuration:result.result condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        result = [self.db updateTableWithModel:cModel recursive:YES configuration:result.result condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.conditionWith(@"classC").equalTo(2);
+            maker.bindKey(@"classC");
         }];
         
         if (result.success) {

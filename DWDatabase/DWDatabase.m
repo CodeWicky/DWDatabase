@@ -187,7 +187,7 @@
     }
 }
 
--(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
     DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
     if (!result.success) {
         return result;
@@ -199,7 +199,7 @@
         maker = [DWDatabaseConditionMaker new];
         condition(maker);
     }
-    return [self dw_updateTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue updateChains:nil recursive:YES updateObjectID:NO conditionMaker:maker];
+    return [self dw_updateTableWithModel:model dbName:name tableName:tblName inQueue:conf.dbQueue updateChains:nil recursive:YES updateObjectID:NO conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
@@ -671,8 +671,8 @@
     return [self _entry_deleteTableWithModel:model configuration:conf deleteChains:nil recursive:recursive condition:nil];
 }
 
--(DWDatabaseResult *)updateTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
-    return [self _entry_updateTableWithModel:model keys:keys configuration:conf updateChains:nil recursive:recursive condition:condition];
+-(DWDatabaseResult *)updateTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
+    return [self _entry_updateTableWithModel:model configuration:conf updateChains:nil recursive:recursive condition:condition];
 }
 
 -(DWDatabaseResult *)queryTableWithClass:(Class)clazz  limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
