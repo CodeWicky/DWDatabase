@@ -10,11 +10,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DWDatabase (Insert)
 
--(DWDatabaseResult *)insertSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(nullable NSArray<NSString *> *)keys insertChains:(nullable DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive;
+-(DWDatabaseResult *)insertSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName insertChains:(nullable DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive conditionMaker:(nullable DWDatabaseConditionMaker *)maker;
 
--(DWDatabaseResult *)_entry_insertTableWithModel:(NSObject *)model keys:(nullable NSArray<NSString *> *)keys configuration:(nullable DWDatabaseConfiguration *)conf insertChains:(nullable DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive;
+-(DWDatabaseResult *)_entry_insertTableWithModel:(NSObject *)model configuration:(nullable DWDatabaseConfiguration *)conf insertChains:(nullable DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive condition:(nullable DWDatabaseConditionHandler)condition;
 
--(DWDatabaseResult *)dw_insertTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(nullable NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue insertChains:(nullable DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive;
+-(DWDatabaseResult *)dw_insertTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue insertChains:(nullable DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive conditionMaker:(nullable DWDatabaseConditionMaker *)maker;
 
 @end
 

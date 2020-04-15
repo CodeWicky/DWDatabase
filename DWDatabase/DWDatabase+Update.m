@@ -117,10 +117,9 @@
         });
         return result;
     } else {
-#warning 这里的keys要改
         ///不存在ID则不做更新操作，做插入操作
         ///插入操作后最好把Dw_id赋值
-        return [self dw_insertTableWithModel:model dbName:dbName tableName:tblName keys:nil inQueue:queue insertChains:nil recursive:recursive];
+        return [self dw_insertTableWithModel:model dbName:dbName tableName:tblName inQueue:queue insertChains:nil recursive:recursive conditionMaker:nil];
     }
 }
 

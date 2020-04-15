@@ -44,7 +44,10 @@
     model.intNum = -100;
     model.floatNum = 3.14;
     model.string = @"123";
-    DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil keys:@[keyPathString(model, intNum),keyPathString(model, floatNum)]];
+    DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.dw_bindKey(intNum).dw_bindKey(floatNum);
+    }];
     if (result.success) {
         NSLog(@"%@",[DWDatabase fetchDw_idForModel:model]);
     } else {
@@ -188,7 +191,7 @@
     v.cls = [v class];
     v.sel = @selector(viewDidLoad);
     
-    DWDatabaseResult * result = [self.db insertTableWithModel:v keys:nil recursive:YES configuration:self.tblConf];
+    DWDatabaseResult * result = [self.db insertTableWithModel:v recursive:YES configuration:self.tblConf condition:nil];
     if (result.success) {
         [self queryCountInTbl];
     } else {
@@ -201,7 +204,7 @@
     m1.intNum = 2;
     V * m2 = [V new];
     m2.intNum = 4;
-    [self.db insertTableWithModels:@[m1,m2] keys:nil recursive:NO rollbackOnFailure:YES configuration:self.tblConf completion:^(DWDatabaseResult * _Nonnull result) {
+    [self.db insertTableWithModels:@[m1,m2] recursive:NO rollbackOnFailure:YES configuration:self.tblConf condition:nil completion:^(DWDatabaseResult * _Nonnull result) {
         if (result.success) {
             [self queryCountInTbl];
         } else {
@@ -226,7 +229,7 @@
 -(void)deleteRowsInTblWithModel {
     V * model = [V new];
     model.intNum = 255;
-    DWDatabaseResult * result = [self.db insertTableWithModel:model keys:nil recursive:NO configuration:self.tblConf];
+    DWDatabaseResult * result = [self.db insertTableWithModel:model recursive:NO configuration:self.tblConf condition:nil];
     if (result.success) {
         result = [self.db deleteTableWithModel:model recursive:NO configuration:self.tblConf];
         if (result.success) {
@@ -347,7 +350,7 @@
     DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
-        result = [self.db insertTableWithModel:cModel keys:nil recursive:YES configuration:conf];
+        result = [self.db insertTableWithModel:cModel recursive:YES configuration:conf condition:nil];
         if (result.success) {
             NSLog(@"%@",[DWDatabase fetchDw_idForModel:cModel]);
         } else {
@@ -501,7 +504,7 @@
     
     DWDatabaseConfiguration * CTblConf = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_SQL" tableName:@"C_Tbl" path:dbPath].result;
     if (CTblConf) {
-        BOOL success = [self.db insertTableWithModel:model keys:nil recursive:YES configuration:CTblConf];
+        BOOL success = [self.db insertTableWithModel:model recursive:YES configuration:CTblConf condition:nil];
         NSLog(@"Insert Success:%d",success);
     }
     

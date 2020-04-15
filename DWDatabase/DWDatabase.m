@@ -130,14 +130,19 @@
     return [self createTableWithClass:cls tableName:tblName configuration:conf];
 }
 
--(DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path keys:(NSArray<NSString *> *)keys {
+-(DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
     DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
     if (!result.success) {
         return result;
     }
     DWDatabaseConfiguration * conf = result.result;
     [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
-    return [self dw_insertTableWithModel:model dbName:name tableName:tblName keys:keys inQueue:conf.dbQueue insertChains:nil recursive:YES];
+    DWDatabaseConditionMaker * maker = nil;
+    if (condition) {
+        maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+    }
+    return [self dw_insertTableWithModel:model dbName:name tableName:tblName inQueue:conf.dbQueue insertChains:nil recursive:YES conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
@@ -255,7 +260,7 @@
     info.dbName = name;
     info.dbPath = path;
     if ([info configRelativePath]) {
-        [self dw_insertTableWithModel:info dbName:kSqlSetDbName tableName:kSqlSetTblName keys:nil inQueue:self.privateQueue insertChains:nil recursive:NO];
+        [self dw_insertTableWithModel:info dbName:kSqlSetDbName tableName:kSqlSetTblName inQueue:self.privateQueue insertChains:nil recursive:NO conditionMaker:nil];
     } else {
         success = NO;
     }
@@ -574,16 +579,21 @@
     return result;
 }
 
--(DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf {
-    return [self _entry_insertTableWithModel:model keys:keys configuration:conf insertChains:nil recursive:recursive];
+-(DWDatabaseResult *)insertTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition {
+    return [self _entry_insertTableWithModel:model  configuration:conf insertChains:nil recursive:recursive condition:condition];
 }
 
--(DWDatabaseResult *)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf {
+-(DWDatabaseResult *)insertTableWithModels:(NSArray<NSObject *> *)models recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
     DWDatabaseOperationChain * insertChains = [DWDatabaseOperationChain new];
+    DWDatabaseConditionMaker * maker = nil;
+    if (condition) {
+        maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+    }
     NSMutableArray * failures = [NSMutableArray arrayWithCapacity:0];
     NSMutableArray * factorys = [NSMutableArray arrayWithCapacity:0];
     [models enumerateObjectsUsingBlock:^(NSObject * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        DWDatabaseSQLFactory * fac = [self insertSQLFactoryWithModel:obj dbName:conf.dbName tableName:conf.tableName keys:keys insertChains:insertChains recursive:recursive].result;
+        DWDatabaseSQLFactory * fac = [self insertSQLFactoryWithModel:obj dbName:conf.dbName tableName:conf.tableName insertChains:insertChains recursive:recursive conditionMaker:maker].result;
         if (!fac) {
             [failures addObject:obj];
             ///如果失败就回滚的话，则此处无需再生成其他sql
@@ -641,9 +651,9 @@
     return result;
 }
 
--(void)insertTableWithModels:(NSArray<NSObject *> *)models keys:(NSArray<NSString *> *)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(DWDatabaseResult * result))completion {
+-(void)insertTableWithModels:(NSArray<NSObject *> *)models recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition completion:(void (^)(DWDatabaseResult * result))completion {
     asyncExcuteOnDBOperationQueue(self, ^{
-        DWDatabaseResult * result = [self insertTableWithModels:models keys:keys recursive:recursive rollbackOnFailure:rollback configuration:conf];
+        DWDatabaseResult * result = [self insertTableWithModels:models recursive:recursive rollbackOnFailure:rollback configuration:conf condition:condition];
         if (completion) {
             completion(result);
         }

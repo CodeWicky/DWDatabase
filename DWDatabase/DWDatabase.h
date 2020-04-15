@@ -199,7 +199,7 @@ NS_ASSUME_NONNULL_BEGIN
  1. -fetchDBConfigurationAutomaticallyWithClass:name:tableName:path:error:
  2. 增删改查对应相关方法
  */
--(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path keys:(nullable NSArray <NSString *>*)keys;
+-(nonnull DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(nonnull DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(nullable Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
@@ -359,7 +359,6 @@ NS_ASSUME_NONNULL_BEGIN
  向当前库指定表中插入指定模型的指定属性的数据信息
 
  @param model 指定模型
- @param keys 指定属性数组
  @param recursive 是否递归插入
  @param conf 数据库句柄
  @return 返回是否插入成功
@@ -369,14 +368,13 @@ NS_ASSUME_NONNULL_BEGIN
       3.当模型的属性中存在另一个模型时，可通过recursive指定是否递归插入。如果为真，将自动插入嵌套模型
       4.若插入成功，返回结果中result将携带当前模型的唯一id
  */
--(DWDatabaseResult *)insertTableWithModel:(NSObject *)model keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)insertTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**
  批量插入模型
 
  @param models 模型数组
- @param keys 指定属性数组
  @param recursive 是否递归插入
  @param rollback 插入失败时是否回滚
  @param conf 数据库句柄
@@ -388,8 +386,8 @@ NS_ASSUME_NONNULL_BEGIN
        4.一旦出现错误立即停止操作，不再进行后续插入操作
        5.若操作失败，result字段将携带插入失败的模型
  */
--(DWDatabaseResult *)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf;
--(void)insertTableWithModels:(NSArray <NSObject *>*)models keys:(nullable NSArray <NSString *>*)keys recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf completion:(void(^)(DWDatabaseResult * result))completion;
+-(DWDatabaseResult *)insertTableWithModels:(NSArray <NSObject *>*)models recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
+-(void)insertTableWithModels:(NSArray <NSObject *>*)models recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition completion:(void(^)(DWDatabaseResult * result))completion;
 
 /**
  删除当前库指定表中对应的模型信息

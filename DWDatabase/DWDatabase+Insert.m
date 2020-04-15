@@ -16,16 +16,22 @@
 @implementation DWDatabase (Insert)
 
 #pragma mark --- interface method ---
--(DWDatabaseResult *)_entry_insertTableWithModel:(NSObject *)model keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive {
+-(DWDatabaseResult *)_entry_insertTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive condition:(DWDatabaseConditionHandler)condition {
     DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
     if (!result.success) {
         return result;
     }
+    
+    DWDatabaseConditionMaker * maker = nil;
+    if (condition) {
+        maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+    }
 
-    return [self dw_insertTableWithModel:model dbName:conf.dbName tableName:conf.tableName keys:keys inQueue:conf.dbQueue insertChains:insertChains recursive:recursive];
+    return [self dw_insertTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue insertChains:insertChains recursive:recursive conditionMaker:maker];
 }
 
--(DWDatabaseResult *)dw_insertTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray <NSString *>*)keys inQueue:(FMDatabaseQueue *)queue insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive {
+-(DWDatabaseResult *)dw_insertTableWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
     if (!queue) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid FMDatabaseQueue who is nil.", 10015)];
     }
@@ -54,7 +60,7 @@
         [insertChains addRecord:record];
     }
     
-    __block DWDatabaseResult * result = [self insertSQLFactoryWithModel:model dbName:dbName tableName:tblName keys:keys insertChains:insertChains recursive:recursive];
+    __block DWDatabaseResult * result = [self insertSQLFactoryWithModel:model dbName:dbName tableName:tblName insertChains:insertChains recursive:recursive conditionMaker:maker];
     if (!result.success) {
         return result;
     }
@@ -102,7 +108,7 @@
     return result;
 }
 
--(DWDatabaseResult *)insertSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName keys:(NSArray<NSString *> *)keys insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive {
+-(DWDatabaseResult *)insertSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
     Class cls = [model class];
     NSError * error = nil;
     if (!tblName.length) {
@@ -114,6 +120,7 @@
         return [DWDatabaseResult failResultWithError:error];
     }
     NSDictionary * infos = nil;
+    NSArray * keys = [maker fetchBindKeys];
     if (keys.count) {
         ///此处要按支持的key做sql
         keys = [self validKeysIn:keys forClass:cls];
@@ -200,7 +207,7 @@
                             if (!operation.finishOperationInChain) {
                                 DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
                                 if (tblConf) {
-                                    DWDatabaseResult * result = [self dw_insertTableWithModel:value dbName:dbName tableName:tblConf.tableName keys:nil inQueue:tblConf.dbQueue insertChains:insertChains recursive:NO];
+                                    DWDatabaseResult * result = [self dw_insertTableWithModel:value dbName:dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue insertChains:insertChains recursive:NO conditionMaker:nil];
                                     if (result.success) {
                                         [validKeys addObject:name];
                                         [args addObject:result.result];
@@ -230,7 +237,7 @@
                                     DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
                                     if (tblConf) {
                                         ///插入
-                                        DWDatabaseResult * result = [self _entry_insertTableWithModel:value keys:nil configuration:tblConf insertChains:insertChains recursive:recursive];
+                                        DWDatabaseResult * result = [self _entry_insertTableWithModel:value configuration:tblConf insertChains:insertChains recursive:recursive condition:nil];
                                         ///如果成功，添加id
                                         if (result.success) {
                                             [validKeys addObject:name];
