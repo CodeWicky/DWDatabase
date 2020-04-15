@@ -42,30 +42,6 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 @property (nonatomic ,assign) DWDatabaseConditionLogicalOperator conditionOperator;
 
-@property (nonatomic ,strong) NSString * tblName;
-
-@property (nonatomic ,strong) NSDictionary * propertyInfos;
-
-@property (nonatomic ,strong) NSDictionary * databaseMap;
-
-@property (nonatomic ,strong) NSMutableArray * validKeys;
-
-@property (nonatomic ,strong) NSMutableArray * arguments;
-
-@property (nonatomic ,strong) NSMutableArray * conditionStrings;
-
-@property (nonatomic ,strong) NSMutableSet * joinTables;
-
-@property (nonatomic ,assign) BOOL hasSubProperty;
-
-@property (nonatomic ,assign) BOOL subPropertyEnabled;
-
-@property (nonatomic ,strong) NSMutableDictionary * inlineTblNameMap;
-
-@property (nonatomic ,strong) NSMutableDictionary * inlineTblMapCtn;
-
-@property (nonatomic ,strong) NSMutableDictionary * inlineTblDataBaseMap;
-
 @property (nonatomic ,strong) NSMutableArray * bindKeys;
 
 -(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty;
@@ -92,25 +68,19 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 @interface DWDatabaseCondition (Private)
 
-@property (nonatomic ,copy) NSString * conditionString;
-
-@property (nonatomic ,strong) NSMutableArray <NSString *>* validKeys;
-
-@property (nonatomic ,strong) NSMutableArray * arguments;
-
-@property (nonatomic ,strong) NSMutableArray <NSString *>* conditionKeys;
-
-@property (nonatomic ,strong) NSMutableSet * joinTables;
-
-@property (nonatomic ,assign) DWDatabaseValueRelation relation;
-
-@property (nonatomic ,strong) id value;
-
 @property (nonatomic ,weak) DWDatabaseConditionMaker * maker;
 
 @property (nonatomic ,weak) DWDatabaseCondition * operateCondition;
 
 @property (nonatomic ,assign) DWDatabaseConditionLogicalOperator conditionOperator;
+
+@property (nonatomic ,strong) NSMutableArray <NSString *>* conditionKeys;
+
+@property (nonatomic ,strong) NSMutableArray <NSString *>* validKeys;
+
+@property (nonatomic ,strong) NSMutableArray * arguments;
+
+@property (nonatomic ,strong) NSMutableSet * joinTables;
 
 -(void)make;
 

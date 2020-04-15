@@ -62,9 +62,46 @@
 
 @end
 
+@interface DWDatabaseCondition ()
+
+@property (nonatomic ,strong) NSMutableDictionary * propertiesCtn;
+
+@property (nonatomic ,copy) NSString * conditionString;
+
+@property (nonatomic ,assign) DWDatabaseValueRelation relation;
+
+@property (nonatomic ,strong) id value;
+
+@end
+
 @interface DWDatabaseConditionMaker ()
 
 @property (nonatomic ,strong) NSMutableDictionary * propertiesCtn;
+
+@property (nonatomic ,strong) NSString * tblName;
+
+@property (nonatomic ,strong) NSDictionary * propertyInfos;
+
+@property (nonatomic ,strong) NSDictionary * databaseMap;
+
+
+@property (nonatomic ,strong) NSMutableArray * validKeys;
+
+@property (nonatomic ,strong) NSMutableArray * arguments;
+
+@property (nonatomic ,strong) NSMutableArray * conditionStrings;
+
+@property (nonatomic ,strong) NSMutableSet * joinTables;
+
+@property (nonatomic ,assign) BOOL hasSubProperty;
+
+@property (nonatomic ,assign) BOOL subPropertyEnabled;
+
+@property (nonatomic ,strong) NSMutableDictionary * inlineTblNameMap;
+
+@property (nonatomic ,strong) NSMutableDictionary * inlineTblMapCtn;
+
+@property (nonatomic ,strong) NSMutableDictionary * inlineTblDataBaseMap;
 
 @end
 
@@ -360,12 +397,6 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 -(void)setBindKeys:(NSMutableArray *)bindKeys {
     DWDatabaseSetValue(bindKeys);
 }
-
-@end
-
-@interface DWDatabaseCondition ()
-
-@property (nonatomic ,strong) NSMutableDictionary * propertiesCtn;
 
 @end
 
