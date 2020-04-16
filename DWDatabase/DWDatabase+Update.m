@@ -158,15 +158,13 @@
     }
     
     ///配置查询条件
-    NSMutableArray * conditionArgs = @[].mutableCopy;
-    NSMutableArray * conditionStrings = @[].mutableCopy;
     NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
     NSDictionary * databaseMap = databaseMapFromClass(cls);
     NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
     [maker configWithTblName:tblName propertyInfos:propertyInfos databaseMap:databaseMap enableSubProperty:NO];
     [maker make];
-    [conditionArgs addObjectsFromArray:[maker fetchArguments]];
-    [conditionStrings addObjectsFromArray:[maker fetchConditions]];
+    NSArray * conditionArgs = [maker fetchArguments];
+    NSArray * conditionStrings = [maker fetchConditions];
     
     ///无有效插入值
     if (!conditionStrings.count) {

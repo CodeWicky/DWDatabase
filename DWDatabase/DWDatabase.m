@@ -851,7 +851,7 @@
     }
     
     NSInteger currentVersion = [result.result integerValue];
-    if (currentVersion <= targetVersion) {
+    if (currentVersion >= targetVersion) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Upgrade DB fail for sending the same targetVersion as currentVersion.", 10022)];
     }
     

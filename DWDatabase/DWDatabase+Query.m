@@ -342,6 +342,7 @@
     NSArray * keys = [maker fetchBindKeys];
     BOOL queryAll = NO;
     ///如果keys为空则试图查询cls与表对应的所有键值
+    BOOL hasDw_id = NO;
     if (!keys.count) {
         keys = [DWDatabase propertysToSaveWithClass:cls];
         ///如果所有键值为空则返回空
@@ -351,8 +352,10 @@
         queryAll = YES;
     } else {
         ///如果不为空，则将keys与对应键值做交集
+        hasDw_id = [keys containsObject:kUniqueID];
         keys = intersectionOfArray(keys, saveKeys);
-        if (!keys.count) {
+        ///如果没有有效查询键值则抛出异常，这里要对kUniqueID做处理，因为saveKeys中可能不包含kUniqueID，所以交集后kUniqueID可能会屏蔽，要补充
+        if (!keys.count && !hasDw_id) {
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query keys which has no key in save keys.", 10008)];
         }
     }
@@ -360,7 +363,7 @@
     NSMutableArray * validQueryKeys = [NSMutableArray arrayWithCapacity:0];
     NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*queryKeysProInfos = [DWDatabase propertyInfosWithClass:cls keys:keys];
     
-    if (!queryKeysProInfos.allKeys.count) {
+    if (!queryKeysProInfos.allKeys.count && !hasDw_id) {
         NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid key to query.",NSStringFromClass(cls)];
         return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
     }
@@ -373,7 +376,7 @@
             [validQueryKeys addObject:kUniqueID];
         }
         [self handleQueryValidKeysWithPropertyInfos:queryKeysProInfos map:map validKeysContainer:validQueryKeys];
-        if (validQueryKeys.count == 1) {
+        if (validQueryKeys.count == 1 && !hasDw_id) {
             NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no valid keys to query.",NSStringFromClass(cls)];
             return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10009)];
         }

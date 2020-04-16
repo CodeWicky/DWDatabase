@@ -86,6 +86,7 @@
 }
 
 -(void)queryAutomatically {
+    
     DWDatabaseResult * result = [self.db queryTableAutomaticallyWithClass:NULL name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(string).equalTo(@"456");
@@ -409,8 +410,9 @@
     if (result.success) {
         C * cModel = [self queryModelRecursively].firstObject;
         cModel.classC = cModel;
+        cModel.aNum = 255;
         result = [self.db updateTableWithModel:cModel recursive:YES configuration:result.result condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
-            maker.conditionWith(@"classC").equalTo(2);
+            maker.conditionWith(@"classC").equalTo(3);
             maker.bindKey(@"classC");
         }];
         
