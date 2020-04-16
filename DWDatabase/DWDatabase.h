@@ -439,6 +439,7 @@ NS_ASSUME_NONNULL_BEGIN
 -(DWDatabaseResult *)updateTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
+typedef void(^DWDatabaseReprocessingHandler)(__kindof NSObject * model,FMResultSet * set);
 /**
  根据指定条件在当前库指定表中查询指定条数数据
 
@@ -448,6 +449,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param orderKey 指定的排序的key
  @param ascending 是否正序
  @param recursive 是否递归查询
+ @param reprocessing 每当查询完结果组建成功一个模型后，对每个模型提供二次处理的操作回调
  @param conf 数据库句柄
  @param condition 指定查询条件的构造器
  @return 返回查询结果
@@ -460,10 +462,11 @@ NS_ASSUME_NONNULL_BEGIN
        6.当orderKey存在且合法时将会以orderKey作为排序条件，ascending作为是否升序或者降序，若不合法，则以默认id为排序条件
        7.orderKey应为模型属性名，框架将自动转换为数据表对应的字段名
        8.当模型的属性中存在另一个模型时，可通过recursive指定是否递归查询。如果为真，将自动查询嵌套模型
-       9.condition为构造查询条件的构造器，condition与clazz不能同时为空
-       10.condition中支持副属性作为条件查询，具体见如下示例代码
-       11.返回的数组中将以传入的clazz的实例作为数据载体
-       12.若操作成功，result字段中将携带结果数组
+       9.当recursive为NO时，reprocessing回调有效。当执行完查询操作后，根据查询结果组装模型时，每当一个有效结果组装完成时，将回调reprocessing方法，并将组装完成的模型及fmdb查询结果set抛回，开发者可在此处对模型做二次处理。二次操作只影响查询结果，不影响数据库中数据。
+       10.condition为构造查询条件的构造器，condition与clazz不能同时为空
+       11.condition中支持副属性作为条件查询，具体见如下示例代码
+       12.返回的数组中将以传入的clazz的实例作为数据载体
+       13.若操作成功，result字段中将携带结果数组
  
  @eg. :
        [self.db queryTableWithClass:NULL keys:nil recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
@@ -474,9 +477,8 @@ NS_ASSUME_NONNULL_BEGIN
     示例中查询模型类为A，类A包含一个ObjectProp属性，属性的类为B。B包含一个intNum属性，属性的类型为整形。
     示例中查询嵌套表中，所有A中ObjectProp对应的B表中，intNum为2的A的结果集合。
  */
-
--(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
--(void)queryTableWithClass:(nullable Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition completion:(nullable void(^)(DWDatabaseResult * result))completion;
+-(DWDatabaseResult *)queryTableWithClass:(nullable Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition reprocessing:(nullable DWDatabaseReprocessingHandler)reprocessing;
+-(void)queryTableWithClass:(nullable Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(nullable NSString *)orderKey ascending:(BOOL)ascending recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition reprocessing:(nullable DWDatabaseReprocessingHandler)reprocessing completion:(nullable void(^)(DWDatabaseResult * result))completion;
 
 /**
  根据sql语句在指定表查询数据并将数据赋值到指定模型

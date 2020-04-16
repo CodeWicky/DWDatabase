@@ -274,7 +274,7 @@
     DWDatabaseResult * result = [self.db queryTableWithClass:NULL limit:3 offset:8 orderKey:nil ascending:NO recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(intNum).equalTo(129);
-    }];
+    } reprocessing:nil];
     
     if (result.success) {
         NSArray <V *>* results = result.result;
@@ -450,6 +450,31 @@
     } else {
         NSLog(@"%@",result.error);
         return nil;
+    }
+}
+
+-(void)reprocessingQueryResult {
+    DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
+    if (result.success) {
+        DWDatabaseConfiguration * conf = result.result;
+        result = [self.db queryTableWithClass:NULL limit:0 offset:0 orderKey:nil ascending:YES recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.dw_loadClass(C);
+            maker.dw_conditionWith(aNum).equalTo(12);
+        } reprocessing:^(C * _Nonnull model, FMResultSet * _Nonnull set) {
+            model.aNum = 0.001;
+        }];
+
+        if (result.success) {
+            NSArray <C *>* models = result.result;
+            [models enumerateObjectsUsingBlock:^(C * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+                NSLog(@"%f",obj.aNum);
+            }];
+        } else {
+            NSLog(@"%@",result.error);
+        }
+        
+    } else {
+        NSLog(@"%@",result.error);
     }
 }
 
@@ -720,20 +745,25 @@
             break;
         case 24:
         {
-            [self fetchDBInlineVersion];
+            [self reprocessingQueryResult];
         }
             break;
         case 25:
         {
-            [self upgradeDBInlineVersion];
+            [self fetchDBInlineVersion];
         }
             break;
         case 26:
         {
-            [self transformToModel];
+            [self upgradeDBInlineVersion];
         }
             break;
         case 27:
+        {
+            [self transformToModel];
+        }
+            break;
+        case 28:
         {
             [self transformToDictionary];
         }
@@ -785,11 +815,11 @@
             @"递归更新模型",
             @"以条件递归更新模型",
             @"递归查询模型",
+            @"对查询结果进行二次处理",
             @"获取数据库内部版本",
             @"更新数据库内部版本",
             @"字典转模型",
             @"模型转字典",
-            @"测试",
         ].mutableCopy;
     }
     return _dataArr;
