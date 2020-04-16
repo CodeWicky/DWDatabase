@@ -84,6 +84,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 
 @property (nonatomic ,strong) NSDictionary * dbTransformMap;
 
+@property (nonatomic ,strong) NSMutableArray * subKeyArr;
+
 @end
 
 static void* dbOpQKey = "dbOperationQueueKey";
@@ -107,6 +109,10 @@ static void* dbOpQKey = "dbOperationQueueKey";
 -(NSString *)sqlCacheKeyWithPrefix:(NSString *)prefix class:(Class)cls tblName:(NSString *)tblName keys:(NSArray <NSString *>*)keys;
 
 -(DWDatabaseResult *)validateConfiguration:(DWDatabaseConfiguration *)conf considerTableName:(BOOL)consider;
+
+-(NSArray <NSArray <NSString *>*> *)seperateSubKeys:(NSArray <NSString *>*)keys;
+
+-(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix;
 
 @end
 

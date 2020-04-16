@@ -62,7 +62,7 @@
     [maker reset];
     maker.loadClass(cls);
     maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    maker.bindKeys = bindKeys;
+    maker.bindKeysWithArray(bindKeys);
     
     result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive,NSDictionary * inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:validProInfos databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:YES reprocessing:nil];
@@ -152,7 +152,7 @@
         return nil;
     }
     
-    return [self handleQueryRecursiveResultWithDbName:dbName tblName:tblName resultArr:resultArr queryChains:queryChains recursive:recursive];
+    return [self handleQueryRecursiveResultWithDbName:dbName tblName:tblName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyArr:fac.subKeyArr];
 }
 
 -(DWDatabaseResult *)dw_queryTableForCountWithDbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue conditionMaker:(DWDatabaseConditionMaker *)maker {
@@ -267,7 +267,7 @@
     return [DWDatabaseResult successResultWithResult:nil];
 }
 
--(DWDatabaseResult *)handleQueryRecursiveResultWithDbName:(NSString *)dbName tblName:(NSString *)tblName resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive {
+-(DWDatabaseResult *)handleQueryRecursiveResultWithDbName:(NSString *)dbName tblName:(NSString *)tblName resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive subKeyArr:(NSArray<NSString *> *)subKeyArr {
     if (recursive) {
         NSMutableArray * tmp = [NSMutableArray arrayWithCapacity:resultArr.count];
         for (NSInteger i = 0; i < resultArr.count; i++) {
@@ -295,7 +295,17 @@
                         DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:key].result;
                         if (tblConf) {
                             ///插入
-                            DWDatabaseResult * result = [self _entry_queryTableWithClass:prop.cls Dw_id:value queryChains:queryChains recursive:recursive configuration:tblConf condition:nil];
+                            
+                            NSArray * subKeys = [self subKeysIn:subKeyArr withPrefix:prop.name];
+                            
+                            DWDatabaseConditionHandler condition = nil;
+                            if (subKeys.count) {
+                                condition = ^(DWDatabaseConditionMaker * maker) {
+                                    maker.bindKeysWithArray(subKeys);
+                                };
+                            }
+                            
+                            DWDatabaseResult * result = [self _entry_queryTableWithClass:prop.cls Dw_id:value queryChains:queryChains recursive:recursive configuration:tblConf condition:condition];
                             if (result.success && result.result) {
                                 [model setValue:result.result forKey:prop.name];
                                 hasValue = YES;
@@ -343,6 +353,8 @@
     NSArray * validConditionKeys = [maker fetchValidKeys];
     NSArray * joinTables = [maker fetchJoinTables];
     NSArray * keys = [maker fetchBindKeys];
+    NSArray * seperateKeys = [self seperateSubKeys:keys];
+    keys = seperateKeys.firstObject;
     BOOL queryAll = NO;
     ///如果keys为空则试图查询cls与表对应的所有键值
     BOOL hasDw_id = NO;
@@ -500,6 +512,7 @@
     fac.clazz = cls;
     fac.validPropertyInfos = validPropertyInfo;
     fac.dbTransformMap = map;
+    fac.subKeyArr = seperateKeys.lastObject;
     return [DWDatabaseResult successResultWithResult:fac];
 }
 

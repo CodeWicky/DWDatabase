@@ -744,7 +744,7 @@
         return result;
     }
     
-    return [self handleQueryRecursiveResultWithDbName:conf.dbName tblName:conf.tableName resultArr:resultArr queryChains:queryChains recursive:recursive];
+    return [self handleQueryRecursiveResultWithDbName:conf.dbName tblName:conf.tableName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyArr:nil];
 }
 
 -(void)queryTableWithSQL:(NSString *)sql class:(Class)cls recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(NSArray<__kindof NSObject *> * _Nonnull, NSError * _Nonnull))completion {

@@ -314,7 +314,11 @@
 }
 
 -(void)queryModelByID {
-    DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(3) recursive:NO configuration:self.tblConf condition:nil];
+    DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(3) recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+        maker.dw_loadClass(V);
+        maker.conditionWith(kUniqueID).equalTo(2);
+        maker.dw_bindKey(string);
+    }];
     if (result.success) {
         V * model = result.result;
         NSLog(@"%@,%@,%@",[DWDatabase fetchDw_idForModel:model],[DWDatabase fetchDBNameForModel:model],[DWDatabase fetchTblNameForModel:model]);
@@ -434,6 +438,7 @@
         result = [self.db queryTableWithClass:NULL recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(aNum).equalTo(12);
+            maker.dw_bindKey(classB.b);
         }];
         
         if (result.success) {

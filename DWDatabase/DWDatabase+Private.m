@@ -297,6 +297,37 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     return [self isTableExistWithTableName:conf.tableName configuration:conf];
 }
 
+-(NSArray<NSArray<NSString *> *> *)seperateSubKeys:(NSArray<NSString *> *)keys {
+    NSMutableArray * mainKey = [NSMutableArray arrayWithCapacity:keys.count];
+    NSMutableArray * subKey = [NSMutableArray arrayWithCapacity:keys.count];
+    NSMutableArray * result = [NSMutableArray arrayWithCapacity:2];
+    [result addObject:mainKey];
+    [result addObject:subKey];
+    [keys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if ([obj containsString:@"."]) {
+            [subKey addObject:obj];
+        } else if (obj.length > 0) {
+            [mainKey addObject:obj];
+        }
+    }];
+    return result;
+}
+
+-(NSArray<NSString *> *)subKeysIn:(NSArray<NSString *> *)subKeys withPrefix:(NSString *)prefix {
+    if (!subKeys.count || !prefix.length) {
+        return nil;
+    }
+    
+    NSInteger prefixLen = prefix.length + 1;
+    NSMutableArray * result = [NSMutableArray arrayWithCapacity:subKeys.count];
+    [subKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.length > prefixLen && [obj hasPrefix:prefix]) {
+            [result addObject:[obj substringFromIndex:prefixLen]];
+        }
+    }];
+    return result;
+}
+
 #pragma mark --- setter/getter ---
 -(NSMutableDictionary *)dbqContainer {
     NSMutableDictionary * ctn = objc_getAssociatedObject(self, _cmd);
