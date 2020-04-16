@@ -46,7 +46,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 
 typedef DWDatabaseConditionMaker *(^DWDatabaseBindKeyWithArray)(NSArray <NSString *>* keys);
-@property (nonatomic ,copy) DWDatabaseBindKeyWithArray bindKeysWithArray;
+@property (nonatomic ,copy ,readonly) DWDatabaseBindKeyWithArray bindKeysWithArray;
 
 -(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty;
 

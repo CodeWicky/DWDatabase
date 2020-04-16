@@ -306,6 +306,10 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     [keys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if ([obj containsString:@"."]) {
             [subKey addObject:obj];
+            if (![obj hasPrefix:@"."]) {
+                obj = [obj componentsSeparatedByString:@"."].firstObject;
+                [mainKey addObject:obj];
+            }
         } else if (obj.length > 0) {
             [mainKey addObject:obj];
         }
@@ -323,6 +327,25 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     [subKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (obj.length > prefixLen && [obj hasPrefix:prefix]) {
             [result addObject:[obj substringFromIndex:prefixLen]];
+        }
+    }];
+    return result;
+}
+
+-(NSArray<NSString *> *)actualSubKeysIn:(NSArray<NSString *> *)subKeys withPrefix:(NSString *)prefix {
+    if (!subKeys.count || !prefix.length) {
+        return nil;
+    }
+    
+    NSInteger prefixLen = prefix.length + 1;
+    NSMutableArray * result = [NSMutableArray arrayWithCapacity:subKeys.count];
+    [subKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.length > prefixLen && [obj hasPrefix:prefix]) {
+            obj = [obj substringFromIndex:prefixLen];
+            if (![obj hasPrefix:@"."]) {
+                obj = [obj componentsSeparatedByString:@"."].firstObject;
+                [result addObject:obj];
+            }
         }
     }];
     return result;

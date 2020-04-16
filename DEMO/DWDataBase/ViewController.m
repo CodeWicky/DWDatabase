@@ -438,7 +438,7 @@
         result = [self.db queryTableWithClass:NULL recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(aNum).equalTo(12);
-            maker.dw_bindKey(classB.b);
+            maker.dw_bindKey(classB).dw_bindKey(classC.a);
         }];
         
         if (result.success) {

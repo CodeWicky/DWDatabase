@@ -253,15 +253,6 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 }
 
 #pragma mark --- setter/getter ---
--(DWDatabaseBindKey)bindKey {
-    return ^(NSString * key) {
-        if (key.length) {
-            [self.bindKeys addObject:key];
-        }
-        return self;
-    };
-}
-
 -(DWDatabaseBindKeyWithArray)bindKeysWithArray {
     return ^(NSArray <NSString *>* array) {
         if (array.count) {
