@@ -194,10 +194,11 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         return [DWDatabaseResult failResultWithError:err];;
     }
     
+    ///这里从查询链中取出当前查询ID对应的模型，因为最后应保证对应唯一查询ID只有一个唯一模型，因为不同属性同种类名和同种ID应该为模型嵌套的结果，故应该保证实例只有一个。
     DWDatabaseResult * existRecordResult = [queryChains existRecordWithClass:cls Dw_Id:Dw_id];
     DWDatabaseOperationRecord * record = nil;
     if (existRecordResult.success) {
-        DWDatabaseOperationRecord * record = existRecordResult.result;
+        record = existRecordResult.result;
         tmp = record.model;
     } else {
         tmp = [cls new];
@@ -207,6 +208,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     __block BOOL validValue = NO;
         
     if (recursive) {
+        ///这里记录查询结果
         if (!existRecordResult.success) {
             record = [DWDatabaseOperationRecord new];
             record.model = tmp;
@@ -215,14 +217,16 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
             record.operatedKeys = [NSMutableSet setWithArray:validProInfos.allKeys];
             [queryChains addRecord:record];
         } else {
-            DWDatabaseOperationRecord * existRecord = existRecordResult.result;
+            record = existRecordResult.result;
             NSMutableSet * keyToQuerySet = [NSMutableSet setWithArray:validProInfos.allKeys];
-            [keyToQuerySet minusSet:existRecord.operatedKeys];
+            [keyToQuerySet minusSet:record.operatedKeys];
+            ///如果已经查询的结果覆盖了将要查询的结果，则认为此次查询已经完成
             if (keyToQuerySet.count == 0) {
                 validValue = YES;
             }
         }
         
+        ///这里新生成一个record实例，此处的实例为记录未完成的属性的实例，并不存入queryChains
         record = [DWDatabaseOperationRecord new];
         record.model = tmp;
         record.finishOperationInChain = YES;
@@ -247,12 +251,12 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                     if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
                         if (recursive && [value isKindOfClass:[NSNumber class]]) {
                             DWDatabaseResult * existRecordResult = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
-                            ///这个数据查过，直接赋值
+                            ///这个数据查过，可以赋值，但是要考虑查过的值是否够，不够的话，要继续查
                             if (existRecordResult.success) {
                                 DWDatabaseOperationRecord * existRecord = existRecordResult.result;
                                 [tmp setValue:existRecord.model forKey:obj.name];
-                                validValue = YES;
                                 ///借用这个标志位记录至少有一个可选值
+                                validValue = YES;
                                 record.operation = DWDatabaseOperationQuery;
                                 
                                 ///看看查询的键值够不够，不够还得补
@@ -260,14 +264,17 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                                 if (subKeyToQuery.count) {
                                     NSMutableSet * subKeyToQuerySet = [NSMutableSet setWithArray:subKeyToQuery];
                                     [subKeyToQuerySet minusSet:existRecord.operatedKeys];
+                                    ///键值不够，开始补
                                     if (subKeyToQuerySet.count > 0) {
                                         NSString * tblName = TblNameFromModel(existRecord.model);
                                         if (tblName.length) {
                                             DWDatabaseOperationRecord * result = [DWDatabaseOperationRecord new];
                                             result.model = obj;
                                             result.userInfo = value;
+                                            ///这里unhandledPros用tblName记录，这样后续补的时候直接可以取出内料表名
                                             [unhandledPros setValue:result forKey:tblName];
                                             record.keysToQuery = [subKeyToQuerySet allObjects];
+                                            ///不足，计算完需要补充的key后，告诉外界这里还没结束，需要补充
                                             if (record.finishOperationInChain) {
                                                 record.finishOperationInChain = NO;
                                             }
@@ -275,6 +282,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                                     }
                                 }
                             } else {
+                                ///不存在就很明显，就应该去查
                                 ///此处取嵌套模型对应地表名
                                 NSString * existTblName = [queryChains anyRecordInChainWithClass:obj.cls].tblName;
                                 NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
@@ -316,14 +324,16 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
 }
 
 -(DWDatabaseResult *)handleQueryRecursiveResultWithDbName:(NSString *)dbName tblName:(NSString *)tblName resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive subKeyArr:(NSArray<NSString *> *)subKeyArr {
+    ///如果是递归模式的话，这里resultArr记录的是record，表名当前模型是否查询完毕
     if (recursive) {
         NSMutableArray * tmp = [NSMutableArray arrayWithCapacity:resultArr.count];
-        for (NSInteger i = 0; i < resultArr.count; i++) {
-            DWDatabaseOperationRecord * obj = resultArr[i];
+        [resultArr enumerateObjectsUsingBlock:^(DWDatabaseOperationRecord * obj, NSUInteger idx, BOOL * _Nonnull stop) {
             NSObject * model = obj.model;
+            ///如果结果被标记已经查询完成了，代表接过已经合法了，直接放在数组里就行
             if (obj.finishOperationInChain) {
                 [tmp addObject:model];
             } else {
+                ///没有完成的话，就要看到底是那些属性没有完成，一般情况下，这些属性应该都是嵌套的模型
                 NSDictionary <NSString *,DWDatabaseOperationRecord *>* pros = (NSDictionary *)obj.userInfo;
                 DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName].result;
                 if (!dbConf) {
@@ -331,13 +341,16 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                     if (obj.operation == DWDatabaseOperationQuery) {
                         [tmp addObject:model];
                     }
-                    continue;
+                    return ;
                 }
                 __block BOOL hasValue = NO;
+                
+                ///开始补属性
                 [pros enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseOperationRecord * _Nonnull aObj, BOOL * _Nonnull stop) {
                     ///建表成功
                     DWPrefix_YYClassPropertyInfo * prop = aObj.model;
                     NSNumber * value = aObj.userInfo;
+                    ///拿待补属性信息及Dw_id，并按需建表
                     if (prop && value && [self createTableWithClass:prop.cls tableName:key configuration:dbConf].success) {
                         ///获取表名数据库句柄
                         DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:key].result;
@@ -366,12 +379,12 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                     }
                 }];
                 
-                if (hasValue) {
+                ///这里补属性成功，或者原本就有查询成功的值，都认为他是有效值
+                if (hasValue || obj.operation == DWDatabaseOperationQuery) {
                     [tmp addObject:model];
                 }
             }
-        }
-        
+        }];
         resultArr = tmp;
     }
     
