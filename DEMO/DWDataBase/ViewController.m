@@ -342,20 +342,26 @@
     cModel.dic = @{@"key":@"value"};
     cModel.classC = cModel;
     cModel.aNum = 12;
+    cModel.array = @[@"1",@"2"];
     
     B * bModel = [B new];
     bModel.b = 100;
     cModel.classB = bModel;
+    bModel.str = @"aaaa";
     
     A * aModel = [A new];
     aModel.a = @[@1,@2];
     aModel.classC = cModel;
     bModel.classA = aModel;
+    aModel.num = 300;
     
     DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
     if (result.success) {
         DWDatabaseConfiguration * conf = result.result;
-        result = [self.db insertTableWithModel:cModel recursive:YES configuration:conf condition:nil];
+        result = [self.db insertTableWithModel:cModel recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+            maker.dw_loadClass(C);
+            maker.dw_bindKey(dic).dw_bindKey(classB.b).dw_bindKey(classB.classA.a);
+        }];
         if (result.success) {
             NSLog(@"%@",[DWDatabase fetchDw_idForModel:cModel]);
         } else {

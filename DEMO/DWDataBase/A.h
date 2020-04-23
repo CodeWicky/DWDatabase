@@ -17,4 +17,6 @@
 
 @property (nonatomic ,strong) C * classC;
 
+@property (nonatomic ,assign) NSInteger num;
+
 @end

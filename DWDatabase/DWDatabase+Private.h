@@ -90,6 +90,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 
 @property (nonatomic ,strong) NSMutableArray * subKeyArr;
 
+@property (nonatomic ,strong) NSArray * validKeys;
+
 @end
 
 static void* dbOpQKey = "dbOperationQueueKey";
@@ -119,6 +121,8 @@ static void* dbOpQKey = "dbOperationQueueKey";
 -(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix;
 
 -(NSArray <NSString *>*)actualSubKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix;
+
+-(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix actualSubKey:(NSString *)actualSubKey;
 
 @end
 

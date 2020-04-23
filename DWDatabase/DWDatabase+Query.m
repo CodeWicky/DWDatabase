@@ -125,7 +125,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     Class cls = fac.clazz;
     NSDictionary * dbTransformMap = fac.dbTransformMap;
     NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
-    
+    NSArray * subKeyArr = fac.subKeyArr;
     result.result = nil;
     result.success = YES;
     NSMutableArray * resultArr = [NSMutableArray arrayWithCapacity:0];
@@ -138,7 +138,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
             BOOL stop = NO;
             while ([set next]) {
                 if (handler) {
-                     result.error = handler(cls,set,validPropertyInfo,fac.subKeyArr,dbTransformMap,resultArr,queryChains,recursive,inlineTblNameMap,&stop,&returnNil);
+                     result.error = handler(cls,set,validPropertyInfo,subKeyArr,dbTransformMap,resultArr,queryChains,recursive,inlineTblNameMap,&stop,&returnNil);
                 }
                 if (stop) {
                     break;
@@ -153,7 +153,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         return nil;
     }
     
-    return [self handleQueryRecursiveResultWithDbName:dbName tblName:tblName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyArr:fac.subKeyArr];
+    return [self handleQueryRecursiveResultWithDbName:dbName tblName:tblName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyArr:subKeyArr];
 }
 
 -(DWDatabaseResult *)dw_queryTableForCountWithDbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue conditionMaker:(DWDatabaseConditionMaker *)maker {
