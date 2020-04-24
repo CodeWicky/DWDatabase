@@ -67,11 +67,8 @@
         return result;
     }
     
-    DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
-        maker.loadClass([DWDatabaseInfo class]);
-    };
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-    condition(maker);
+    maker.loadClass([DWDatabaseInfo class]);
     NSArray <DWDatabaseInfo *>* res = [self dw_queryTableWithDbName:kSqlSetDbName tableName:kSqlSetTblName limit:0 offset:0 orderKey:nil ascending:YES inQueue:self.privateQueue queryChains:nil recursive:NO conditionMaker:maker reprocessing:nil].result;
     if (res.count) {
         ///取出以后配置数据库完整地址
@@ -285,16 +282,12 @@
     info.dbPath = path;
     if ([info configRelativePath]) {
         
-        DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
-            maker.dw_loadClass(DWDatabaseInfo);
-            maker.dw_conditionWith(dbName).equalTo(info.dbName);
-            maker.dw_conditionWith(dbPath).equalTo(info.dbPath);
-            maker.dw_conditionWith(relativePath).equalTo(info.relativePath);
-            maker.dw_conditionWith(relativeType).equalTo(info.relativeType);
-        };
-        
         DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-        condition(maker);
+        maker.dw_loadClass(DWDatabaseInfo);
+        maker.dw_conditionWith(dbName).equalTo(info.dbName);
+        maker.dw_conditionWith(dbPath).equalTo(info.dbPath);
+        maker.dw_conditionWith(relativePath).equalTo(info.relativePath);
+        maker.dw_conditionWith(relativeType).equalTo(info.relativeType);
         
         result = [self dw_deleteTableWithModel:nil dbName:kSqlSetDbName tableName:kSqlSetTblName inQueue:self.privateQueue deleteChains:nil recursive:NO conditionMaker:maker];
         ///若表删除成功，应移除所有相关信息，包括缓存的DBQ，数据库地址缓存，本地数据库文件，以及若为当前库还要清空当前库信息

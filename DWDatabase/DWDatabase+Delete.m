@@ -94,13 +94,10 @@
         if (!Dw_id) {
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
         }
-        DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
-            maker.loadClass([model class]);
-            maker.conditionWith(kUniqueID).equalTo(Dw_id);
-        };
         
         maker = [DWDatabaseConditionMaker new];
-        condition(maker);
+        maker.loadClass([model class]);
+        maker.conditionWith(kUniqueID).equalTo(Dw_id);
     }
     
     Class cls = [maker fetchQueryClass];

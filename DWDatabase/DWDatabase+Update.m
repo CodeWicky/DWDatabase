@@ -244,11 +244,8 @@
                                     if (tblConf) {
                                         DWDatabaseConditionMaker * maker = nil;
                                         if (Dw_id) {
-                                            DWDatabaseConditionHandler condition = ^(DWDatabaseConditionMaker * maker) {
-                                                maker.conditionWith(kUniqueID).equalTo(Dw_id);
-                                            };
                                             maker = [DWDatabaseConditionMaker new];
-                                            condition(maker);
+                                            maker.conditionWith(kUniqueID).equalTo(Dw_id);
                                         }
                                         
                                         DWDatabaseResult * result = [self dw_updateTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue updateChains:updateChains recursive:NO updateObjectID:YES conditionMaker:maker];
