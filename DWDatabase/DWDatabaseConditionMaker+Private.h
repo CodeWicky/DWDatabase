@@ -31,7 +31,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 };
 
 #import "DWDatabaseConditionMaker.h"
-
+@class DWDatabaseBindKeyWrapper;
 @interface DWDatabaseConditionMaker (Private)
 
 @property (nonatomic ,strong) NSMutableArray <DWDatabaseCondition *>* conditions;
@@ -42,11 +42,15 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 @property (nonatomic ,assign) DWDatabaseConditionLogicalOperator conditionOperator;
 
-@property (nonatomic ,strong) NSMutableArray * bindKeys;
+@property (nonatomic ,strong) DWDatabaseBindKeyWrapper * currentBindKeyWrapper;
 
+@property (nonatomic ,strong) NSMutableArray <DWDatabaseBindKeyWrapper *>* bindKeys;
 
-typedef DWDatabaseConditionMaker *(^DWDatabaseBindKeyWithArray)(NSArray <NSString *>* keys);
-@property (nonatomic ,copy ,readonly) DWDatabaseBindKeyWithArray bindKeysWithArray;
+@property (nonatomic ,strong) NSMutableDictionary * bindKeyWrappers;
+
+typedef NSMutableDictionary <NSString *,DWDatabaseBindKeyWrapper *>* DWDatabaseBindKeyWrapperContainer;
+typedef DWDatabaseConditionMaker *(^DWDatabaseBindKeyWithWrappers)(DWDatabaseBindKeyWrapperContainer wrappers);
+@property (nonatomic ,copy ,readonly) DWDatabaseBindKeyWithWrappers bindKeyWithWrappers;
 
 -(void)configWithTblName:(NSString *)tblName propertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)propertyInfos databaseMap:(NSDictionary *)databaseMap enableSubProperty:(BOOL)enableSubProperty;
 
@@ -62,7 +66,7 @@ typedef DWDatabaseConditionMaker *(^DWDatabaseBindKeyWithArray)(NSArray <NSStrin
 
 -(Class)fetchQueryClass;
 
--(NSArray *)fetchBindKeys;
+-(DWDatabaseBindKeyWrapperContainer)fetchBindKeys;
 
 -(DWDatabaseCondition *)installConditionWithValue:(id)value relation:(DWDatabaseValueRelation)relation;
 
@@ -97,5 +101,15 @@ typedef DWDatabaseConditionMaker *(^DWDatabaseBindKeyWithArray)(NSArray <NSStrin
 @property (nonatomic ,strong) DWDatabaseCondition * conditionB;
 
 @property (nonatomic ,assign) DWDatabaseConditionLogicalOperator combineOperator;
+
+@end
+
+@interface DWDatabaseBindKeyWrapper : NSObject<NSCopying>
+
+@property (nonatomic ,copy) NSMutableArray <NSString *>* bindKeys;
+
+@property (nonatomic ,assign) BOOL recursively;
+
+@property (nonatomic ,copy) NSString * key;
 
 @end

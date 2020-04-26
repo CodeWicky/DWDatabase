@@ -17,6 +17,8 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionVoidValue)(void);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKey)(NSString * key);
+typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKeyRecursively)(BOOL recursively);
+typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKeyCommit)(void);
 
 @interface DWDatabaseCondition : NSObject
 
@@ -37,6 +39,10 @@ typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKey)(NSString * key);
 ///为当前条件工厂指定索引模型类（必须在其他属性前调用）
 @property (nonatomic ,copy) DWDatabaseConditionClass loadClass;
 
+@end
+
+
+@interface DWDatabaseConditionMaker (Condition)
 //2.指定条件对应的键值
 ///指定当前条件对应的键值（此处会根据先前装载的模型类自动推断出该模型类的相关属性，方便快速指定键值。），一个条件可以对应多个键值（即属性a及属性bu均等于某个值时conditionWith 可以连续调用）
 @property (nonatomic ,copy) DWDatabaseConditionKey conditionWith;
@@ -78,6 +84,10 @@ typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKey)(NSString * key);
 ///指定当前条件为非Null值字段
 @property (nonatomic ,copy) DWDatabaseConditionVoidValue notNull;
 
+@end
+
+@interface DWDatabaseConditionMaker (BindKey)
+
 ///4.绑定操作键值
 ///为后续操作绑定相关键值。例如：
 ///(1).插入方法中，指定需要插入表的属性名
@@ -85,6 +95,11 @@ typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKey)(NSString * key);
 ///(3).查询方法中，指定需要查询表的属性名
 ///若不绑定键值，将默认操作表中所有的字段
 @property (nonatomic ,copy) DWDatabaseBindKey bindKey;
+
+///设置绑定的键值是否支持递归，若不调用，默认为YES
+@property (nonatomic ,copy) DWDatabaseBindKeyRecursively recursively;
+
+@property (nonatomic ,copy) DWDatabaseBindKeyCommit commit;
 
 @end
 

@@ -201,7 +201,7 @@
         maker = [DWDatabaseConditionMaker new];
         condition(maker);
     }
-    return [self dw_updateTableWithModel:model dbName:name tableName:tblName inQueue:conf.dbQueue updateChains:nil recursive:YES updateObjectID:NO conditionMaker:maker];
+    return [self dw_updateTableWithModel:model dbName:name tableName:tblName inQueue:conf.dbQueue updateChains:nil recursive:YES conditionMaker:maker];
 }
 
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(Class)clazz name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
@@ -721,7 +721,7 @@
         if (set) {
             while ([set next]) {
                 
-                result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:props subKeyArr:nil databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:&stop returnNil:&returnNil stopOnValidValue:NO reprocessing:nil];
+                result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:props mainKeyWrappers:nil subKeyWrappers:nil databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:&stop returnNil:&returnNil stopOnValidValue:NO reprocessing:nil];
                 
                 if (!result.success) {
                     if (stop) {
@@ -737,7 +737,7 @@
         return result;
     }
     
-    return [self handleQueryRecursiveResultWithDbName:conf.dbName tblName:conf.tableName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyArr:nil];
+    return [self handleQueryRecursiveResultWithDbName:conf.dbName tblName:conf.tableName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyWrappers:nil];
 }
 
 -(void)queryTableWithSQL:(NSString *)sql class:(Class)cls recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf completion:(void (^)(NSArray<__kindof NSObject *> * _Nonnull, NSError * _Nonnull))completion {

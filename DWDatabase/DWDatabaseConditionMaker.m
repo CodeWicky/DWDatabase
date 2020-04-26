@@ -198,8 +198,30 @@
 -(DWDatabaseBindKey)bindKey {
     return ^(NSString * key) {
         if (key.length) {
-            [self.bindKeys addObject:key];
+            DWDatabaseBindKeyWrapper * currentWrapper = self.currentBindKeyWrapper;
+            if (!currentWrapper) {
+                currentWrapper = [DWDatabaseBindKeyWrapper new];
+                self.currentBindKeyWrapper = currentWrapper;
+                [self.bindKeys addObject:currentWrapper];
+            }
+            [currentWrapper.bindKeys addObject:key];
         }
+        return self;
+    };
+}
+
+-(DWDatabaseBindKeyRecursively)recursively {
+    return ^(BOOL recursively) {
+        if (self.currentBindKeyWrapper) {
+            self.currentBindKeyWrapper.recursively = recursively;
+        }
+        return self;
+    };
+}
+
+-(DWDatabaseBindKeyCommit)commit {
+    return ^(void) {
+        self.currentBindKeyWrapper = nil;
         return self;
     };
 }

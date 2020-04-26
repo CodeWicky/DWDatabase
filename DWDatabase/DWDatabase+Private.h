@@ -8,6 +8,7 @@
 #import <Foundation/Foundation.h>
 #import "DWDatabaseResult.h"
 #import "DWDatabase.h"
+#import "DWDatabaseConditionMaker+Private.h"
 
 typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
     DWDatabaseOperationUndefined,
@@ -48,7 +49,7 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 
 @property (nonatomic ,strong) NSMutableSet * operatedKeys;
 
-@property (nonatomic ,strong) NSArray <NSString *>* keysToQuery;
+@property (nonatomic ,strong) DWDatabaseBindKeyWrapperContainer keyWrappersToQuery;
 
 @end
 
@@ -88,7 +89,9 @@ typedef NS_ENUM(NSUInteger, DWDatabaseOperation) {
 
 @property (nonatomic ,strong) NSDictionary * dbTransformMap;
 
-@property (nonatomic ,strong) NSMutableArray * subKeyArr;
+@property (nonatomic ,strong) DWDatabaseBindKeyWrapperContainer mainKeyWrappers;
+
+@property (nonatomic ,strong) DWDatabaseBindKeyWrapperContainer subKeyWrappers;
 
 @property (nonatomic ,strong) NSArray * validKeys;
 
@@ -118,11 +121,23 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(NSArray <NSArray <NSString *>*> *)seperateSubKeys:(NSArray <NSString *>*)keys;
 
+-(NSArray <DWDatabaseBindKeyWrapperContainer>*)seperateSubWrappers:(DWDatabaseBindKeyWrapperContainer)wrapper;
+
 -(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix;
+
+-(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers withPrefix:(NSString *)prefix;
+
+-(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers inKeys:(NSArray <NSString *>*)keys;
+
+-(DWDatabaseBindKeyWrapperContainer)saveKeysWrappersWithCls:(Class)cls;
 
 -(NSArray <NSString *>*)actualSubKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix;
 
+-(DWDatabaseBindKeyWrapperContainer)actualSubKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subWrappers withPrefix:(NSString *)prefix;
+
 -(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix actualSubKey:(NSString *)actualSubKey;
+
+-(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers withPrefix:(NSString *)prefix actualSubKey:(NSString *)actualSubKey;
 
 @end
 

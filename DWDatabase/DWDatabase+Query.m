@@ -10,7 +10,7 @@
 #import "DWDatabaseConditionMaker+Private.h"
 #define kQueryPrefix (@"q")
 
-typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,NSArray <NSString *>* subKeyArr,NSDictionary * databaseMap,NSMutableArray * resultArr,DWDatabaseOperationChain * queryChains,BOOL recursive,NSDictionary * inlineTblNameMap,BOOL * stop,BOOL * returnNil);
+typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*validProInfos,DWDatabaseBindKeyWrapperContainer mainKeyWrappers,DWDatabaseBindKeyWrapperContainer subKeyWrappers,NSDictionary * databaseMap,NSMutableArray * resultArr,DWDatabaseOperationChain * queryChains,BOOL recursive,NSDictionary * inlineTblNameMap,BOOL * stop,BOOL * returnNil);
 @implementation DWDatabase (Query)
 
 #pragma mark --- interface method ---
@@ -59,14 +59,14 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     if (condition) {
         condition(maker);
     }
-    NSMutableArray * bindKeys = maker.bindKeys;
+    DWDatabaseBindKeyWrapperContainer bindKeyWrappers = [maker fetchBindKeys];
     [maker reset];
     maker.loadClass(cls);
     maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    maker.bindKeysWithArray(bindKeys);
+    maker.bindKeyWithWrappers(bindKeyWrappers);
     
-    result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSArray<NSString *> *subKeyArr, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
-        DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:validProInfos subKeyArr:subKeyArr databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:YES reprocessing:nil];
+    result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, DWDatabaseBindKeyWrapperContainer mainKeyWrappers, DWDatabaseBindKeyWrapperContainer subKeyWrappers, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+        DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:validProInfos mainKeyWrappers:mainKeyWrappers subKeyWrappers:subKeyWrappers databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:YES reprocessing:nil];
         if (result.success) {
             return nil;
         } else {
@@ -86,8 +86,8 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
 
 -(DWDatabaseResult *)dw_queryTableWithDbName:(NSString *)dbName tableName:(NSString *)tblName limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending inQueue:(FMDatabaseQueue *)queue queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker reprocessing:(DWDatabaseReprocessingHandler)reprocessing {
 
-    return [self dw_queryTableWithDbName:dbName tableName:tblName limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSArray<NSString *> *subKeyArr, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
-        DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:dbName tblName:tblName resultSet:set validProInfos:validProInfos subKeyArr:subKeyArr databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:NO reprocessing:reprocessing];
+    return [self dw_queryTableWithDbName:dbName tableName:tblName limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:queue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, DWDatabaseBindKeyWrapperContainer mainKeyWrappers, DWDatabaseBindKeyWrapperContainer subKeyWrappers, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+        DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:dbName tblName:tblName resultSet:set validProInfos:validProInfos mainKeyWrappers:mainKeyWrappers subKeyWrappers:subKeyWrappers databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:NO reprocessing:reprocessing];
         if (result.success) {
             return nil;
         } else {
@@ -125,7 +125,8 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     Class cls = fac.clazz;
     NSDictionary * dbTransformMap = fac.dbTransformMap;
     NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
-    NSArray * subKeyArr = fac.subKeyArr;
+    DWDatabaseBindKeyWrapperContainer mainKeyWrappers = fac.mainKeyWrappers;
+    DWDatabaseBindKeyWrapperContainer subKeyWrappers = fac.subKeyWrappers;
     result.result = nil;
     result.success = YES;
     NSMutableArray * resultArr = [NSMutableArray arrayWithCapacity:0];
@@ -138,7 +139,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
             BOOL stop = NO;
             while ([set next]) {
                 if (handler) {
-                     result.error = handler(cls,set,validPropertyInfo,subKeyArr,dbTransformMap,resultArr,queryChains,recursive,inlineTblNameMap,&stop,&returnNil);
+                     result.error = handler(cls,set,validPropertyInfo,mainKeyWrappers,subKeyWrappers,dbTransformMap,resultArr,queryChains,recursive,inlineTblNameMap,&stop,&returnNil);
                 }
                 if (stop) {
                     break;
@@ -153,7 +154,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         return nil;
     }
     
-    return [self handleQueryRecursiveResultWithDbName:dbName tblName:tblName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyArr:subKeyArr];
+    return [self handleQueryRecursiveResultWithDbName:dbName tblName:tblName resultArr:resultArr queryChains:queryChains recursive:recursive subKeyWrappers:subKeyWrappers];
 }
 
 -(DWDatabaseResult *)dw_queryTableForCountWithDbName:(NSString *)dbName tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue conditionMaker:(DWDatabaseConditionMaker *)maker {
@@ -162,8 +163,9 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     }
     ///查询个数的话，只查询ID即可
     [maker.bindKeys removeAllObjects];
-    [maker.bindKeys addObject:kUniqueID];
-    DWDatabaseResult * result = [self dw_queryTableWithDbName:dbName tableName:tblName limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue queryChains:nil recursive:NO conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, NSArray<NSString *> *subKeyArr, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+    maker.bindKeyWrappers = nil;
+    maker.bindKey(kUniqueID);
+    DWDatabaseResult * result = [self dw_queryTableWithDbName:dbName tableName:tblName limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue queryChains:nil recursive:NO conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, DWDatabaseBindKeyWrapperContainer mainKeyWrappers, DWDatabaseBindKeyWrapperContainer subKeyWrappers, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         [resultArr addObject:@1];
         return nil;
     }];
@@ -177,7 +179,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     return result;
 }
 
--(DWDatabaseResult *)handleQueryResultWithClass:(Class)cls dbName:(NSString *)dbName tblName:(NSString *)tblName resultSet:(FMResultSet *)set validProInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)validProInfos subKeyArr:(NSArray <NSString *>*)subKeyArr databaseMap:(NSDictionary *)databaseMap resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive inlineTblNameMap:(NSDictionary *)inlineTblNameMap stop:(BOOL *)stop returnNil:(BOOL *)returnNil stopOnValidValue:(BOOL)stopOnValidValue reprocessing:(DWDatabaseReprocessingHandler)reprocessing {
+-(DWDatabaseResult *)handleQueryResultWithClass:(Class)cls dbName:(NSString *)dbName tblName:(NSString *)tblName resultSet:(FMResultSet *)set validProInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)validProInfos mainKeyWrappers:(DWDatabaseBindKeyWrapperContainer)mainKeyWrappers subKeyWrappers:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers databaseMap:(NSDictionary *)databaseMap resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive inlineTblNameMap:(NSDictionary *)inlineTblNameMap stop:(BOOL *)stop returnNil:(BOOL *)returnNil stopOnValidValue:(BOOL)stopOnValidValue reprocessing:(DWDatabaseReprocessingHandler)reprocessing {
     if (cls == NULL) {
         NSError * err = errorWithMessage(@"Invalid Class who is Nil.", 10017);
         *stop = YES;
@@ -249,32 +251,51 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                     id value = [set objectForColumn:name];
                     ///这里考虑对象嵌套
                     if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                        if (recursive && [value isKindOfClass:[NSNumber class]]) {
-                            DWDatabaseResult * existRecordResult = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
-                            ///这个数据查过，可以赋值，但是要考虑查过的值是否够，不够的话，要继续查
-                            if (existRecordResult.success) {
-                                DWDatabaseOperationRecord * existRecord = existRecordResult.result;
-                                [tmp setValue:existRecord.model forKey:obj.name];
-                                ///借用这个标志位记录至少有一个可选值
-                                validValue = YES;
-                                record.operation = DWDatabaseOperationQuery;
-                                
-                                ///看看查询的键值够不够，不够还得补
-                                NSArray * subKeyToQuery = [self actualSubKeysIn:subKeyArr withPrefix:obj.name];
-                                if (subKeyToQuery.count) {
-                                    NSMutableSet * subKeyToQuerySet = [NSMutableSet setWithArray:subKeyToQuery];
-                                    [subKeyToQuerySet minusSet:existRecord.operatedKeys];
-                                    ///键值不够，开始补
-                                    if (subKeyToQuerySet.count > 0) {
-                                        NSString * tblName = TblNameFromModel(existRecord.model);
-                                        if (tblName.length) {
+                        DWDatabaseBindKeyWrapper * wrapper = mainKeyWrappers[obj.name];
+                        if ([value isKindOfClass:[NSNumber class]]) {
+                            if (!wrapper || wrapper.recursively) {
+                                if (recursive) {
+                                    DWDatabaseResult * existRecordResult = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
+                                    ///这个数据查过，可以赋值，但是要考虑查过的值是否够，不够的话，要继续查
+                                    if (existRecordResult.success) {
+                                        DWDatabaseOperationRecord * existRecord = existRecordResult.result;
+                                        [tmp setValue:existRecord.model forKey:obj.name];
+                                        ///借用这个标志位记录至少有一个可选值
+                                        validValue = YES;
+                                        record.operation = DWDatabaseOperationQuery;
+                                        
+                                        ///看看查询的键值够不够，不够还得补
+                                        DWDatabaseBindKeyWrapperContainer subKeyWrappersToQuery = [self actualSubKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
+                                        if (subKeyWrappersToQuery.allKeys.count) {
+                                            NSMutableSet * subKeyToQuerySet = [NSMutableSet setWithArray:subKeyWrappersToQuery.allKeys];
+                                            [subKeyToQuerySet minusSet:existRecord.operatedKeys];
+                                            ///键值不够，开始补
+                                            if (subKeyToQuerySet.count > 0) {
+                                                NSString * tblName = TblNameFromModel(existRecord.model);
+                                                if (tblName.length) {
+                                                    DWDatabaseOperationRecord * result = [DWDatabaseOperationRecord new];
+                                                    result.model = obj;
+                                                    result.userInfo = value;
+                                                    ///这里unhandledPros用tblName记录，这样后续补的时候直接可以取出内料表名
+                                                    [unhandledPros setValue:result forKey:tblName];
+                                                    record.keyWrappersToQuery = [self subKeyWrappersIn:subKeyWrappersToQuery inKeys:[subKeyToQuerySet allObjects]];
+                                                    ///不足，计算完需要补充的key后，告诉外界这里还没结束，需要补充
+                                                    if (record.finishOperationInChain) {
+                                                        record.finishOperationInChain = NO;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        ///不存在就很明显，就应该去查
+                                        ///此处取嵌套模型对应地表名
+                                        NSString * existTblName = [queryChains anyRecordInChainWithClass:obj.cls].tblName;
+                                        NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
+                                        if (inlineTblName.length) {
                                             DWDatabaseOperationRecord * result = [DWDatabaseOperationRecord new];
                                             result.model = obj;
                                             result.userInfo = value;
-                                            ///这里unhandledPros用tblName记录，这样后续补的时候直接可以取出内料表名
-                                            [unhandledPros setValue:result forKey:tblName];
-                                            record.keysToQuery = [subKeyToQuerySet allObjects];
-                                            ///不足，计算完需要补充的key后，告诉外界这里还没结束，需要补充
+                                            [unhandledPros setValue:result forKey:inlineTblName];
                                             if (record.finishOperationInChain) {
                                                 record.finishOperationInChain = NO;
                                             }
@@ -282,19 +303,9 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                                     }
                                 }
                             } else {
-                                ///不存在就很明显，就应该去查
-                                ///此处取嵌套模型对应地表名
-                                NSString * existTblName = [queryChains anyRecordInChainWithClass:obj.cls].tblName;
-                                NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
-                                if (inlineTblName.length) {
-                                    DWDatabaseOperationRecord * result = [DWDatabaseOperationRecord new];
-                                    result.model = obj;
-                                    result.userInfo = value;
-                                    [unhandledPros setValue:result forKey:inlineTblName];
-                                    if (record.finishOperationInChain) {
-                                        record.finishOperationInChain = NO;
-                                    }
-                                }
+                                [tmp dw_setValue:value forPropertyInfo:obj];
+                                record.operation = DWDatabaseOperationQuery;
+                                validValue = YES;
                             }
                         }
                     } else {
@@ -323,7 +334,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     return [DWDatabaseResult successResultWithResult:nil];
 }
 
--(DWDatabaseResult *)handleQueryRecursiveResultWithDbName:(NSString *)dbName tblName:(NSString *)tblName resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive subKeyArr:(NSArray<NSString *> *)subKeyArr {
+-(DWDatabaseResult *)handleQueryRecursiveResultWithDbName:(NSString *)dbName tblName:(NSString *)tblName resultArr:(NSMutableArray *)resultArr queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive subKeyWrappers:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers {
     ///如果是递归模式的话，这里resultArr记录的是record，表名当前模型是否查询完毕
     if (recursive) {
         NSMutableArray * tmp = [NSMutableArray arrayWithCapacity:resultArr.count];
@@ -356,17 +367,17 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                         DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:key].result;
                         if (tblConf) {
                             ///取出需要查询的key。由于查询是先查询完自身的逻辑，故当前仅当对象A持有对象A自身的时候会遇到嵌套结构，这时候有可能取到二重属性较自身额外的查询属性，所以直接查找以录得属性即可。其他情况下，keysToQuery为空。
-                            NSArray * subKeys = aObj.keysToQuery;
-                            if (!subKeys) {
-                                subKeys = [self subKeysIn:subKeyArr withPrefix:prop.name];
+                            DWDatabaseBindKeyWrapperContainer subKeyWrappers = aObj.keyWrappersToQuery;
+                            if (!subKeyWrappers) {
+                                subKeyWrappers = [self subKeyWrappersIn:subKeyWrappers withPrefix:prop.name];
                             } else {
-                                aObj.keysToQuery = nil;
+                                aObj.keyWrappersToQuery = nil;
                             }
                             
                             DWDatabaseConditionHandler condition = nil;
-                            if (subKeys.count) {
+                            if (subKeyWrappers.allKeys.count) {
                                 condition = ^(DWDatabaseConditionMaker * maker) {
-                                    maker.bindKeysWithArray(subKeys);
+                                    maker.bindKeyWithWrappers(subKeyWrappers);
                                 };
                             }
                             
@@ -417,9 +428,9 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     NSArray * conditionStrings = [maker fetchConditions];
     NSArray * validConditionKeys = [maker fetchValidKeys];
     NSArray * joinTables = [maker fetchJoinTables];
-    NSArray * keys = [maker fetchBindKeys];
-    NSArray * seperateKeys = [self seperateSubKeys:keys];
-    keys = seperateKeys.firstObject;
+    DWDatabaseBindKeyWrapperContainer bindKeyWrapper = [maker fetchBindKeys];
+    NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper];
+    NSArray * keys = [seperateWrappers.firstObject allKeys];
     BOOL queryAll = NO;
     ///如果keys为空则试图查询cls与表对应的所有键值
     BOOL hasDw_id = NO;
@@ -577,7 +588,8 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     fac.clazz = cls;
     fac.validPropertyInfos = validPropertyInfo;
     fac.dbTransformMap = map;
-    fac.subKeyArr = seperateKeys.lastObject;
+    fac.mainKeyWrappers = seperateWrappers.firstObject;
+    fac.subKeyWrappers = seperateWrappers.lastObject;
     return [DWDatabaseResult successResultWithResult:fac];
 }
 

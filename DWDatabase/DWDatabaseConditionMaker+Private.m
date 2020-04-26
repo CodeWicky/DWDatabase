@@ -84,7 +84,6 @@
 
 @property (nonatomic ,strong) NSDictionary * databaseMap;
 
-
 @property (nonatomic ,strong) NSMutableArray * validKeys;
 
 @property (nonatomic ,strong) NSMutableArray * arguments;
@@ -170,8 +169,22 @@
     return [self.joinTables allObjects];
 }
 
--(NSArray *)fetchBindKeys {
-    return [self.bindKeys copy];
+-(DWDatabaseBindKeyWrapperContainer)fetchBindKeys {
+    if (self.bindKeyWrappers) {
+        return self.bindKeyWrappers;
+    }
+    NSMutableDictionary * tmpDic = [NSMutableDictionary dictionaryWithCapacity:0];
+    [self.bindKeys enumerateObjectsUsingBlock:^(DWDatabaseBindKeyWrapper * _Nonnull wrapper, NSUInteger idx, BOOL * _Nonnull stop) {
+        [wrapper.bindKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            if (obj.length) {
+                DWDatabaseBindKeyWrapper * tmp = [wrapper copy];
+                tmp.key = obj;
+                [tmpDic setObject:tmp forKey:obj];
+            }
+        }];
+    }];
+    self.bindKeyWrappers = tmpDic;
+    return self.bindKeyWrappers;
 }
 
 -(DWDatabaseCondition *)installConditionWithValue:(id)value relation:(DWDatabaseValueRelation)relation {
@@ -190,6 +203,7 @@
     self.inlineTblDataBaseMap = nil;
     self.inlineTblMapCtn = nil;
     self.bindKeys = nil;
+    self.bindKeyWrappers = nil;
     self.hasSubProperty = NO;
 }
 
@@ -201,49 +215,49 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
         return maker.conditions.lastObject;
     }
     
-    DWDatabaseCondition * conf = maker.currentCondition;
+    DWDatabaseCondition * condition = maker.currentCondition;
     switch (relation) {
         case DWDatabaseValueRelationErrorALL:
         {
-            NSMutableArray * fixKeys = [NSMutableArray arrayWithCapacity:conf.conditionKeys.count];
-            while (fixKeys.count < conf.conditionKeys.count) {
+            NSMutableArray * fixKeys = [NSMutableArray arrayWithCapacity:condition.conditionKeys.count];
+            while (fixKeys.count < condition.conditionKeys.count) {
                 [fixKeys addObject:@"1"];
             }
-            conf.conditionKeys = fixKeys;
-            conf.value = @"1";
-            conf.relation = DWDatabaseValueRelationEqual;
-            conf.maker = maker;
+            condition.conditionKeys = fixKeys;
+            condition.value = @"1";
+            condition.relation = DWDatabaseValueRelationEqual;
+            condition.maker = maker;
         }
             break;
         case DWDatabaseValueRelationErrorNone:
         {
-            NSMutableArray * fixKeys = [NSMutableArray arrayWithCapacity:conf.conditionKeys.count];
-            while (fixKeys.count < conf.conditionKeys.count) {
+            NSMutableArray * fixKeys = [NSMutableArray arrayWithCapacity:condition.conditionKeys.count];
+            while (fixKeys.count < condition.conditionKeys.count) {
                 [fixKeys addObject:kUniqueID];
             }
-            conf.conditionKeys = fixKeys;
-            conf.value = @"0";
-            conf.relation = DWDatabaseValueRelationEqual;
-            conf.maker = maker;
+            condition.conditionKeys = fixKeys;
+            condition.value = @"0";
+            condition.relation = DWDatabaseValueRelationEqual;
+            condition.maker = maker;
         }
             break;
         default:
         {
-            conf.value = value;
-            conf.relation = relation;
-            conf.maker = maker;
+            condition.value = value;
+            condition.relation = relation;
+            condition.maker = maker;
         }
             break;
     }
-    [maker.conditions addObject:conf];
+    [maker.conditions addObject:condition];
     maker.currentCondition = nil;
     ///如果当前maker包含逻辑运算状态，代表当前条件是与上一个条件存在逻辑关系，则将逻辑关系及上一个条件保存在当前条件中，当调用combine时根据就近原则组合最后两个具有逻辑关系的条件
     if (maker.conditionOperator != DWDatabaseConditionLogicalOperatorNone) {
-        conf.conditionOperator = maker.conditionOperator;
-        conf.operateCondition = maker.conditions.lastObject;
+        condition.conditionOperator = maker.conditionOperator;
+        condition.operateCondition = maker.conditions.lastObject;
         maker.conditionOperator = DWDatabaseConditionLogicalOperatorNone;
     }
-    return conf;
+    return condition;
 }
 
 #pragma mark --- override ---
@@ -253,10 +267,10 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 }
 
 #pragma mark --- setter/getter ---
--(DWDatabaseBindKeyWithArray)bindKeysWithArray {
-    return ^(NSArray <NSString *>* array) {
-        if (array.count) {
-            [self.bindKeys addObjectsFromArray:array];
+-(DWDatabaseBindKeyWithWrappers)bindKeyWithWrappers {
+    return ^(DWDatabaseBindKeyWrapperContainer wrappers) {
+        if (wrappers.allKeys.count) {
+            self.bindKeyWrappers = wrappers;
         }
         return self;
     };
@@ -399,12 +413,28 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
     DWDatabaseSetValue(inlineTblDataBaseMap);
 }
 
+-(DWDatabaseBindKeyWrapper *)currentBindKeyWrapper {
+    return DWDatabaseGetValue(currentBindKeyWrapper);
+}
+
+-(void)setCurrentBindKeyWrapper:(DWDatabaseBindKeyWrapper *)currentBindKeyWrapper {
+    DWDatabaseSetValue(currentBindKeyWrapper);
+}
+
 -(NSMutableArray *)bindKeys {
     return DWDatabaseLazyValue(bindKeys, NSMutableArray, array);
 }
 
 -(void)setBindKeys:(NSMutableArray *)bindKeys {
     DWDatabaseSetValue(bindKeys);
+}
+
+-(NSMutableDictionary *)bindKeyWrappers {
+    return DWDatabaseGetValue(bindKeyWrappers);
+}
+
+-(void)setBindKeyWrappers:(NSMutableDictionary *)bindKeyWrappers {
+    DWDatabaseSetValue(bindKeyWrappers);
 }
 
 @end
@@ -913,6 +943,46 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 -(NSString *)description {
     NSString * superDes = [NSString stringWithFormat:@"<%@: %p>",NSStringFromClass([self class]),self];
     return [NSString stringWithFormat:@"%@ (%@ %@ %@)",superDes,self.conditionA,(self.combineOperator == DWDatabaseConditionLogicalOperatorAnd)?@"AND":@"OR",self.conditionB];
+}
+
+@end
+
+@implementation DWDatabaseBindKeyWrapper
+
+#pragma mark --- override ---
+-(instancetype)init {
+    if (self = [super init]) {
+        _recursively = YES;
+    }
+    return self;
+}
+
+-(id)copyWithZone:(NSZone *)zone {
+    DWDatabaseBindKeyWrapper * copy = [[[self class] allocWithZone:zone] init];
+    if (_bindKeys) {
+        copy.bindKeys = [self.bindKeys mutableCopy];
+    }
+    copy.key = [self.key copy];
+    copy.recursively = self.recursively;
+    return copy;
+}
+
+- (id)mutableCopyWithZone:(NSZone *)zone {
+    DWDatabaseBindKeyWrapper * copy = [[[self class] allocWithZone:zone] init];
+    if (_bindKeys) {
+        copy.bindKeys = [self.bindKeys mutableCopy];
+    }
+    copy.key = [self.key mutableCopy];
+    copy.recursively = self.recursively;
+    return copy;
+}
+
+#pragma mark --- setter/getter ---
+-(NSMutableArray<NSString *> *)bindKeys {
+    if (!_bindKeys) {
+        _bindKeys = [NSMutableArray arrayWithCapacity:0];
+    }
+    return _bindKeys;
 }
 
 @end

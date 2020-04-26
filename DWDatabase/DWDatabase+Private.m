@@ -317,6 +317,28 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     return result;
 }
 
+-(NSArray<DWDatabaseBindKeyWrapperContainer> *)seperateSubWrappers:(DWDatabaseBindKeyWrapperContainer)wrapper {
+    NSMutableDictionary * mainWrappers = [NSMutableDictionary dictionaryWithCapacity:wrapper.count];
+    NSMutableDictionary * subWrappers = [NSMutableDictionary dictionaryWithCapacity:wrapper.count];
+    NSMutableArray * result = [NSMutableArray arrayWithCapacity:2];
+    [result addObject:mainWrappers];
+    [result addObject:subWrappers];
+    [wrapper enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseBindKeyWrapper * _Nonnull obj, BOOL * _Nonnull stop) {
+        if ([key containsString:@"."]) {
+            [subWrappers setValue:obj forKey:key];
+            if (![key hasPrefix:@"."]) {
+                key = [key componentsSeparatedByString:@"."].firstObject;
+                DWDatabaseBindKeyWrapper * tmp = [obj copy];
+                tmp.recursively = YES;
+                [mainWrappers setValue:tmp forKey:key];
+            }
+        } else if (key.length > 0) {
+            [mainWrappers setValue:obj forKey:key];
+        }
+    }];
+    return result;
+}
+
 -(NSArray<NSString *> *)subKeysIn:(NSArray<NSString *> *)subKeys withPrefix:(NSString *)prefix {
     if (!subKeys.count || !prefix.length) {
         return nil;
@@ -327,6 +349,55 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     [subKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (obj.length > prefixLen && [obj hasPrefix:prefix]) {
             [result addObject:[obj substringFromIndex:prefixLen]];
+        }
+    }];
+    return result;
+}
+
+-(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers withPrefix:(NSString *)prefix {
+    if (!subKeyWrappers.allKeys.count || !prefix.length) {
+        return nil;
+    }
+    
+    NSInteger prefixLen = prefix.length + 1;
+    NSMutableDictionary * result = [NSMutableDictionary dictionaryWithCapacity:subKeyWrappers.allKeys.count];
+    [subKeyWrappers enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseBindKeyWrapper * _Nonnull obj, BOOL * _Nonnull stop) {
+        if (key.length > prefixLen && [key hasPrefix:prefix]) {
+            key = [key substringFromIndex:prefixLen];
+            obj.key = key;
+            [result setObject:obj forKey:key];
+        }
+    }];
+    return result;
+}
+
+-(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers inKeys:(NSArray<NSString *> *)keys {
+    if (!subKeyWrappers.allKeys.count || !keys.count) {
+        return nil;
+    }
+    NSMutableDictionary * result = [NSMutableDictionary dictionaryWithCapacity:keys.count];
+    [keys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.length) {
+            result[obj] = subKeyWrappers[obj];
+        }
+    }];
+    return result;
+}
+
+-(DWDatabaseBindKeyWrapperContainer)saveKeysWrappersWithCls:(Class)cls {
+    if (!cls) {
+        return nil;
+    }
+    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
+    if (!saveKeys.count) {
+        return nil;
+    }
+    NSMutableDictionary * result = [NSMutableDictionary dictionaryWithCapacity:saveKeys.count];
+    [saveKeys enumerateObjectsUsingBlock:^(NSString * obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.length) {
+            DWDatabaseBindKeyWrapper * tmp = [DWDatabaseBindKeyWrapper new];
+            tmp.key = obj;
+            [result setObject:tmp forKey:obj];
         }
     }];
     return result;
@@ -351,6 +422,26 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     return result;
 }
 
+-(DWDatabaseBindKeyWrapperContainer)actualSubKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subWrappers withPrefix:(NSString *)prefix {
+    if (!subWrappers.allKeys.count || !prefix.length) {
+        return nil;
+    }
+    prefix = [prefix stringByAppendingString:@"."];
+    NSInteger prefixLen = prefix.length;
+    NSMutableDictionary * result = [NSMutableDictionary dictionaryWithCapacity:subWrappers.count];
+    [subWrappers enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseBindKeyWrapper * _Nonnull obj, BOOL * _Nonnull stop) {
+        if (key.length > prefixLen && [key hasPrefix:prefix]) {
+            key = [key substringFromIndex:prefixLen];
+            if (![key hasPrefix:@"."]) {
+                key = [key componentsSeparatedByString:@"."].firstObject;
+                obj.key = key;
+                [result setObject:obj forKey:key];
+            }
+        }
+    }];
+    return result;
+}
+
 -(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix actualSubKey:(NSString *)actualSubKey {
     if (!subKeys.count || !prefix.length || !actualSubKey.length) {
         return nil;
@@ -361,6 +452,32 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     [subKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if (obj.length > findKey.length && [obj hasPrefix:findKey]) {
             [result addObject:[obj substringFromIndex:subLenFrom]];
+        }
+    }];
+    return result;
+}
+
+-(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers withPrefix:(NSString *)prefix actualSubKey:(NSString *)actualSubKey {
+    if (!subKeyWrappers.allKeys.count || !prefix.length || !actualSubKey.length) {
+        return nil;
+    }
+    NSMutableDictionary * result = [NSMutableDictionary dictionaryWithCapacity:subKeyWrappers.allKeys.count];
+    NSString * findKey = [NSString stringWithFormat:@"%@.%@",prefix,actualSubKey];
+    
+    NSInteger subLenFrom = prefix.length + 1;
+    [subKeyWrappers enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseBindKeyWrapper * _Nonnull obj, BOOL * _Nonnull stop) {
+        if (key.length >= findKey.length && [key hasPrefix:findKey]) {
+            key = [key substringFromIndex:subLenFrom];
+            if ([key isEqualToString:actualSubKey]) {
+                obj.key = key;
+                [result setObject:obj forKey:key];
+            } else {
+                if ([key hasPrefix:@"."] && key.length > 1) {
+                    key = [key substringFromIndex:1];
+                    obj.key = key;
+                    [result setObject:obj forKey:key];
+                }
+            }
         }
     }];
     return result;

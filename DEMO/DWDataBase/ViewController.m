@@ -360,7 +360,7 @@
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db insertTableWithModel:cModel recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
-            maker.dw_bindKey(dic).dw_bindKey(classB.b).dw_bindKey(classB.classA.a);
+            maker.dw_bindKey(dic).dw_bindKey(classB.b).dw_bindKey(classB.classA.a).dw_bindKey(classB.classA.classC.aNum).recursively(NO);
         }];
         if (result.success) {
             NSLog(@"%@",[DWDatabase fetchDw_idForModel:cModel]);
@@ -420,10 +420,11 @@
     if (result.success) {
         C * cModel = [self queryModelRecursively].firstObject;
         cModel.classC = cModel;
+        cModel.classB.b = 200;
         cModel.aNum = 255;
         result = [self.db updateTableWithModel:cModel recursive:YES configuration:result.result condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.conditionWith(@"classC").equalTo(3);
-            maker.bindKey(@"classC");
+            maker.bindKey(@"classC").bindKey(@"classB.b");
         }];
         
         if (result.success) {
