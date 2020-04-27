@@ -157,7 +157,4 @@ loadClass = nil
 ///快速为当前操作绑定操作键值
 #define dw_bindKey(key) bindKey(keyPathString(loadClass,key))
 
-///快速提交绑定的key
-#define commit() commit()
-
 #endif /* DWDatabaseMacro_h */

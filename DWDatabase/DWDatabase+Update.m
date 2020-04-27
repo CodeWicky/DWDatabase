@@ -23,9 +23,8 @@
         return result;
     }
     
-    DWDatabaseConditionMaker * maker = nil;
+    DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     if (condition) {
-        maker = [DWDatabaseConditionMaker new];
         condition(maker);
     }
     
@@ -49,9 +48,20 @@
     NSNumber * Dw_id = Dw_idFromModel(model);
     ///如果模型本身存在Dw_id或者条件中设置过Dw_id，则认为是更新模式，否则是插入模式
     if (Dw_id || maker.conditions.count) {
+        if (!maker) {
+            maker = [DWDatabaseConditionMaker new];
+        }
+        BOOL updateWithDw_id = NO;
         ///更新时的递归操作思路：
         if (!maker.conditions.count) {
+            ///这种情况下，其实没有传入条件，想要以Dw_id进行更新
+            updateWithDw_id = YES;
             maker.conditionWith(kUniqueID).equalTo(Dw_id);
+        }
+        
+        ///条件模式更新，不支持嵌套更新
+        if (!updateWithDw_id) {
+            recursive = NO;
         }
         ///思路与插入时大致相同，当根据模型生成sql是，如果模型的某个属性是对象类型，应该根据该属性对应的对象是否包含Dw_id，如果不包含，则需要插入操作，完成后，更新至模型中。如果存在Dw_id，则直接更新指定模型，并在sql中可以更新为此Dw_id。同样，为了避免循环插入，要记录在更新链中。
         
@@ -61,7 +71,8 @@
                 updateChains = [DWDatabaseOperationChain new];
             }
             
-            if (![updateChains existRecordWithModel:model].success) {
+            ///更新模式下，只有Dw_id存在时，才是更新当前模型
+            if (![updateChains existRecordWithModel:model].success && updateWithDw_id) {
                 ///记录本次操作
                 DWDatabaseOperationRecord * record = [DWDatabaseOperationRecord new];
                 record.model = model;
@@ -115,8 +126,7 @@
         return result;
     } else {
         ///不存在ID则不做更新操作，做插入操作
-        ///插入操作后最好把Dw_id赋值
-        return [self dw_insertTableWithModel:model dbName:dbName tableName:tblName inQueue:queue insertChains:nil recursive:recursive conditionMaker:nil];
+        return [self dw_insertTableWithModel:model dbName:dbName tableName:tblName inQueue:queue insertChains:nil recursive:recursive conditionMaker:maker];
     }
 }
 
@@ -227,50 +237,27 @@
     Class cls = [model class];
     NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
     NSDictionary * dbTransformMap = databaseMapFromClass(cls);
-    [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
-        if (obj.name) {
-            id value = [model dw_valueForPropertyInfo:obj];
-            NSString * propertyTblName = propertyInfoTblName(obj, dbTransformMap);
+    [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull prop, BOOL * _Nonnull stop) {
+        if (prop.name) {
+            id value = [model dw_valueForPropertyInfo:prop];
+            NSString * propertyTblName = propertyInfoTblName(prop, dbTransformMap);
             if (propertyTblName.length) {
                 if (value) {
-                    if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                        DWDatabaseBindKeyWrapper * wrapper = mainKeyWrappers[obj.name];
+                    if (prop.type == DWPrefix_YYEncodingTypeObject && prop.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
+                        DWDatabaseBindKeyWrapper * wrapper = mainKeyWrappers[prop.name];
                         if (!wrapper || wrapper.recursively) {
                             if (recursive) {
-                                DWDatabaseResult * existResult =  [updateChains existRecordWithModel:value];
-                                if (existResult.success) {
-                                    NSNumber * Dw_id = Dw_idFromModel(value);
-                                    DWDatabaseOperationRecord * record = (DWDatabaseOperationRecord *)existResult.result;
-                                    
-                                    ///如果未完成，有存在，证明此次作为子节点递归存在，故不需要再次递归更新，仅更新本层即可
-                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:record.tblName].result;
-                                    
-                                    DWDatabaseBindKeyWrapperContainer subkeyToUpdate = nil;
-                                    if (tblConf) {
-                                        subkeyToUpdate = [self actualSubKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
-                                        ///没有指定二级属性，则按需要插入全部属性计算
-                                        if (!subkeyToUpdate.count) {
-                                            subkeyToUpdate = [self saveKeysWrappersWithCls:obj.cls];
-                                        }
-                                    }
-                                    
-                                    if (!record.finishOperationInChain) {
-                                        if (!subkeyToUpdate.count) {
-                                            return ;
-                                        }
-                                        [self updateModelSubKeys:value Dw_id:Dw_id propertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate.allKeys record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
-                                    } else {
-                                        ///如果已经在更新链中完成更新 ，那么直接更新id即可
-                                        [self supplyModelSubKeys:value Dw_id:Dw_id propertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate.allKeys record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
-                                    }
-                                } else {
-                                    [self updateNotExistModel:value propertyInfo:obj dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers updateChains:updateChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
-                                }
+                                [self updateModelRecursively:value propertyInfo:prop dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers updateChains:updateChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
                             } else {
                                 [self updateModelID:value propertyTblName:propertyTblName validKeysContainer:validKeys argumentsContaienr:args];
                             }
                         } else {
-                            [self updateModelID:value propertyTblName:propertyTblName validKeysContainer:validKeys argumentsContaienr:args];
+                            ///当需要更新的属性不是Number，即有可能是嵌套模型且该模型不存在Dw_id时，应该先将嵌套模型插入表中，然后在更新表的ID
+                            if (![value isKindOfClass:[NSNumber class]] && !Dw_idFromModel(value)) {
+                                [self updateModelRecursively:value propertyInfo:prop dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers updateChains:updateChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+                            } else {
+                                [self updateModelID:value propertyTblName:propertyTblName validKeysContainer:validKeys argumentsContaienr:args];
+                            }
                         }
                     } else {
                         propertyTblName = [propertyTblName stringByAppendingString:@" = ?"];
@@ -399,6 +386,38 @@
             [validKeys addObject:propertyTblName];
             [args addObject:Dw_id];
         }
+    }
+}
+
+-(void)updateModelRecursively:(NSObject *)model propertyInfo:(DWPrefix_YYClassPropertyInfo *)prop dbName:(NSString *)dbName tblName:(NSString *)tblName propertyTblName:(NSString *)propertyTblName subKeyWrappers:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers updateChains:(DWDatabaseOperationChain *)updateChains inlineTblNameMap:(NSDictionary *)inlineTblNameMap validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
+    DWDatabaseResult * existResult =  [updateChains existRecordWithModel:model];
+    if (existResult.success) {
+        NSNumber * Dw_id = Dw_idFromModel(model);
+        DWDatabaseOperationRecord * record = (DWDatabaseOperationRecord *)existResult.result;
+        
+        ///如果未完成，有存在，证明此次作为子节点递归存在，故不需要再次递归更新，仅更新本层即可
+        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:record.tblName].result;
+        
+        DWDatabaseBindKeyWrapperContainer subkeyToUpdate = nil;
+        if (tblConf) {
+            subkeyToUpdate = [self actualSubKeyWrappersIn:subKeyWrappers withPrefix:prop.name];
+            ///没有指定二级属性，则按需要插入全部属性计算
+            if (!subkeyToUpdate.count) {
+                subkeyToUpdate = [self saveKeysWrappersWithCls:prop.cls];
+            }
+        }
+        
+        if (!record.finishOperationInChain) {
+            if (!subkeyToUpdate.count) {
+                return ;
+            }
+            [self updateModelSubKeys:model Dw_id:Dw_id propertyInfo:prop propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate.allKeys record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+        } else {
+            ///如果已经在更新链中完成更新 ，那么直接更新id即可
+            [self supplyModelSubKeys:model Dw_id:Dw_id propertyInfo:prop propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate.allKeys record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+        }
+    } else {
+        [self updateNotExistModel:model propertyInfo:prop dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers updateChains:updateChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
     }
 }
 

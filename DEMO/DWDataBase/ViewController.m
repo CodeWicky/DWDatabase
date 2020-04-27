@@ -360,7 +360,8 @@
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db insertTableWithModel:cModel recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
-            maker.dw_bindKey(dic).dw_bindKey(classB.b).dw_bindKey(classB.classA.a).dw_bindKey(classB.classA.classC.aNum).recursively(NO);
+            maker.dw_bindKey(dic).dw_bindKey(classB.b).dw_bindKey(classB.classA.a).dw_bindKey(classB.classA.classC.aNum).commit();
+            maker.dw_bindKey(classC).recursively(NO);
         }];
         if (result.success) {
             NSLog(@"%@",[DWDatabase fetchDw_idForModel:cModel]);
@@ -397,12 +398,15 @@
         C * cModel = result.firstObject;
         cModel.classB.classA.classC = nil;
         C * newCModel = [C new];
-//        newCModel.a = @"newCModel";
+        newCModel.a = @"newCModel";
         cModel.classC = newCModel;
         DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
         if (result.success) {
             DWDatabaseConfiguration * conf = result.result;
-            result = [self.db updateTableWithModel:cModel recursive:YES configuration:conf condition:nil];
+            result = [self.db updateTableWithModel:cModel recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                maker.dw_loadClass(C);
+                maker.dw_bindKey(classC).recursively(NO).commit();
+            }];
             if (result.success) {
                 cModel = [self queryModelRecursively].firstObject;
                 NSLog(@"%@",cModel);
