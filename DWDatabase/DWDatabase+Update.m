@@ -83,7 +83,7 @@
         if (recursive) {
             DWDatabaseOperationRecord * record = [updateChains recordInChainWithModel:model];
             if (record.finishOperationInChain) {
-                DWDatabaseBindKeyWrapperContainer updateWrappers = [self subKeyWrappersIn:fac.mainKeyWrappers inKeys:fac.objMap.allKeys];
+                DWDatabaseBindKeyWrapperContainer updateWrappers = [self subKeyWrappersIn:fac.mainKeyWrappers inKeys:fac.validKeys];
                 if (fac.objMap.allKeys.count && updateWrappers.allKeys.count) {
                     
                     [fac.objMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
@@ -245,12 +245,12 @@
                                     ///如果未完成，有存在，证明此次作为子节点递归存在，故不需要再次递归更新，仅更新本层即可
                                     DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:record.tblName].result;
                                     
-                                    NSArray * subkeyToUpdate = nil;
+                                    DWDatabaseBindKeyWrapperContainer subkeyToUpdate = nil;
                                     if (tblConf) {
-                                        subkeyToUpdate = [self actualSubKeysIn:subKeyWrappers.allKeys withPrefix:obj.name];
+                                        subkeyToUpdate = [self actualSubKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
                                         ///没有指定二级属性，则按需要插入全部属性计算
                                         if (!subkeyToUpdate.count) {
-                                            subkeyToUpdate = [DWDatabase propertysToSaveWithClass:obj.cls];
+                                            subkeyToUpdate = [self saveKeysWrappersWithCls:obj.cls];
                                         }
                                     }
                                     
@@ -258,10 +258,10 @@
                                         if (!subkeyToUpdate.count) {
                                             return ;
                                         }
-                                        [self updateModelSubKeys:value Dw_id:Dw_id propertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+                                        [self updateModelSubKeys:value Dw_id:Dw_id propertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate.allKeys record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
                                     } else {
                                         ///如果已经在更新链中完成更新 ，那么直接更新id即可
-                                        [self supplyModelSubKeys:value Dw_id:Dw_id propertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+                                        [self supplyModelSubKeys:value Dw_id:Dw_id propertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToUpdate:subkeyToUpdate.allKeys record:record conf:tblConf updateChains:updateChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
                                     }
                                 } else {
                                     [self updateNotExistModel:value propertyInfo:obj dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers updateChains:updateChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];

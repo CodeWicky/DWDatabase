@@ -119,11 +119,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(DWDatabaseResult *)validateConfiguration:(DWDatabaseConfiguration *)conf considerTableName:(BOOL)consider;
 
--(NSArray <NSArray <NSString *>*> *)seperateSubKeys:(NSArray <NSString *>*)keys;
-
 -(NSArray <DWDatabaseBindKeyWrapperContainer>*)seperateSubWrappers:(DWDatabaseBindKeyWrapperContainer)wrapper;
-
--(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix;
 
 -(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers withPrefix:(NSString *)prefix;
 
@@ -131,11 +127,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(DWDatabaseBindKeyWrapperContainer)saveKeysWrappersWithCls:(Class)cls;
 
--(NSArray <NSString *>*)actualSubKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix;
-
 -(DWDatabaseBindKeyWrapperContainer)actualSubKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subWrappers withPrefix:(NSString *)prefix;
-
--(NSArray <NSString *>*)subKeysIn:(NSArray <NSString *>*)subKeys withPrefix:(NSString *)prefix actualSubKey:(NSString *)actualSubKey;
 
 -(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers withPrefix:(NSString *)prefix actualSubKey:(NSString *)actualSubKey;
 

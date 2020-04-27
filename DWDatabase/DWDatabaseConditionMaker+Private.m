@@ -177,8 +177,9 @@
     [self.bindKeys enumerateObjectsUsingBlock:^(DWDatabaseBindKeyWrapper * _Nonnull wrapper, NSUInteger idx, BOOL * _Nonnull stop) {
         [wrapper.bindKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
             if (obj.length) {
-                DWDatabaseBindKeyWrapper * tmp = [wrapper copy];
+                DWDatabaseBindKeyWrapper * tmp = [DWDatabaseBindKeyWrapper new];
                 tmp.key = obj;
+                tmp.recursively = wrapper.recursively;
                 [tmpDic setObject:tmp forKey:obj];
             }
         }];

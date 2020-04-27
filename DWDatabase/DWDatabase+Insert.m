@@ -75,7 +75,8 @@
         DWDatabaseOperationRecord * record = [insertChains recordInChainWithModel:model];
         if (record.finishOperationInChain) {
             NSNumber * Dw_id = Dw_idFromModel(model);
-            DWDatabaseBindKeyWrapperContainer updateWrappers = [self subKeyWrappersIn:fac.mainKeyWrappers inKeys:fac.objMap.allKeys];
+            ///这里用validKeys是因为要做全量更新，当finishOperationInChain以后，非对象属性可能由于还没有插入导致漏掉
+            DWDatabaseBindKeyWrapperContainer updateWrappers = [self subKeyWrappersIn:fac.mainKeyWrappers inKeys:fac.validKeys];
             if (fac.objMap.allKeys.count && updateWrappers.count) {
                 
                 [fac.objMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
@@ -214,12 +215,12 @@
                                 ///获取一下表名数据库句柄，一会插入表或者更新表需要使用
                                 DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:record.tblName].result;
                                 
-                                NSArray * subKeyToInsert = nil;
+                                DWDatabaseBindKeyWrapperContainer subKeyToInsert = nil;
                                 if (tblConf) {
-                                    subKeyToInsert = [self actualSubKeysIn:subKeyWrappers.allKeys withPrefix:obj.name];
+                                    subKeyToInsert = [self actualSubKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
                                     ///没有指定二级属性，则按需要插入全部属性计算
                                     if (!subKeyToInsert.count) {
-                                        subKeyToInsert = [DWDatabase propertysToSaveWithClass:obj.cls];
+                                        subKeyToInsert = [self saveKeysWrappersWithCls:obj.cls];
                                     }
                                 }
                                 
@@ -231,7 +232,7 @@
                                     }
                                     
                                     ///到这里，已经确定好本属性作为模型，要插入的属性了，接下来看下本属性作为模型，已经插入的属性是哪些，排除掉这些属性，插入其他待补充的属性
-                                    [self supplyModelSubKeys:value withPropertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToInsert:subKeyToInsert record:record conf:tblConf insertChains:insertChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+                                    [self supplyModelSubKeys:value withPropertyInfo:obj propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers subkeyToInsert:subKeyToInsert.allKeys record:record conf:tblConf insertChains:insertChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
                                 } else {
                                     ///走到这，说明这个模型其实已经如果库了，那么则将其ID作为插入值更新，同时还要看这个模型本身是否字段已经插入完整，如果不完整，这里需要补一下
                                     NSNumber * Dw_id = Dw_idFromModel(value);
@@ -246,7 +247,7 @@
                                     }
                                     
                                     ///开始更新二级字段
-                                    [self updateModelSubKeys:value propertyInfo:obj subKeyWrappers:subKeyWrappers subkeyToInsert:subKeyToInsert record:record conf:tblConf insertChains:insertChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
+                                    [self updateModelSubKeys:value propertyInfo:obj subKeyWrappers:subKeyWrappers subkeyToInsert:subKeyToInsert.allKeys record:record conf:tblConf insertChains:insertChains validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
                                 }
                             } else {
                                 ///开始插入二级模型
