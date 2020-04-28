@@ -297,7 +297,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     return [self isTableExistWithTableName:conf.tableName configuration:conf];
 }
 
--(NSArray<DWDatabaseBindKeyWrapperContainer> *)seperateSubWrappers:(DWDatabaseBindKeyWrapperContainer)wrapper {
+-(NSArray<DWDatabaseBindKeyWrapperContainer> *)seperateSubWrappers:(DWDatabaseBindKeyWrapperContainer)wrapper fixMainWrappers:(BOOL)fixMainWrappers {
     NSMutableDictionary * mainWrappers = [NSMutableDictionary dictionaryWithCapacity:wrapper.count];
     NSMutableDictionary * subWrappers = [NSMutableDictionary dictionaryWithCapacity:wrapper.count];
     NSMutableArray * result = [NSMutableArray arrayWithCapacity:2];
@@ -306,7 +306,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     [wrapper enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseBindKeyWrapper * _Nonnull obj, BOOL * _Nonnull stop) {
         if ([key containsString:@"."]) {
             [subWrappers setValue:obj forKey:key];
-            if (![key hasPrefix:@"."]) {
+            if (fixMainWrappers && ![key hasPrefix:@"."]) {
                 key = [key componentsSeparatedByString:@"."].firstObject;
                 DWDatabaseBindKeyWrapper * tmp = [DWDatabaseBindKeyWrapper new];
                 tmp.key = key;

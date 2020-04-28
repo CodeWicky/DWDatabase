@@ -121,7 +121,7 @@
     }
     NSDictionary * infos = nil;
     DWDatabaseBindKeyWrapperContainer bindKeyWrapper = [maker fetchBindKeys];
-    NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper];
+    NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper fixMainWrappers:YES];
     NSArray * keys = [seperateWrappers.firstObject allKeys];
     if (keys.count) {
         ///此处要按支持的key做sql

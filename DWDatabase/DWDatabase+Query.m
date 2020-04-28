@@ -441,7 +441,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     NSArray * validConditionKeys = [maker fetchValidKeys];
     NSArray * joinTables = [maker fetchJoinTables];
     DWDatabaseBindKeyWrapperContainer bindKeyWrapper = [maker fetchBindKeys];
-    NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper];
+    NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper fixMainWrappers:YES];
     NSArray * keys = [seperateWrappers.firstObject allKeys];
     BOOL queryAll = NO;
     ///如果keys为空则试图查询cls与表对应的所有键值

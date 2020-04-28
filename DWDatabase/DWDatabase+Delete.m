@@ -15,19 +15,39 @@
 
 #pragma mark --- interface method ---
 -(DWDatabaseResult *)_entry_deleteTableWithModel:(NSObject *)model configuration:(DWDatabaseConfiguration *)conf deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive condition:(DWDatabaseConditionHandler)condition {
-    DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
-    if (!result.success) {
-        return result;
+    
+    if (!condition && !model) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which both are nil.", 10016)];
     }
     
-    if (!condition && model) {
-        NSNumber * Dw_id = Dw_idFromModel(model);
+    NSNumber * Dw_id = nil;
+    if (model) {
+        Dw_id = Dw_idFromModel(model);
         if (Dw_id) {
+            
+            DWDatabaseBindKeyWrapperContainer bindKeyWrappers = nil;
+            
+            if (condition) {
+                DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+                condition(maker);
+                bindKeyWrappers = [maker fetchBindKeys];
+                if (!bindKeyWrappers.allKeys.count) {
+                    bindKeyWrappers = nil;
+                }
+            }
+            
             condition = ^(DWDatabaseConditionMaker * maker) {
                 maker.loadClass([model class]);
                 maker.conditionWith(kUniqueID).equalTo(Dw_id);
+                if (bindKeyWrappers) {
+                    maker.bindKeyWithWrappers(bindKeyWrappers);
+                }
             };
         }
+    }
+    
+    if (!condition) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
     }
     
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
@@ -89,13 +109,16 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to delete.", 10009)];
     }
     
-    if (!maker) {
+    if (!maker.conditions.count) {
         NSNumber * Dw_id = Dw_idFromModel(model);
         if (!Dw_id) {
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
         }
         
-        maker = [DWDatabaseConditionMaker new];
+        if (!maker) {
+            maker = [DWDatabaseConditionMaker new];
+        }
+        
         maker.loadClass([model class]);
         maker.conditionWith(kUniqueID).equalTo(Dw_id);
     }
@@ -116,6 +139,7 @@
     NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
     NSDictionary * map = databaseMapFromClass(cls);
     NSDictionary * propertyInfos = [DWDatabase propertyInfosWithClass:cls keys:saveKeys];
+    
     [maker configWithTblName:tblName propertyInfos:propertyInfos databaseMap:map enableSubProperty:NO];
     [maker make];
     [args addObjectsFromArray:[maker fetchArguments]];
@@ -126,9 +150,13 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to delete.", 10009)];
     }
     
+    DWDatabaseBindKeyWrapperContainer bindKeyWrappers = [maker fetchBindKeys];
+    NSArray <DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrappers fixMainWrappers:NO];
+    DWDatabaseBindKeyWrapperContainer mainKeyWrappers = seperateWrappers.firstObject;
+    DWDatabaseBindKeyWrapperContainer subKeyWrappers = seperateWrappers.lastObject;
     
     ///处理递归删除
-    [self handleDeleteRecursiveModelWithPropertyInfos:propertyInfos dbName:dbName tblName:tblName model:model deleteChains:deleteChains recursive:recursive];
+    [self handleDeleteRecursiveModelWithPropertyInfos:propertyInfos dbName:dbName tblName:tblName model:model deleteChains:deleteChains recursive:recursive mainKeyWrappers:mainKeyWrappers subKeyWrappers:subKeyWrappers];
     
     NSString * sql = nil;
     ///先尝试取缓存的sql
@@ -155,44 +183,69 @@
     return [DWDatabaseResult successResultWithResult:fac];
 }
 
--(void)handleDeleteRecursiveModelWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName model:(NSObject *)model deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive {
-    if (model && recursive) {
+-(void)handleDeleteRecursiveModelWithPropertyInfos:(NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>*)props dbName:(NSString *)dbName tblName:(NSString *)tblName model:(NSObject *)model deleteChains:(DWDatabaseOperationChain *)deleteChains recursive:(BOOL)recursive mainKeyWrappers:(DWDatabaseBindKeyWrapperContainer)mainKeyWrappers subKeyWrappers:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers {
+    if (model && ![model isKindOfClass:[NSNumber class]] && recursive) {
         Class cls = [model class];
         NSDictionary * inlineTblNameMap = inlineModelTblNameMapFromClass(cls);
         NSDictionary * dbTransformMap = databaseMapFromClass(cls);
         [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             if (obj.name && obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                id value = [model dw_valueForPropertyInfo:obj];
-                if (value) {
-                    NSNumber * Dw_id = Dw_idFromModel(value);
-                    if (Dw_id) {
-                        NSString * name = propertyInfoTblName(obj, dbTransformMap);
-                        if (name.length) {
-                            DWDatabaseResult * existResult =  [deleteChains existRecordWithModel:value];
-                            if (existResult.success) {
-                                DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
-                                ///如果还没有完成，说明作为子节点，直接以非递归模式删除即可。如果完成了，跳过即可。
-                                if (!operation.finishOperationInChain) {
-                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
-                                    if (tblConf) {
-                                        DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO conditionMaker:nil];
-                                        
-                                        if (result.success) {
-                                            operation.finishOperationInChain = YES;
+                DWDatabaseBindKeyWrapper * wrapper = mainKeyWrappers[obj.name];
+                if (!wrapper || wrapper.recursively) {
+                    id value = [model dw_valueForPropertyInfo:obj];
+                    if (value) {
+                        NSNumber * Dw_id = value;
+                        if (![Dw_id isKindOfClass:[NSNumber class]]) {
+                            Dw_id = Dw_idFromModel(value);
+                        }
+                        if (Dw_id) {
+                            NSString * name = propertyInfoTblName(obj, dbTransformMap);
+                            if (name.length) {
+                                DWDatabaseResult * existResult =  [deleteChains existRecordWithModel:value];
+                                if (existResult.success) {
+                                    DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
+                                    ///如果还没有完成，说明作为子节点，直接以非递归模式删除即可。如果完成了，跳过即可。
+                                    if (!operation.finishOperationInChain) {
+                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
+                                        if (tblConf) {
+                                            
+                                            DWDatabaseBindKeyWrapperContainer subKeyToInsert = [self subKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
+                                            DWDatabaseConditionMaker * maker = nil;
+                                            if (subKeyToInsert.allKeys.count) {
+                                                maker = [DWDatabaseConditionMaker new];
+                                                maker.loadClass(obj.cls);
+                                                maker.conditionWith(kUniqueID).equalTo(Dw_id);
+                                                maker.bindKeyWithWrappers(subKeyToInsert);
+                                            }
+                                            DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO conditionMaker:maker];
+                                            
+                                            if (result.success) {
+                                                operation.finishOperationInChain = YES;
+                                            }
                                         }
                                     }
-                                }
-                            } else {
-                                ///如果不存在，直接走递归删除逻辑
-                                NSString * existTblName = [deleteChains anyRecordInChainWithClass:obj.cls].tblName;
-                                NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
-                                if (inlineTblName.length) {
-                                    DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
-                                    if (tblConf) {
-                                        DWDatabaseResult * result = [self _entry_deleteTableWithModel:value configuration:tblConf deleteChains:deleteChains recursive:recursive condition:nil];
-                                        if (result.success) {
-                                            DWDatabaseOperationRecord * record = [deleteChains recordInChainWithModel:value];
-                                            record.finishOperationInChain = YES;
+                                } else {
+                                    ///如果不存在，直接走递归删除逻辑
+                                    NSString * existTblName = [deleteChains anyRecordInChainWithClass:obj.cls].tblName;
+                                    NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
+                                    if (inlineTblName.length) {
+                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
+                                        if (tblConf) {
+                                            DWDatabaseBindKeyWrapperContainer subKeyToInsert = [self subKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
+                                            
+                                            DWDatabaseConditionHandler condition = nil;
+                                            if (subKeyToInsert.allKeys.count) {
+                                                condition = ^(DWDatabaseConditionMaker * maker) {
+                                                    maker.loadClass(obj.cls);
+                                                    maker.conditionWith(kUniqueID).equalTo(Dw_id);
+                                                    maker.bindKeyWithWrappers(subKeyToInsert);
+                                                };
+                                            }
+                                            DWDatabaseResult * result = [self _entry_deleteTableWithModel:value configuration:tblConf deleteChains:deleteChains recursive:recursive condition:condition];
+                                            if (result.success) {
+                                                DWDatabaseOperationRecord * record = [deleteChains recordInChainWithModel:value];
+                                                record.finishOperationInChain = YES;
+                                            }
                                         }
                                     }
                                 }

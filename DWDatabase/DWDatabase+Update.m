@@ -150,7 +150,7 @@
     }
     
     DWDatabaseBindKeyWrapperContainer bindKeyWrapper = [maker fetchBindKeys];
-    NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper];
+    NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper fixMainWrappers:YES];
     NSArray * keys = [seperateWrappers.firstObject allKeys];
     ///如果指定更新key则取更新key的infos信息
     if (keys.count) {

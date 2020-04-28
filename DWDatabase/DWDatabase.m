@@ -143,50 +143,12 @@
 }
 
 -(DWDatabaseResult *)deleteTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
-    
-    if (!model && !condition) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which both are nil.", 10016)];
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
     }
-    ///如果是条件模式，因为删除并不会查询出嵌套字段的值，所以条件删除模式目前不支持嵌套结构
-    if (condition) {
-        
-        DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-        condition(maker);
-        Class cls = [maker fetchQueryClass];
-        if (!cls) {
-            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
-        }
-        
-        DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:cls name:name tableName:tblName path:path];
-        if (!result.success) {
-            return result;
-        }
-        
-        DWDatabaseConfiguration * conf = result.result;
-        return [self dw_deleteTableWithModel:nil dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:nil recursive:NO conditionMaker:maker];
-        
-    } else {
-        
-        DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
-        if (!result.success) {
-            return result;
-        }
-        DWDatabaseConfiguration * conf = result.result;
-        NSNumber * Dw_id = Dw_idFromModel(model);
-        if (!Dw_id) {
-            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
-        }
-        
-        condition = ^(DWDatabaseConditionMaker * maker) {
-            maker.loadClass([model class]);
-            maker.conditionWith(kUniqueID).equalTo(Dw_id);
-        };
-        
-        DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-        condition(maker);
-        
-        return [self dw_deleteTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue deleteChains:nil recursive:YES conditionMaker:maker];
-    }
+    DWDatabaseConfiguration * conf = result.result;
+    return [self deleteTableWithModel:model recursive:YES configuration:conf condition:condition];
 }
 
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
@@ -653,25 +615,12 @@
     });
 }
 
--(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
+-(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
     DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
     if (!result.success) {
         return result;
     }
-    return [self _entry_deleteTableWithModel:nil configuration:conf deleteChains:nil recursive:NO condition:condition];
-}
-
--(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf {
-    if (!model) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
-    }
-    
-    NSNumber * Dw_id = Dw_idFromModel(model);
-    if (!Dw_id) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
-    }
-    
-    return [self _entry_deleteTableWithModel:model configuration:conf deleteChains:nil recursive:recursive condition:nil];
+    return [self _entry_deleteTableWithModel:model configuration:conf deleteChains:nil recursive:recursive condition:condition];
 }
 
 -(DWDatabaseResult *)updateTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {

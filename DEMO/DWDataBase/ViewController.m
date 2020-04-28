@@ -215,7 +215,7 @@
 }
 
 -(void)deleteRowsInTblWithCondition {
-    DWDatabaseResult * result = [self.db deleteTableWithConfiguration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db deleteTableWithModel:nil recursive:YES configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(intNum).equalTo(4);
     }];
@@ -232,7 +232,7 @@
     model.intNum = 255;
     DWDatabaseResult * result = [self.db insertTableWithModel:model recursive:NO configuration:self.tblConf condition:nil];
     if (result.success) {
-        result = [self.db deleteTableWithModel:model recursive:NO configuration:self.tblConf];
+        result = [self.db deleteTableWithModel:model recursive:NO configuration:self.tblConf condition:nil];
         if (result.success) {
             [self queryCountInTbl];
         } else {
@@ -380,7 +380,10 @@
         DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
         if (result.success) {
             DWDatabaseConfiguration * conf = result.result;
-            result = [self.db deleteTableWithModel:cModel recursive:YES configuration:conf];
+            result = [self.db deleteTableWithModel:cModel recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+                maker.dw_loadClass(C);
+                maker.dw_bindKey(classB.classA).recursively(NO);
+            }];
             if (result.success) {
                 NSLog(@"%@",result.result);
             } else {
@@ -448,7 +451,7 @@
         result = [self.db queryTableWithClass:NULL recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(aNum).equalTo(12);
-            maker.dw_bindKey(classB).recursively(NO).commit();
+            maker.dw_bindKey(classB).commit();
             maker.dw_bindKey(classC.a);
         }];
         

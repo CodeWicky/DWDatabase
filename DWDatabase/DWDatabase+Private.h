@@ -119,7 +119,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(DWDatabaseResult *)validateConfiguration:(DWDatabaseConfiguration *)conf considerTableName:(BOOL)consider;
 
--(NSArray <DWDatabaseBindKeyWrapperContainer>*)seperateSubWrappers:(DWDatabaseBindKeyWrapperContainer)wrapper;
+-(NSArray <DWDatabaseBindKeyWrapperContainer>*)seperateSubWrappers:(DWDatabaseBindKeyWrapperContainer)wrapper fixMainWrappers:(BOOL)fixMainWrappers;
 
 -(DWDatabaseBindKeyWrapperContainer)subKeyWrappersIn:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers withPrefix:(NSString *)prefix;
 

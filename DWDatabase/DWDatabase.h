@@ -399,7 +399,6 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 1.此处传入表明数据库句柄
       2.此处删除均为非递归模式删除，因为删除时并不会获取待删条目故无法知道嵌套信息
  */
--(DWDatabaseResult *)deleteTableWithConfiguration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition;
 
 /**
  删除当前库指定表中对应的模型信息
@@ -414,7 +413,8 @@ NS_ASSUME_NONNULL_BEGIN
      3.当模型的属性中存在另一个模型时，可通过recursive指定是否递归删除。如果为真，将自动删除嵌套模型
      4.自动删除嵌套模型时，将根据嵌套模型是否存在Dw_id决定是否将其删除。若嵌套的模型不包含Dw_id，将跳过此嵌套模型的删除操作
 */
--(DWDatabaseResult *)deleteTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf;
+
+-(DWDatabaseResult *)deleteTableWithModel:(nullable NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**
