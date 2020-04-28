@@ -44,7 +44,7 @@
     model.intNum = -100;
     model.floatNum = 3.14;
     model.string = @"123";
-    DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:dbPath condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_bindKey(intNum).dw_bindKey(floatNum);
     }];
@@ -59,7 +59,7 @@
     V * model = [V new];
     model.intNum = 100;
     model.string = @"456";
-    DWDatabaseResult * result = [self.db updateTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db updateTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:dbPath condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(floatNum).between(DWApproximateFloatValue(3.14));
         maker.dw_bindKey(intNum).dw_bindKey(string);
@@ -87,7 +87,7 @@
 
 -(void)queryAutomatically {
     
-    DWDatabaseResult * result = [self.db queryTableAutomaticallyWithClass:NULL name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db queryTableAutomaticallyWithClass:NULL name:@"Auto" tableName:@"Auto_V_Tbl" path:dbPath condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.dw_conditionWith(string).equalTo(@"456");
         maker.dw_bindKey(string);
@@ -102,7 +102,7 @@
 }
 
 -(void)deleteAutomatically {
-    DWDatabaseResult * result = [self.db deleteTableAutomaticallyWithModel:nil name:@"Auto" tableName:@"Auto_V_Tbl" path:nil condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db deleteTableAutomaticallyWithModel:nil name:@"Auto" tableName:@"Auto_V_Tbl" path:dbPath condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.loadClass([V class]);
         maker.conditionWith(@"intNum").greaterThanOrEqualTo(50);
     }];
@@ -314,7 +314,7 @@
 }
 
 -(void)queryModelByID {
-    DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(3) recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db queryTableWithClass:[V class] Dw_id:@(5) recursive:NO configuration:self.tblConf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
         maker.conditionWith(kUniqueID).equalTo(2);
         maker.dw_bindKey(string);

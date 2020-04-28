@@ -147,7 +147,7 @@
     if (!model && !condition) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which both are nil.", 10016)];
     }
-    
+    ///如果是条件模式，因为删除并不会查询出嵌套字段的值，所以条件删除模式目前不支持嵌套结构
     if (condition) {
         
         DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
