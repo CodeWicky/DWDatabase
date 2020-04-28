@@ -252,12 +252,7 @@
                                 [self updateModelID:value propertyTblName:propertyTblName validKeysContainer:validKeys argumentsContaienr:args];
                             }
                         } else {
-                            ///当需要更新的属性不是Number，即有可能是嵌套模型且该模型不存在Dw_id时，应该先将嵌套模型插入表中，然后在更新表的ID
-                            if (![value isKindOfClass:[NSNumber class]] && !Dw_idFromModel(value)) {
-                                [self updateModelRecursively:value propertyInfo:prop dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers updateChains:updateChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
-                            } else {
-                                [self updateModelID:value propertyTblName:propertyTblName validKeysContainer:validKeys argumentsContaienr:args];
-                            }
+                           [self updateModelID:value propertyTblName:propertyTblName validKeysContainer:validKeys argumentsContaienr:args];
                         }
                     } else {
                         propertyTblName = [propertyTblName stringByAppendingString:@" = ?"];
