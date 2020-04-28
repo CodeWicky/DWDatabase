@@ -397,15 +397,14 @@
     if (result.count) {
         C * cModel = result.firstObject;
         cModel.classB.classA.classC = nil;
-        C * newCModel = [C new];
-        newCModel.a = @"newCModel";
-        cModel.classC = newCModel;
+        cModel.classC = cModel;
         DWDatabaseResult * result = [self.db fetchDBConfigurationAutomaticallyWithClass:[C class] name:@"C_Recursive" tableName:@"C_Recursive" path:dbPath];
         if (result.success) {
             DWDatabaseConfiguration * conf = result.result;
             result = [self.db updateTableWithModel:cModel recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
                 maker.dw_loadClass(C);
                 maker.dw_bindKey(classC).recursively(NO).commit();
+                maker.dw_bindKey(classB.classA.classC);
             }];
             if (result.success) {
                 cModel = [self queryModelRecursively].firstObject;
@@ -449,7 +448,8 @@
         result = [self.db queryTableWithClass:NULL recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
             maker.dw_conditionWith(aNum).equalTo(12);
-            maker.dw_bindKey(classB).dw_bindKey(classC.a);
+            maker.dw_bindKey(classB).recursively(NO).commit();
+            maker.dw_bindKey(classC.a);
         }];
         
         if (result.success) {

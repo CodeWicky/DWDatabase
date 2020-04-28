@@ -254,6 +254,18 @@
                                 [self insertNotExistModel:value propertyInfo:obj dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers insertChains:insertChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];
                             }
                         }
+                    } else {
+                        ///非递归模式下，看当前要插入的值是否包含Dw_id，如果包含则用这个ID做更新
+                        if ([model isKindOfClass:[NSNumber class]]) {
+                            [validKeys addObject:propertyTblName];
+                            [args addObject:model];
+                        } else {
+                            NSNumber * Dw_id = Dw_idFromModel(model);
+                            if (Dw_id) {
+                                [validKeys addObject:propertyTblName];
+                                [args addObject:Dw_id];
+                            }
+                        }
                     }
                 } else {
                     [validKeys addObject:propertyTblName];

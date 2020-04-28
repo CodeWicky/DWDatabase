@@ -225,6 +225,8 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
             ///如果已经查询的结果覆盖了将要查询的结果，则认为此次查询已经完成
             if (keyToQuerySet.count == 0) {
                 validValue = YES;
+            } else {
+                [keyToQuerySet addObjectsFromArray:validProInfos.allKeys];
             }
         }
         
@@ -246,9 +248,9 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         
         [validProInfos enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
             if (obj.name.length) {
-                NSString * name = propertyInfoTblName(obj, databaseMap);
-                if (name.length) {
-                    id value = [set objectForColumn:name];
+                NSString * propertyTblName = propertyInfoTblName(obj, databaseMap);
+                if (propertyTblName.length) {
+                    id value = [set objectForColumn:propertyTblName];
                     ///这里考虑对象嵌套
                     if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
                         DWDatabaseBindKeyWrapper * wrapper = mainKeyWrappers[obj.name];
@@ -257,6 +259,14 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                                 if (recursive) {
                                     DWDatabaseResult * existRecordResult = [queryChains existRecordWithClass:obj.cls Dw_Id:value];
                                     ///这个数据查过，可以赋值，但是要考虑查过的值是否够，不够的话，要继续查
+                                    DWDatabaseBindKeyWrapperContainer subKeyWrappersToQuery = [self actualSubKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
+                                    if (!subKeyWrappersToQuery.allKeys.count) {
+                                        subKeyWrappersToQuery = [self saveKeysWrappersWithCls:obj.cls];
+                                    }
+                                    
+                                    if (!subKeyWrappersToQuery.allKeys.count) {
+                                        return ;
+                                    }
                                     if (existRecordResult.success) {
                                         DWDatabaseOperationRecord * existRecord = existRecordResult.result;
                                         [tmp setValue:existRecord.model forKey:obj.name];
@@ -265,7 +275,6 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                                         record.operation = DWDatabaseOperationQuery;
                                         
                                         ///看看查询的键值够不够，不够还得补
-                                        DWDatabaseBindKeyWrapperContainer subKeyWrappersToQuery = [self actualSubKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
                                         if (subKeyWrappersToQuery.allKeys.count) {
                                             NSMutableSet * subKeyToQuerySet = [NSMutableSet setWithArray:subKeyWrappersToQuery.allKeys];
                                             [subKeyToQuerySet minusSet:existRecord.operatedKeys];
@@ -299,11 +308,13 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                                             if (record.finishOperationInChain) {
                                                 record.finishOperationInChain = NO;
                                             }
+                                            record.keyWrappersToQuery = subKeyWrappersToQuery;
                                         }
                                     }
                                 }
                             } else {
-                                [tmp dw_setValue:value forPropertyInfo:obj];
+                                ///这里直接将ID赋值
+                                [tmp setValue:value forKey:obj.name];
                                 record.operation = DWDatabaseOperationQuery;
                                 validValue = YES;
                             }
@@ -345,7 +356,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                 [tmp addObject:model];
             } else {
                 ///没有完成的话，就要看到底是那些属性没有完成，一般情况下，这些属性应该都是嵌套的模型
-                NSDictionary <NSString *,DWDatabaseOperationRecord *>* pros = (NSDictionary *)obj.userInfo;
+                NSDictionary <NSString *,DWDatabaseOperationRecord *>* unhandledPros = (NSDictionary *)obj.userInfo;
                 DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName].result;
                 if (!dbConf) {
                     ///没有dbConf，说明无法补充嵌套值，这时候看下有没有已经有的有效值，如果有，证明此模型合法，添加至结果数组
@@ -357,7 +368,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                 __block BOOL hasValue = NO;
                 
                 ///开始补属性
-                [pros enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseOperationRecord * _Nonnull aObj, BOOL * _Nonnull stop) {
+                [unhandledPros enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWDatabaseOperationRecord * _Nonnull aObj, BOOL * _Nonnull stop) {
                     ///建表成功
                     DWPrefix_YYClassPropertyInfo * prop = aObj.model;
                     NSNumber * value = aObj.userInfo;
@@ -367,11 +378,11 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                         DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:key].result;
                         if (tblConf) {
                             ///取出需要查询的key。由于查询是先查询完自身的逻辑，故当前仅当对象A持有对象A自身的时候会遇到嵌套结构，这时候有可能取到二重属性较自身额外的查询属性，所以直接查找以录得属性即可。其他情况下，keysToQuery为空。
-                            DWDatabaseBindKeyWrapperContainer subKeyWrappers = aObj.keyWrappersToQuery;
+                            DWDatabaseBindKeyWrapperContainer subKeyWrappers = obj.keyWrappersToQuery;
                             if (!subKeyWrappers) {
                                 subKeyWrappers = [self subKeyWrappersIn:subKeyWrappers withPrefix:prop.name];
                             } else {
-                                aObj.keyWrappersToQuery = nil;
+                                obj.keyWrappersToQuery = nil;
                             }
                             
                             DWDatabaseConditionHandler condition = nil;
@@ -380,6 +391,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                                     maker.bindKeyWithWrappers(subKeyWrappers);
                                 };
                             }
+                            
                             
                             DWDatabaseResult * result = [self _entry_queryTableWithClass:prop.cls Dw_id:value queryChains:queryChains recursive:recursive configuration:tblConf condition:condition];
                             if (result.success && result.result) {
