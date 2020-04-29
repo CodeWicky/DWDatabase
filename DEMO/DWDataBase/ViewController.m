@@ -450,7 +450,7 @@
         DWDatabaseConfiguration * conf = result.result;
         result = [self.db queryTableWithClass:NULL recursive:YES configuration:conf condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
             maker.dw_loadClass(C);
-            maker.dw_conditionWith(aNum).equalTo(12);
+            maker.dw_conditionWith(aNum).equalTo(12).or.dw_conditionWith(classB.b).equalTo(100);
             maker.dw_bindKey(classB).commit();
             maker.dw_bindKey(classC.a);
         }];

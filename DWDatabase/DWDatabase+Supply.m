@@ -22,7 +22,7 @@
 @implementation DWMetaClassInfo (Supply)
 
 +(NSArray *)fieldsToSupplyForClass:(Class)cls withKeys:(NSArray <NSString *>*)keys {
-    if (!cls) {
+    if (cls == NULL) {
         return nil;
     }
     if (keys.count == 0) {
@@ -47,7 +47,7 @@
 }
 
 +(void)supplyTblFieldsForClass:(Class)cls withKeys:(NSArray <NSString *>*)keys {
-    if (!cls) {
+    if (cls == NULL) {
         return;
     }
     if (keys.count == 0) {
@@ -83,32 +83,32 @@
 
 @implementation DWDatabase (Supply)
 
--(DWDatabaseResult *)_entry_supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf {
-    NSArray * propertyToSaveKey = [DWDatabase propertysToSaveWithClass:clazz];
-    return [self _entry_addFieldsToTableWithClass:clazz keys:propertyToSaveKey configuration:conf];
+-(DWDatabaseResult *)_entry_supplyFieldIfNeededWithClass:(Class)cls configuration:(DWDatabaseConfiguration *)conf {
+    NSArray * propertyToSaveKey = [DWDatabase propertysToSaveWithClass:cls];
+    return [self _entry_addFieldsToTableWithClass:cls keys:propertyToSaveKey configuration:conf];
 }
 
--(DWDatabaseResult *)_entry_addFieldsToTableWithClass:(Class)clazz keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf {
+-(DWDatabaseResult *)_entry_addFieldsToTableWithClass:(Class)cls keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf {
     
     __block DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
     if (!result.success) {
         return result;
     }
     
-    NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:clazz configuration:conf].result;
-    [DWMetaClassInfo supplyTblFieldsForClass:clazz withKeys:allKeysInTbl];
-    NSArray * saveProArray = [DWMetaClassInfo fieldsToSupplyForClass:clazz withKeys:keys];
+    NSArray * allKeysInTbl = [self queryAllFieldInTable:YES class:cls configuration:conf].result;
+    [DWMetaClassInfo supplyTblFieldsForClass:cls withKeys:allKeysInTbl];
+    NSArray * saveProArray = [DWMetaClassInfo fieldsToSupplyForClass:cls withKeys:keys];
     if (saveProArray.count == 0) {
         return [DWDatabaseResult successResultWithResult:nil];
     }
     
-    NSDictionary * map = databaseMapFromClass(clazz);
-    NSDictionary * defaultValueMap = databaseFieldDefaultValueMapFromClass(clazz);
-    NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [DWDatabase propertyInfosWithClass:clazz keys:saveProArray];
+    NSDictionary * map = databaseMapFromClass(cls);
+    NSDictionary * defaultValueMap = databaseFieldDefaultValueMapFromClass(cls);
+    NSDictionary <NSString *,DWPrefix_YYClassPropertyInfo *>* propertys = [DWDatabase propertyInfosWithClass:cls keys:saveProArray];
     NSMutableArray * successKeys = [NSMutableArray arrayWithCapacity:propertys.count];
     [propertys enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
         ///转化完成的键名及数据类型
-        result = [self dw_addFieldsToTableForClass:clazz withKey:key propertyInfo:obj dbMap:map defaultValueMap:defaultValueMap configuration:conf];
+        result = [self dw_addFieldsToTableForClass:cls withKey:key propertyInfo:obj dbMap:map defaultValueMap:defaultValueMap configuration:conf];
         
         if (!result.success) {
             *stop = YES;
@@ -118,14 +118,14 @@
     }];
     
     if (successKeys.count) {
-        [DWMetaClassInfo supplyFieldsForClass:clazz withKeys:successKeys];
+        [DWMetaClassInfo supplyFieldsForClass:cls withKeys:successKeys];
     }
     
     return result;
 }
 
 -(DWDatabaseResult *)dw_addFieldsToTableForClass:(Class)cls withKey:(NSString *)key propertyInfo:(DWPrefix_YYClassPropertyInfo *)propertyInfo dbMap:(NSDictionary *)dbMap defaultValueMap:(NSDictionary *)defaultValueMap configuration:(DWDatabaseConfiguration *)conf {
-    if (!cls) {
+    if (cls == NULL) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Fail adding fields because the supply class is NULL.", 10025)];
     }
     if (!key.length) {

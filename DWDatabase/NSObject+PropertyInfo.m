@@ -69,7 +69,7 @@ NS_INLINE DWPrefix_YYEncodingType DWPrefix_YYEncodingGetType(const char *typeEnc
 
 /// Get the Foundation class type from property info.
 NS_INLINE DWPrefix_YYEncodingNSType YYClassGetNSType(Class cls) {
-    if (!cls) return DWPrefix_YYEncodingTypeNSUnknown;
+    if (cls == NULL) return DWPrefix_YYEncodingTypeNSUnknown;
     if ([cls isSubclassOfClass:[NSMutableString class]]) return DWPrefix_YYEncodingTypeNSMutableString;
     if ([cls isSubclassOfClass:[NSString class]]) return DWPrefix_YYEncodingTypeNSString;
     if ([cls isSubclassOfClass:[NSDecimalNumber class]]) return DWPrefix_YYEncodingTypeNSDecimalNumber;
@@ -760,7 +760,7 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
 @implementation DWMetaClassInfo
 
 +(instancetype)classInfoFromClass:(Class)cls {
-    if (!cls || [cls isEqual:[NSObject class]] || !NSStringFromClass(cls)) {
+    if (cls == NULL || [cls isEqual:[NSObject class]] || !NSStringFromClass(cls)) {
         return nil;
     }
     static NSMutableDictionary * infoCollection;
@@ -778,7 +778,7 @@ static void modelSetValueWithPropertyInfo(id model,DWPrefix_YYClassPropertyInfo 
 }
 
 -(void)setupInfoWithClass:(Class)cls {
-    if (!cls || !NSStringFromClass(cls)) {
+    if (cls == NULL || !NSStringFromClass(cls)) {
         return;
     }
     _cls = cls;

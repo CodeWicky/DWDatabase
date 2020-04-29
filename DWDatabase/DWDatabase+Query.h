@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DWDatabase (Query)
 
--(DWDatabaseResult *)_entry_queryTableWithClass:(nullable Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending configuration:(nullable DWDatabaseConfiguration *)conf queryChains:(nullable DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(nullable DWDatabaseConditionHandler)condition reprocessing:(nullable DWDatabaseReprocessingHandler)reprocessing;
+-(DWDatabaseResult *)_entry_queryTableWithClass:(nullable Class)cls limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending configuration:(nullable DWDatabaseConfiguration *)conf queryChains:(nullable DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(nullable DWDatabaseConditionHandler)condition reprocessing:(nullable DWDatabaseReprocessingHandler)reprocessing;
 
 -(DWDatabaseResult *)_entry_queryTableWithClass:(nullable Class)cls Dw_id:(NSNumber *)Dw_id queryChains:(nullable DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive configuration:(nullable DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 

@@ -155,7 +155,7 @@
 }
 
 -(DWDatabaseOperationRecord *)anyRecordInChainWithClass:(Class)cls {
-    if (!cls) {
+    if (cls == NULL) {
         return nil;
     }
     NSString * key = NSStringFromClass(cls);
@@ -238,11 +238,11 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
     return result;
 }
 
--(NSArray <NSString *>*)validKeysIn:(NSArray <NSString *>*)keys forClass:(Class)clazz {
+-(NSArray <NSString *>*)validKeysIn:(NSArray <NSString *>*)keys forClass:(Class)cls {
     if (!keys.count) {
         return nil;
     }
-    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:clazz];
+    NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];
     return intersectionOfArray(keys,saveKeys);
 }
 
@@ -351,7 +351,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
 }
 
 -(DWDatabaseBindKeyWrapperContainer)saveKeysWrappersWithCls:(Class)cls {
-    if (!cls) {
+    if (cls == NULL) {
         return nil;
     }
     NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];

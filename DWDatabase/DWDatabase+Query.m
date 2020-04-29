@@ -14,8 +14,8 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
 @implementation DWDatabase (Query)
 
 #pragma mark --- interface method ---
--(DWDatabaseResult *)_entry_queryTableWithClass:(Class)clazz limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(void(^)(DWDatabaseConditionMaker * maker))condition reprocessing:(DWDatabaseReprocessingHandler)reprocessing {
-    if (!clazz && !condition) {
+-(DWDatabaseResult *)_entry_queryTableWithClass:(Class)cls limit:(NSUInteger)limit offset:(NSUInteger)offset orderKey:(NSString *)orderKey ascending:(BOOL)ascending configuration:(DWDatabaseConfiguration *)conf queryChains:(DWDatabaseOperationChain *)queryChains recursive:(BOOL)recursive condition:(void(^)(DWDatabaseConditionMaker * maker))condition reprocessing:(DWDatabaseReprocessingHandler)reprocessing {
+    if (cls == NULL && !condition) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     
@@ -26,14 +26,18 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     
     if (!condition) {
         condition = ^(DWDatabaseConditionMaker * maker) {
-            maker.loadClass(clazz);
+            maker.loadClass(cls);
         };
     }
     
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     condition(maker);
-    Class cls = [maker fetchQueryClass];
-    if (!cls) {
+    Class clazz = [maker fetchQueryClass];
+    if (clazz == NULL && cls != NULL) {
+        clazz = cls;
+        maker.loadClass(clazz);
+    }
+    if (clazz == NULL) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     
@@ -45,10 +49,6 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Dw_id who is Nil.", 10018)];
     }
     
-    if (!cls) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
-    }
-    
     DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:YES];
     if (!result.success) {
         return result;
@@ -58,7 +58,16 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
     if (condition) {
         condition(maker);
+        Class clazz = [maker fetchQueryClass];
+        if (clazz != NULL) {
+            cls = clazz;
+        }
     }
+    
+    if (cls == NULL) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+    }
+    
     DWDatabaseBindKeyWrapperContainer bindKeyWrappers = [maker fetchBindKeys];
     [maker reset];
     maker.loadClass(cls);
@@ -205,6 +214,8 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     } else {
         tmp = [cls new];
         SetDw_idForModel(tmp, Dw_id);
+        SetDbNameForModel(tmp, dbName);
+        SetTblNameForModel(tmp, tblName);
     }
     
     __block BOOL validValue = NO;
@@ -237,9 +248,6 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     }
     
     if (!validValue) {
-        SetDbNameForModel(tmp, dbName);
-        SetTblNameForModel(tmp, tblName);
-        
         NSMutableDictionary * unhandledPros = nil;
         if (recursive) {
             unhandledPros = [NSMutableDictionary dictionaryWithCapacity:0];
@@ -427,7 +435,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     
     ///获取条件字段组并获取本次的class
     Class cls = [maker fetchQueryClass];
-    if (!cls) {
+    if (cls == NULL) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     NSArray * saveKeys = [DWDatabase propertysToSaveWithClass:cls];

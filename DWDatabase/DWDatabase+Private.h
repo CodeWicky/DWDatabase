@@ -111,7 +111,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 -(DWDatabaseResult *)excuteUpdate:(FMDatabase *)db WithFactory:(DWDatabaseSQLFactory *)fac clear:(BOOL)clear;
 
--(NSArray <NSString *>*)validKeysIn:(NSArray <NSString *>*)keys forClass:(Class)clazz;
+-(NSArray <NSString *>*)validKeysIn:(NSArray <NSString *>*)keys forClass:(Class)cls;
 
 -(NSDictionary *)propertyInfosForSaveKeysWithClass:(Class)cls;
 

@@ -139,10 +139,10 @@
     }
     
     Class cls = [maker fetchQueryClass];
-    if (!cls && model) {
+    if (cls == NULL && model) {
         cls = [model class];
         
-        if (!cls) {
+        if (cls == NULL) {
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
         }
         

@@ -11,9 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DWDatabase (Supply)
 
--(DWDatabaseResult *)_entry_supplyFieldIfNeededWithClass:(Class)clazz configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)_entry_supplyFieldIfNeededWithClass:(Class)cls configuration:(DWDatabaseConfiguration *)conf;
 
--(DWDatabaseResult *)_entry_addFieldsToTableWithClass:(Class)clazz keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)_entry_addFieldsToTableWithClass:(Class)cls keys:(NSArray<NSString *> *)keys configuration:(DWDatabaseConfiguration *)conf;
 
 @end
 
