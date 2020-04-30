@@ -93,7 +93,7 @@
 #import "DWDatabaseConditionMaker.h"
 #import "DWDatabaseMacro.h"
 #import "DWDatabaseResult.h"
-#import "NSObject+PropertyInfo.h"
+#import <DWKit/NSObject+DWObjectUtils.h>
 
 /**
  模型数据表转换协议

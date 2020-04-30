@@ -7,7 +7,6 @@
 //
 
 #import "C.h"
-#import <DWDatabase/NSObject+PropertyInfo.h>
 #import <DWDatabase/DWDatabase.h>
 
 @implementation C

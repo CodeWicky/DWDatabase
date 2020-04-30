@@ -1,6 +1,8 @@
 PODS:
   - DWDatabase (1.0.4.8):
+    - DWKit/DWCategory/DWObjectUtils (~> 0.0.0.18)
     - FMDB (~> 2.7.2)
+  - DWKit/DWCategory/DWObjectUtils (0.0.0.18)
   - FMDB (2.7.5):
     - FMDB/standard (= 2.7.5)
   - FMDB/standard (2.7.5)
@@ -9,7 +11,8 @@ DEPENDENCIES:
   - DWDatabase (from `../`)
 
 SPEC REPOS:
-  https://github.com/cocoapods/specs.git:
+  https://github.com/CocoaPods/Specs.git:
+    - DWKit
     - FMDB
 
 EXTERNAL SOURCES:
@@ -17,9 +20,10 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  DWDatabase: 2d4658152902fcd1c97df823c2a0a5d8548b9213
+  DWDatabase: c6c4c100a21a304f6051a715145f862cc2fd53db
+  DWKit: 18908dff6111e932726556e20bb2f12a7b723799
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
 
-PODFILE CHECKSUM: a40028e90cac68bfcd3a58c19ae19f13c543940b
+PODFILE CHECKSUM: 3ac360483159e4214b0b7385de02fc8ab5171b04
 
-COCOAPODS: 1.7.5
+COCOAPODS: 1.9.1

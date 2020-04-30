@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "NSObject+PropertyInfo.h"
+#import <DWKit/NSObject+DWObjectUtils.h>
 NS_ASSUME_NONNULL_BEGIN
 
 @class DWDatabaseCondition,DWDatabaseConditionMaker;

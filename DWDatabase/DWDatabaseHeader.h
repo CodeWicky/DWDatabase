@@ -13,6 +13,6 @@
 #import "DWDatabaseResult.h"
 #import "DWDatabaseConditionMaker.h"
 #import "DWDatabaseMacro.h"
-#import "NSObject+PropertyInfo.h"
+#import <DWKit/NSObject+DWObjectUtils.h>
 
 #endif /* DWDatabaseHeader_h */

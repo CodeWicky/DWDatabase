@@ -1,3 +1,5 @@
+source 'https://github.com/CocoaPods/Specs.git'
+
 target 'DWDataBase' do
 pod 'DWDatabase', :path => '../'
 end		

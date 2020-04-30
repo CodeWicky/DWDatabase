@@ -19,11 +19,14 @@
     "ios": "8.0"
   },
   "source_files": "DWDatabase/**/*.{h,m}",
-  "public_header_files": "DWDatabase/**/{DWDatabase,DWDatabaseConfiguration,DWDatabaseResult,DWDatabaseConditionMaker,NSObject+PropertyInfo,DWDatabaseMacro,DWDatabaseHeader}.h",
+  "public_header_files": "DWDatabase/**/{DWDatabase,DWDatabaseConfiguration,DWDatabaseResult,DWDatabaseConditionMaker,DWDatabaseMacro,DWDatabaseHeader}.h",
   "frameworks": "UIKit",
   "dependencies": {
     "FMDB": [
       "~> 2.7.2"
+    ],
+    "DWKit/DWCategory/DWObjectUtils": [
+      "~> 0.0.0.18"
     ]
   }
 }

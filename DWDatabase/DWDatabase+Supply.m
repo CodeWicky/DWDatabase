@@ -6,7 +6,7 @@
 //
 
 #import "DWDatabase+Supply.h"
-#import "NSObject+PropertyInfo.h"
+#import <DWKit/NSObject+DWObjectUtils.h>
 #import <objc/runtime.h>
 #import "DWDatabaseFunction.h"
 #import "DWDatabase+Private.h"

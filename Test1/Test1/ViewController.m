@@ -11,7 +11,6 @@
 #import "Ex.h"
 #import "Ax.h"
 #import <DWDatabase/DWDatabase.h>
-#import <DWDatabase/DWDatabaseFunction.h>
 
 @interface ViewController ()
 
