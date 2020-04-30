@@ -24,6 +24,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         return result;
     }
     
+    ///如果没有condition，补充为查全部数据的condition
     if (!condition) {
         condition = ^(DWDatabaseConditionMaker * maker) {
             maker.loadClass(cls);
@@ -68,6 +69,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     
+    ///更改条件为按Dw_id查询，抛弃其他条件
     DWDatabaseBindKeyWrapperContainer bindKeyWrappers = [maker fetchBindKeys];
     [maker reset];
     maker.loadClass(cls);
@@ -75,6 +77,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     maker.bindKeyWithWrappers(bindKeyWrappers);
     
     result = [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:0 offset:0 orderKey:nil ascending:YES inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, DWDatabaseBindKeyWrapperContainer mainKeyWrappers, DWDatabaseBindKeyWrapperContainer subKeyWrappers, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
+        ///从FMDB拿到set后处理结果
         DWDatabaseResult * result = [self handleQueryResultWithClass:cls dbName:conf.dbName tblName:conf.tableName resultSet:set validProInfos:validProInfos mainKeyWrappers:mainKeyWrappers subKeyWrappers:subKeyWrappers databaseMap:databaseMap resultArr:resultArr queryChains:queryChains recursive:recursive inlineTblNameMap:inlineTblNameMap stop:stop returnNil:returnNil stopOnValidValue:YES reprocessing:nil];
         if (result.success) {
             return nil;
@@ -208,6 +211,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     ///这里从查询链中取出当前查询ID对应的模型，因为最后应保证对应唯一查询ID只有一个唯一模型，因为不同属性同种类名和同种ID应该为模型嵌套的结果，故应该保证实例只有一个。
     DWDatabaseResult * existRecordResult = [queryChains existRecordWithClass:cls Dw_Id:Dw_id];
     DWDatabaseOperationRecord * record = nil;
+    ///如果查询链中存在的话，不新建模型，给原模型赋值
     if (existRecordResult.success) {
         record = existRecordResult.result;
         tmp = record.model;

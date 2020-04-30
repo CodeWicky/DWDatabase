@@ -777,23 +777,7 @@
             result.success = dbVersion != nil;
         }];
     });
-    
-//    NSString * sql = @"PRAGMA user_version";
-//    excuteOnDBOperationQueue(self, ^{
-//        [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-//            [db userVersion];
-//            FMResultSet * set = [db executeQuery:sql];
-//            result.error = db.lastError;
-//            ///获取带转换的属性
-//            NSNumber * dbVersion = nil;
-//            while ([set next] && !dbVersion) {
-//                dbVersion = [set objectForColumn:@"user_version"];
-//            }
-//            result.result = dbVersion;
-//            result.success = dbVersion != nil;
-//            [set close];
-//        }];
-//    });
+
     return result;
 }
 
@@ -828,15 +812,6 @@
             result.result = @(newVersion);
         }];
     });
-    
-//    NSString * sql = [NSString stringWithFormat:@"PRAGMA user_version = %ld",newVersion];
-//    excuteOnDBOperationQueue(self, ^{
-//        [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-//            result.success = [db executeUpdate:sql];
-//            result.error = db.lastError;
-//            result.result = @(newVersion);
-//        }];
-//    });
     
     return result;
 }

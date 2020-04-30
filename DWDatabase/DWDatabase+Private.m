@@ -466,7 +466,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
 }
 
 -(void)setSubPropertyInfos:(NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *)subPropertyInfos {
-    objc_setAssociatedObject(self, @selector(subPropertyInfos), subPropertyInfos, OBJC_ASSOCIATION_ASSIGN);
+    objc_setAssociatedObject(self, @selector(subPropertyInfos), subPropertyInfos, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 -(NSString *)tblName {

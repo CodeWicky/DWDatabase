@@ -52,7 +52,7 @@
             maker = [DWDatabaseConditionMaker new];
         }
         BOOL updateWithDw_id = NO;
-        ///更新时的递归操作思路：
+        
         if (!maker.conditions.count) {
             ///这种情况下，其实没有传入条件，想要以Dw_id进行更新
             updateWithDw_id = YES;
@@ -63,6 +63,7 @@
         if (!updateWithDw_id) {
             recursive = NO;
         }
+       ///更新时的递归操作思路：
         ///思路与插入时大致相同，当根据模型生成sql是，如果模型的某个属性是对象类型，应该根据该属性对应的对象是否包含Dw_id，如果不包含，则需要插入操作，完成后，更新至模型中。如果存在Dw_id，则直接更新指定模型，并在sql中可以更新为此Dw_id。同样，为了避免循环插入，要记录在更新链中。
         
         if (recursive) {
@@ -125,7 +126,7 @@
         });
         return result;
     } else {
-        ///不存在ID则不做更新操作，做插入操作
+        ///不存在ID，且没有条件，则降级为插入操作
         return [self dw_insertTableWithModel:model dbName:dbName tableName:tblName inQueue:queue insertChains:nil recursive:recursive conditionMaker:maker];
     }
 }

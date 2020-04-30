@@ -454,7 +454,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param condition 删除数据的条件
  @return 返回是否插入成功
  
- @disc 1.若传入非空model，且model中存在Dw_id，则将根据Dw_id进行数据表删除，否则将根据condition删除数据表中的数据，model的Dw_id及condition不可以同时为空，否则将删除失败。
+ @disc 1.若传入非空model，且model中存在Dw_id，则将根据Dw_id进行数据表删除，否则将根据condition删除数据表中的数据，model的Dw_id及condition不可以同时为空，否则将删除失败。当且仅当按Dw_id删除时递归模式才有效。条件模式由于无法获取嵌套信息故无法使用递归模式。
  2.recursive将决定是否可以递归删除。当recursive为YES时，将自动删除嵌套模型对应Dw_id的数据。当recursive为NO时，嵌套属性将不做特殊处理。
  3.当且仅当传入非空模型且其Dw_id不为空时，才能确定嵌套模型相关信息，故只有此情形下递归模式生效，condition模式删除时，不支持递归模式。
  4.自动删除嵌套模型时，将根据嵌套模型是否存在Dw_id决定是否将其删除。若嵌套的模型不包含Dw_id，将跳过此嵌套模型的删除操作

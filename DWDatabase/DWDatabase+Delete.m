@@ -24,10 +24,11 @@
     if (model) {
         Dw_id = Dw_idFromModel(model);
         if (Dw_id) {
-            
+            ///若存在Dw_id，改为按Dw_id删除
             DWDatabaseBindKeyWrapperContainer bindKeyWrappers = nil;
             
             if (condition) {
+                ///尝试获取通过condition绑定的key
                 DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
                 condition(maker);
                 bindKeyWrappers = [maker fetchBindKeys];
@@ -36,6 +37,7 @@
                 }
             }
             
+            ///重新构建一个condition，并该表条件为Dw_id，同时添加原condition绑定的key
             condition = ^(DWDatabaseConditionMaker * maker) {
                 maker.loadClass([model class]);
                 maker.conditionWith(kUniqueID).equalTo(Dw_id);
@@ -48,6 +50,11 @@
     
     if (!condition) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
+    }
+    
+    ///如果不按Dw_id删除的话，降级为非递归模式
+    if (!Dw_id) {
+        recursive = NO;
     }
     
     DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
@@ -109,20 +116,6 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to delete.", 10009)];
     }
     
-    if (!maker.conditions.count) {
-        NSNumber * Dw_id = Dw_idFromModel(model);
-        if (!Dw_id) {
-            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model whose Dw_id is nil.", 10016)];
-        }
-        
-        if (!maker) {
-            maker = [DWDatabaseConditionMaker new];
-        }
-        
-        maker.loadClass([model class]);
-        maker.conditionWith(kUniqueID).equalTo(Dw_id);
-    }
-    
     Class cls = [maker fetchQueryClass];
     if (cls == NULL && model) {
         cls = [model class];
@@ -150,6 +143,7 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to delete.", 10009)];
     }
     
+    ///获取绑定键值
     DWDatabaseBindKeyWrapperContainer bindKeyWrappers = [maker fetchBindKeys];
     NSArray <DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrappers fixMainWrappers:NO];
     DWDatabaseBindKeyWrapperContainer mainKeyWrappers = seperateWrappers.firstObject;
@@ -210,11 +204,10 @@
                                         if (tblConf) {
                                             
                                             DWDatabaseBindKeyWrapperContainer subKeyToInsert = [self subKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
-                                            DWDatabaseConditionMaker * maker = nil;
+                                            DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
+                                            maker.loadClass(obj.cls);
+                                            maker.conditionWith(kUniqueID).equalTo(Dw_id);
                                             if (subKeyToInsert.allKeys.count) {
-                                                maker = [DWDatabaseConditionMaker new];
-                                                maker.loadClass(obj.cls);
-                                                maker.conditionWith(kUniqueID).equalTo(Dw_id);
                                                 maker.bindKeyWithWrappers(subKeyToInsert);
                                             }
                                             DWDatabaseResult * result = [self dw_deleteTableWithModel:value dbName:tblConf.dbName tableName:tblConf.tableName inQueue:tblConf.dbQueue deleteChains:deleteChains recursive:NO conditionMaker:maker];

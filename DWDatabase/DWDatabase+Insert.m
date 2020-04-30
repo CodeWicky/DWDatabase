@@ -52,6 +52,7 @@
             insertChains = [DWDatabaseOperationChain new];
         }
         
+        ///递归模式下，即使插入链中存在，也可能走递归模式，补充字段。所以这里记录一下，不存在的才更新插入链
         if (![insertChains existRecordWithModel:model].success) {
             ///记录本次操作
             DWDatabaseOperationRecord * record = [DWDatabaseOperationRecord new];
@@ -63,6 +64,7 @@
         }
     }
     
+    ///生成sqlFac
     __block DWDatabaseResult * result = [self insertSQLFactoryWithModel:model dbName:dbName tableName:tblName insertChains:insertChains recursive:recursive conditionMaker:maker];
     if (!result.success) {
         return result;
@@ -72,23 +74,22 @@
     ///如果插入链中已经包含model，说明嵌套链中存在自身model，且已经成功插入，此时直接更新表（如A-B-A这种结构中，inertChains结果中将不包含B，故此需要更新）
     
     if (recursive) {
+        ///看看是不是已经在插入链中完成了，嵌套结构的话会存在这种情况。如果完成了，则更新所有对象字段。
         DWDatabaseOperationRecord * record = [insertChains recordInChainWithModel:model];
         if (record.finishOperationInChain) {
             NSNumber * Dw_id = Dw_idFromModel(model);
             ///这里用validKeys是因为要做全量更新，当finishOperationInChain以后，非对象属性可能由于还没有插入导致漏掉
             DWDatabaseBindKeyWrapperContainer updateWrappers = [self subKeyWrappersIn:fac.mainKeyWrappers inKeys:fac.validKeys];
             if (fac.objMap.allKeys.count && updateWrappers.count) {
-                
                 [fac.objMap enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
                     [model setValue:obj forKey:key];
                 }];
-                
                 
                 DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
                 maker.loadClass([model class]);
                 maker.conditionWith(kUniqueID).equalTo(Dw_id);
                 maker.bindKeyWithWrappers(updateWrappers);
-                
+                ///只更新对象说行，不需要嵌套结构了
                 result = [self dw_updateTableWithModel:model dbName:dbName tableName:tblName inQueue:queue updateChains:nil recursive:NO conditionMaker:maker];
             }
             result.result = Dw_id;
