@@ -174,8 +174,8 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid query without any condition.", 10010)];
     }
     ///查询个数的话，只查询ID即可
-    [maker.bindKeys removeAllObjects];
-    maker.bindKeyWrappers = nil;
+    [maker.bindedKeys removeAllObjects];
+    maker.bindedKeyWrappers = nil;
     maker.bindKey(kUniqueID);
     DWDatabaseResult * result = [self dw_queryTableWithDbName:dbName tableName:tblName limit:0 offset:0 orderKey:nil ascending:YES inQueue:queue queryChains:nil recursive:NO conditionMaker:maker resultSetHandler:^NSError *(__unsafe_unretained Class cls, FMResultSet *set, NSDictionary<NSString *,DWPrefix_YYClassPropertyInfo *> *validProInfos, DWDatabaseBindKeyWrapperContainer mainKeyWrappers, DWDatabaseBindKeyWrapperContainer subKeyWrappers, NSDictionary *databaseMap, NSMutableArray *resultArr, DWDatabaseOperationChain *queryChains, BOOL recursive, NSDictionary *inlineTblNameMap, BOOL *stop, BOOL *returnNil) {
         [resultArr addObject:@1];
@@ -539,10 +539,10 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-%@-%@",orderField,ascending?@"ASC":@"DESC"]];
     
     if (limit > 0) {
-        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-L%lu",(unsigned long)limit]];
+        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-L%zu",limit]];
     }
     if (offset > 0) {
-        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-O%lu",(unsigned long)offset]];
+        cacheSqlKey = [cacheSqlKey stringByAppendingString:[NSString stringWithFormat:@"-O%zu",offset]];
     }
     if (cacheSqlKey.length) {
         sql = [self.sqlsCache objectForKey:cacheSqlKey];
@@ -586,10 +586,10 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
             sql = [sql stringByAppendingString:[NSString stringWithFormat:@" ORDER BY %@ %@",orderField,ascending?@"ASC":@"DESC"]];
         }
         if (limit > 0) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" LIMIT %lu",(unsigned long)limit]];
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" LIMIT %zu",limit]];
         }
         if (offset > 0) {
-            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" OFFSET %lu",(unsigned long)offset]];
+            sql = [sql stringByAppendingString:[NSString stringWithFormat:@" OFFSET %zu",offset]];
         }
         
         ///计算完缓存sql

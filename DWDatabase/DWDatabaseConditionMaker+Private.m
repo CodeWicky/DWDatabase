@@ -170,11 +170,11 @@
 }
 
 -(DWDatabaseBindKeyWrapperContainer)fetchBindKeys {
-    if (self.bindKeyWrappers) {
-        return self.bindKeyWrappers;
+    if (self.bindedKeyWrappers) {
+        return self.bindedKeyWrappers;
     }
     NSMutableDictionary * tmpDic = [NSMutableDictionary dictionaryWithCapacity:0];
-    [self.bindKeys enumerateObjectsUsingBlock:^(DWDatabaseBindKeyWrapper * _Nonnull wrapper, NSUInteger idx, BOOL * _Nonnull stop) {
+    [self.bindedKeys enumerateObjectsUsingBlock:^(DWDatabaseBindKeyWrapper * _Nonnull wrapper, NSUInteger idx, BOOL * _Nonnull stop) {
         [wrapper.bindKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
             if (obj.length) {
                 DWDatabaseBindKeyWrapper * tmp = [DWDatabaseBindKeyWrapper new];
@@ -184,8 +184,8 @@
             }
         }];
     }];
-    self.bindKeyWrappers = tmpDic;
-    return self.bindKeyWrappers;
+    self.bindedKeyWrappers = tmpDic;
+    return self.bindedKeyWrappers;
 }
 
 -(DWDatabaseCondition *)installConditionWithValue:(id)value relation:(DWDatabaseValueRelation)relation {
@@ -203,15 +203,15 @@
     self.inlineTblNameMap = nil;
     self.inlineTblDataBaseMap = nil;
     self.inlineTblMapCtn = nil;
-    self.bindKeys = nil;
-    self.bindKeyWrappers = nil;
+    self.bindedKeys = nil;
+    self.bindedKeyWrappers = nil;
     self.hasSubProperty = NO;
 }
 
 #pragma mark --- tool func ---
 DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value,DWDatabaseValueRelation relation) {
     if (!value) {
-        NSLog(@"Attemp to create an invalid condition whose value is nil.");
+        NSLog(@"DWDatabase WARNING:Attemp to create an invalid condition whose value is nil.");
         maker.currentCondition = nil;
         return maker.conditions.lastObject;
     }
@@ -271,7 +271,7 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 -(DWDatabaseBindKeyWithWrappers)bindKeyWithWrappers {
     return ^(DWDatabaseBindKeyWrapperContainer wrappers) {
         if (wrappers.allKeys.count) {
-            self.bindKeyWrappers = wrappers;
+            self.bindedKeyWrappers = wrappers;
         }
         return self;
     };
@@ -422,20 +422,20 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
     DWDatabaseSetValue(currentBindKeyWrapper);
 }
 
--(NSMutableArray *)bindKeys {
-    return DWDatabaseLazyValue(bindKeys, NSMutableArray, array);
+-(NSMutableArray *)bindedKeys {
+    return DWDatabaseLazyValue(bindedKeys, NSMutableArray, array);
 }
 
--(void)setBindKeys:(NSMutableArray *)bindKeys {
-    DWDatabaseSetValue(bindKeys);
+-(void)setBindedKeys:(NSMutableArray *)bindedKeys {
+    DWDatabaseSetValue(bindedKeys);
 }
 
--(NSMutableDictionary *)bindKeyWrappers {
-    return DWDatabaseGetValue(bindKeyWrappers);
+-(NSMutableDictionary *)bindedKeyWrappers {
+    return DWDatabaseGetValue(bindedKeyWrappers);
 }
 
--(void)setBindKeyWrappers:(NSMutableDictionary *)bindKeyWrappers {
-    DWDatabaseSetValue(bindKeyWrappers);
+-(void)setBindedKeyWrappers:(NSMutableDictionary *)bindedKeyWrappers {
+    DWDatabaseSetValue(bindedKeyWrappers);
 }
 
 @end
@@ -833,7 +833,7 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
 #pragma mark --- override ---
 -(NSString *)description {
     NSString * superDes = [super description];
-    return [NSString stringWithFormat:@"%@ Keys:%@ Relation:%ld Value:%@",superDes,self.conditionKeys,(unsigned long)self.relation,self.value];
+    return [NSString stringWithFormat:@"%@ Keys:%@ Relation:%zu Value:%@",superDes,self.conditionKeys,self.relation,self.value];
 }
 
 #pragma mark --- setter/getter ---

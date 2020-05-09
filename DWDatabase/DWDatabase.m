@@ -797,11 +797,11 @@
     
     NSInteger newVersion = handler(self,currentVersion,targetVersion);
     if (newVersion < 0) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a invalid version:%ld",newVersion], 10023)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a invalid version:%zd",newVersion], 10023)];
     }
     
     if ([result.result integerValue] == newVersion) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a the same version as current version:%ld",newVersion], 10024)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage([NSString stringWithFormat: @"Upgrade DB fail for handler return a the same version as current version:%zd",newVersion], 10024)];
     }
     
     excuteOnDBOperationQueue(self, ^{

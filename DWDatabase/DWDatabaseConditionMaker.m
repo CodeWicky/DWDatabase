@@ -65,7 +65,6 @@
 
 -(DWDatabaseConditionClass)loadClass {
     return ^(Class class) {
-        NSLog(@"Initialize maker with class:%@",NSStringFromClass(class));
         self.clazz = class;
         return self;
     };
@@ -73,7 +72,6 @@
 
 -(DWDatabaseConditionKey)conditionWith {
     return ^(NSString * key) {
-        NSLog(@"Append a condition key:%@",key);
         [self.currentCondition.conditionKeys addObject:key];
         return self;
     };
@@ -81,42 +79,36 @@
 
 -(DWDatabaseConditionValue)equalTo {
     return ^(id value) {
-        NSLog(@"Setup condition with an equal value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationEqual];
     };
 }
 
 -(DWDatabaseConditionValue)notEqualTo {
     return ^(id value) {
-        NSLog(@"Setup condition with an not equal value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationNotEqual];
     };
 }
 
 -(DWDatabaseConditionValue)greaterThan {
     return ^(id value) {
-        NSLog(@"Setup condition with a greater value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationGreater];
     };
 }
 
 -(DWDatabaseConditionValue)lessThan {
     return ^(id value) {
-        NSLog(@"Setup condition with a less value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationLess];
     };
 }
 
 -(DWDatabaseConditionValue)greaterThanOrEqualTo {
     return ^(id value) {
-        NSLog(@"Setup condition with a greater or equal value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationGreaterOrEqual];
     };
 }
 
 -(DWDatabaseConditionValue)lessThanOrEqualTo {
     return ^(id value) {
-        NSLog(@"Setup condition with a less or equal value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationLessOrEqual];
     };
 }
@@ -125,20 +117,19 @@
     return ^(id value) {
         ///范围条件值为一个数组，如果不是转化成等于条件
         if (![value isKindOfClass:[NSArray class]]) {
-            NSLog(@"Setup condition with a in values:%@,But the single value will be transform to equal value",value);
+            NSLog(@"DWDatabase WARNING:Setup condition with a in values:%@,But the single value will be transform to equal value",value);
             return [self installConditionWithValue:value relation:DWDatabaseValueRelationEqual];
         } else {
             ///如果是数组且无元素，转化成无结果的条件
             NSArray * arrValue = value;
             if (arrValue.count == 0) {
-                NSLog(@"Setup condition with a in values:%@,But the single value will be transform to error value with no result",value);
+                NSLog(@"DWDatabase WARNING:Setup condition with a in values:%@,But the single value will be transform to error value with no result",value);
                 return [self installConditionWithValue:value relation:DWDatabaseValueRelationErrorNone];
             } else if (arrValue.count == 1) {
                 ///如果是数组仅一个元素，转换成等于条件
-                NSLog(@"Setup condition with a in values:%@,But the single value will be transform to equal value",value);
+                NSLog(@"DWDatabase WARNING:Setup condition with a in values:%@,But the single value will be transform to equal value",value);
                 return [self installConditionWithValue:value relation:DWDatabaseValueRelationEqual];
             } else {
-                NSLog(@"Setup condition with a in values:%@",value);
                 return [self installConditionWithValue:value relation:DWDatabaseValueRelationInValues];
             }
         }
@@ -148,19 +139,18 @@
 -(DWDatabaseConditionValue)notInValues {
     return ^(id value) {
         if (![value isKindOfClass:[NSArray class]]) {
-            NSLog(@"Setup condition with a not in values:%@,But the single value will be transform to not equal value",value);
+            NSLog(@"DWDatabase WARNING:Setup condition with a not in values:%@,But the single value will be transform to not equal value",value);
             return [self installConditionWithValue:value relation:DWDatabaseValueRelationNotEqual];
         } else {
             NSArray * arrValue = value;
             if (arrValue.count == 0) {
                 ///如果是数组且无元素，转化成匹配所有结果的条件
-                NSLog(@"Setup condition with a not in values:%@,But the empty value will be transform to error value which lead to all data",value);
+                NSLog(@"DWDatabase WARNING:Setup condition with a not in values:%@,But the empty value will be transform to error value which lead to all data",value);
                 return [self installConditionWithValue:value relation:DWDatabaseValueRelationErrorALL];
             } else if (arrValue.count == 1) {
-                NSLog(@"Setup condition with a not in values:%@,But the single value will be transform to not equal value",value);
+                NSLog(@"DWDatabase WARNING:Setup condition with a not in values:%@,But the single value will be transform to not equal value",value);
                 return [self installConditionWithValue:value relation:DWDatabaseValueRelationNotEqual];
             } else {
-                NSLog(@"Setup condition with a not in values:%@",value);
                 return [self installConditionWithValue:value relation:DWDatabaseValueRelationNotInValues];
             }
         }
@@ -169,28 +159,24 @@
 
 -(DWDatabaseConditionValue)like {
     return ^(id value) {
-        NSLog(@"Setup condition with a like value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationLike];
     };
 }
 
 -(DWDatabaseConditionValue)between {
     return ^(id value) {
-        NSLog(@"Setup condition with a between value:%@",value);
         return [self installConditionWithValue:value relation:DWDatabaseValueRelationBetween];
     };
 }
 
 -(DWDatabaseConditionVoidValue)isNull {
     return ^(void) {
-        NSLog(@"Setup condition with a null value");
         return [self installConditionWithValue:[NSNull null] relation:DWDatabaseValueRelationIsNull];
     };
 }
 
 -(DWDatabaseConditionVoidValue)notNull {
     return ^(void) {
-        NSLog(@"Setup condition with a not null value");
         return [self installConditionWithValue:[NSNull null] relation:DWDatabaseValueRelationNotNull];
     };
 }
@@ -202,12 +188,27 @@
             if (!currentWrapper) {
                 currentWrapper = [DWDatabaseBindKeyWrapper new];
                 self.currentBindKeyWrapper = currentWrapper;
-                [self.bindKeys addObject:currentWrapper];
+                [self.bindedKeys addObject:currentWrapper];
             }
             [currentWrapper.bindKeys addObject:key];
         }
         return self;
     };
+}
+
+-(DWDatabaseBindKeys)bindKeys {
+        return ^(NSArray <NSString *>* keys) {
+            if (keys.count) {
+                DWDatabaseBindKeyWrapper * currentWrapper = self.currentBindKeyWrapper;
+                if (!currentWrapper) {
+                    currentWrapper = [DWDatabaseBindKeyWrapper new];
+                    self.currentBindKeyWrapper = currentWrapper;
+                    [self.bindedKeys addObject:currentWrapper];
+                }
+                [currentWrapper.bindKeys addObjectsFromArray:keys];
+            }
+            return self;
+        };
 }
 
 -(DWDatabaseBindKeyRecursively)recursively {

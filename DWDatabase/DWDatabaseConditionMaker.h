@@ -17,6 +17,7 @@ typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionVoidValue)(void);
 typedef DWDatabaseCondition *_Nonnull(^DWDatabaseConditionCombine)(void);
 typedef void (^DWDatabaseConditionHandler)(DWDatabaseConditionMaker * maker);
 typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKey)(NSString * key);
+typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKeys)(NSArray <NSString *>* keys);
 typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKeyRecursively)(BOOL recursively);
 typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKeyCommit)(void);
 
@@ -184,6 +185,7 @@ typedef DWDatabaseConditionMaker *_Nonnull(^DWDatabaseBindKeyCommit)(void);
 ///(3).查询方法中，指定需要查询表的属性名
 ///若不绑定键值，将默认操作表中所有的字段
 @property (nonatomic ,copy) DWDatabaseBindKey bindKey;
+@property (nonatomic ,copy) DWDatabaseBindKeys bindKeys;
 
 ///设置绑定的键值是否支持递归，若不调用，默认为YES
 @property (nonatomic ,copy) DWDatabaseBindKeyRecursively recursively;

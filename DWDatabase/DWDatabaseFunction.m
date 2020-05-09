@@ -442,6 +442,7 @@ NSArray * minusArray(NSArray * arr1,NSArray * arr2) {
 NSString * const dbErrorDomain = @"com.DWDatabase.error";
 ///快速生成NSError
 NSError * errorWithMessage(NSString * msg,NSInteger code) {
+    NSLog(@"DWDatabase ERROR:%@",msg);
     NSDictionary * userInfo = nil;
     if (msg.length) {
         userInfo = @{NSLocalizedDescriptionKey:msg};

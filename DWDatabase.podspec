@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
 s.name = 'DWDatabase'
-s.version = '1.1.0'
+s.version = '1.1.1.1'
 s.license = { :type => 'MIT', :file => 'LICENSE' }
 s.summary = '无入侵模型自动落库。Automaticly save model to database.'
 s.homepage = 'https://github.com/CodeWicky/DWDatabase'
