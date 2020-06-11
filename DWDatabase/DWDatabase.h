@@ -88,6 +88,9 @@
  
  version 1.1.1.1
  添加bindKeys接口
+ 
+ version 1.1.1.2
+ 修复inValues、notInValues遇到单值转化时的类型错误问题
 
  */
 
