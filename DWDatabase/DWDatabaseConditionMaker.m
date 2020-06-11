@@ -124,13 +124,13 @@
             NSArray * arrValue = value;
             if (arrValue.count == 0) {
                 NSLog(@"DWDatabase WARNING:Setup condition with a in values:%@,But the single value will be transform to error value with no result",value);
-                return [self installConditionWithValue:value relation:DWDatabaseValueRelationErrorNone];
+                return [self installConditionWithValue:arrValue relation:DWDatabaseValueRelationErrorNone];
             } else if (arrValue.count == 1) {
                 ///如果是数组仅一个元素，转换成等于条件
                 NSLog(@"DWDatabase WARNING:Setup condition with a in values:%@,But the single value will be transform to equal value",value);
-                return [self installConditionWithValue:value relation:DWDatabaseValueRelationEqual];
+                return [self installConditionWithValue:arrValue.lastObject relation:DWDatabaseValueRelationEqual];
             } else {
-                return [self installConditionWithValue:value relation:DWDatabaseValueRelationInValues];
+                return [self installConditionWithValue:arrValue relation:DWDatabaseValueRelationInValues];
             }
         }
     };
@@ -146,12 +146,12 @@
             if (arrValue.count == 0) {
                 ///如果是数组且无元素，转化成匹配所有结果的条件
                 NSLog(@"DWDatabase WARNING:Setup condition with a not in values:%@,But the empty value will be transform to error value which lead to all data",value);
-                return [self installConditionWithValue:value relation:DWDatabaseValueRelationErrorALL];
+                return [self installConditionWithValue:arrValue relation:DWDatabaseValueRelationErrorALL];
             } else if (arrValue.count == 1) {
                 NSLog(@"DWDatabase WARNING:Setup condition with a not in values:%@,But the single value will be transform to not equal value",value);
-                return [self installConditionWithValue:value relation:DWDatabaseValueRelationNotEqual];
+                return [self installConditionWithValue:arrValue.lastObject relation:DWDatabaseValueRelationNotEqual];
             } else {
-                return [self installConditionWithValue:value relation:DWDatabaseValueRelationNotInValues];
+                return [self installConditionWithValue:arrValue relation:DWDatabaseValueRelationNotInValues];
             }
         }
     };

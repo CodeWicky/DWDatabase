@@ -13,7 +13,7 @@
 
 #import <DWDatabase/DWDatabaseHeader.h>
 
-#define dbPath @"/Users/momo/Desktop/a.sqlite3"
+#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
 //#define dbPath [defaultSavePath() stringByAppendingPathComponent:@"a.sqlite3"]
 //#define dbPath @"/Users/wicky/Desktop/a.sqlite3"
 @interface ViewController ()<UITableViewDataSource,UITableViewDelegate>
