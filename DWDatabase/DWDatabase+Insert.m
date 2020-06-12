@@ -288,7 +288,7 @@
     } else {
         ///走到这，说明作为二级模型，虽然指定了插入的key，但是之前已经将这些key都插入过了，说明已经完整了，不需要再插了
         NSNumber * Dw_id = Dw_idFromModel(model);
-        if (Dw_id) {
+        if (Dw_id && propertyTblName.length) {
             [validKeys addObject:propertyTblName];
             [args addObject:Dw_id];
         }
@@ -309,11 +309,13 @@
     ///在表中插入此次要补的key。此处因为是finishOperationInChain为NO才会进入的分支，标志着本地中，一定没有这个模型的记录，所以此处一定是插入。
     DWDatabaseResult * result = [self dw_insertTableWithModel:model dbName:conf.dbName tableName:conf.tableName inQueue:conf.dbQueue insertChains:insertChains recursive:YES conditionMaker:maker];
     if (result.success) {
-        [validKeys addObject:propertyTblName];
-        [args addObject:result.result];
-        ///标记一下，表中已经有这条记录了，之后针对这条记录的所有插入操作，均应降级成为更新操作
-        record.finishOperationInChain = YES;
-        objMap[prop.name] = model;
+        if (propertyTblName.length && result.result) {
+            [validKeys addObject:propertyTblName];
+            [args addObject:result.result];
+            ///标记一下，表中已经有这条记录了，之后针对这条记录的所有插入操作，均应降级成为更新操作
+            record.finishOperationInChain = YES;
+            objMap[prop.name] = model;
+        }
     } else {
         record.finishOperationInChain = NO;
         ///如果插入失败了，再将刚才因此添加的key移除
@@ -377,12 +379,14 @@
             DWDatabaseResult * result = [self _entry_insertTableWithModel:model configuration:tblConf insertChains:insertChains recursive:YES condition:condition];
             ///如果成功，添加id
             if (result.success) {
-                [validKeys addObject:propertyTblName];
-                [args addObject:result.result];
-                
-                DWDatabaseOperationRecord * record = [insertChains recordInChainWithModel:model];
-                record.finishOperationInChain = YES;
-                objMap[prop.name] = model;
+                if (propertyTblName.length && result.result) {
+                    [validKeys addObject:propertyTblName];
+                    [args addObject:result.result];
+                    
+                    DWDatabaseOperationRecord * record = [insertChains recordInChainWithModel:model];
+                    record.finishOperationInChain = YES;
+                    objMap[prop.name] = model;
+                }
             }
         }
     }

@@ -113,7 +113,9 @@
         if (!result.success) {
             *stop = YES;
         } else {
-            [successKeys addObject:obj.name];
+            if (obj.name.length) {
+                [successKeys addObject:obj.name];
+            }
         }
     }];
     

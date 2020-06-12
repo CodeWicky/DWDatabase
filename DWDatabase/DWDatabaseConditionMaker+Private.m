@@ -453,9 +453,10 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
     if (!subPropertyEnabled || hasSubProperty) {
         [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
             DWDatabaseConditionValueWrapper * wrapper = [self conditionValuesWithKey:obj];
-            if (!wrapper) {
+            if (!wrapper || !wrapper.value) {
                 return ;
             }
+            
             ///如果当前记录
             if (subPropertyEnabled && !hasSubProperty && wrapper.subProperty) {
                 hasSubProperty = YES;
@@ -505,6 +506,11 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
         
         ///根据wrapper获取条件字符串
         [wrappers enumerateObjectsUsingBlock:^(DWDatabaseConditionValueWrapper * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            
+            if (!obj.value) {
+                return ;
+            }
+            
             NSString * conditionString = [self conditioinStringWithPropertyWrapper:obj valueCount:obj.valueCount hasSubProperty:hasSubProperty];
             
             if (!conditionString) {

@@ -72,7 +72,9 @@
 
 -(DWDatabaseConditionKey)conditionWith {
     return ^(NSString * key) {
-        [self.currentCondition.conditionKeys addObject:key];
+        if (key.length) {
+            [self.currentCondition.conditionKeys addObject:key];
+        }
         return self;
     };
 }

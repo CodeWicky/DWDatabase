@@ -91,6 +91,12 @@
  
  version 1.1.1.2
  修复inValues、notInValues遇到单值转化时的类型错误问题
+ 
+ version 1.1.1.3
+ 修复更新模型后覆盖Dw_id为空的bug
+ 
+ version 1.1.1.4
+ 添加防止崩溃的安全条件
 
  */
 

@@ -343,12 +343,17 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
     
     if (validValue) {
         if (recursive) {
-            [resultArr addObject:record];
+            if (record) {
+                [resultArr addObject:record];
+            }
+            
         } else {
             if (reprocessing) {
                 reprocessing(tmp,set);
             }
-            [resultArr addObject:tmp];
+            if (tmp) {
+                [resultArr addObject:tmp];
+            }
         }
         if (stopOnValidValue) {
             *stop = YES;
@@ -363,6 +368,9 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         NSMutableArray * tmp = [NSMutableArray arrayWithCapacity:resultArr.count];
         [resultArr enumerateObjectsUsingBlock:^(DWDatabaseOperationRecord * obj, NSUInteger idx, BOOL * _Nonnull stop) {
             NSObject * model = obj.model;
+            if (!model) {
+                return ;
+            }
             ///如果结果被标记已经查询完成了，代表接过已经合法了，直接放在数组里就行
             if (obj.finishOperationInChain) {
                 [tmp addObject:model];

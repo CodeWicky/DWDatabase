@@ -471,7 +471,10 @@
         [conf.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
             FMResultSet * set = [db getTableSchema:conf.tableName];
             while ([set next]) {
-                [fields addObject:[set stringForColumn:@"name"]];
+                NSString * field = [set stringForColumn:@"name"];
+                if (field.length) {
+                    [fields addObject:field];
+                }
             }
             [set close];
         }];
@@ -588,12 +591,16 @@
                     DWDatabaseResult * result = [strongSelf excuteUpdate:db WithFactory:obj operation:(DWDatabaseOperationInsert)];
                     if (!result.success) {
                         hasFailure = YES;
-                        [failures addObject:obj.model];
+                        if (obj.model) {
+                            [failures addObject:obj.model];
+                        }
                         error = result.error;
                     }
                 } else {
-                    ///如果失败过，直接将模型加入数组即可
-                    [failures addObject:obj.model];
+                    if (obj.model) {
+                        ///如果失败过，直接将模型加入数组即可
+                        [failures addObject:obj.model];
+                    }
                 }
             }];
             

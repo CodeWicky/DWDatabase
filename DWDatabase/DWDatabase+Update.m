@@ -277,15 +277,19 @@
     if (result) {
         if (!result.success) {
             propertyTblName = [propertyTblName stringByAppendingString:@" = ?"];
-            [validKeys addObject:propertyTblName];
-            ///之前就存在，则_entry_update中走的也是更新逻辑
-            if (Dw_id) {
-                [args addObject:Dw_id];
-            } else {
-                [args addObject:result.result];
-                objMap[prop.name] = model;
+            if (propertyTblName.length) {
+                [validKeys addObject:propertyTblName];
+                ///之前就存在，则_entry_update中走的也是更新逻辑
+                if (Dw_id) {
+                    [args addObject:Dw_id];
+                } else {
+                    if (result.result) {
+                        [args addObject:result.result];
+                        objMap[prop.name] = model;
+                    }
+                }
+                record.finishOperationInChain = YES;
             }
-            record.finishOperationInChain = YES;
         } else {
             ///如果插入失败了，再将刚才因此添加的key移除
             [record.operatedKeys minusSet:subKeyToUpdateSet];
@@ -316,10 +320,12 @@
 -(void)supplyModelSubKeys:(NSObject *)model Dw_id:(NSNumber *)Dw_id propertyInfo:(DWPrefix_YYClassPropertyInfo *)prop propertyTblName:(NSString *)propertyTblName subKeyWrappers:(DWDatabaseBindKeyWrapperContainer)subKeyWrappers subkeyToUpdate:(NSArray <NSString *>*)subkeyToUpdate record:(DWDatabaseOperationRecord *)record conf:(DWDatabaseConfiguration *)conf  updateChains:(DWDatabaseOperationChain *)updateChains validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args objMap:(NSMutableDictionary *)objMap {
     if (Dw_id) {
         propertyTblName = [propertyTblName stringByAppendingString:@" = ?"];
-        [validKeys addObject:propertyTblName];
-        [args addObject:Dw_id];
-        NSMutableSet * subKeyToUpdateSet = [NSMutableSet setWithArray:subkeyToUpdate];
-        [self updateModelSubKeysResult:model propertyInfo:prop subKeyWrappers:subKeyWrappers subKeyToUpdateSet:subKeyToUpdateSet record:record conf:conf updateChains:updateChains];
+        if (propertyTblName.length) {
+            [validKeys addObject:propertyTblName];
+            [args addObject:Dw_id];
+            NSMutableSet * subKeyToUpdateSet = [NSMutableSet setWithArray:subkeyToUpdate];
+            [self updateModelSubKeysResult:model propertyInfo:prop subKeyWrappers:subKeyWrappers subKeyToUpdateSet:subKeyToUpdateSet record:record conf:conf updateChains:updateChains];
+        }
     }
 }
 
@@ -354,17 +360,21 @@
             DWDatabaseResult * result = [self _entry_updateTableWithModel:model configuration:tblConf updateChains:updateChains recursive:YES condition:condition];
             if (result.success) {
                 propertyTblName = [propertyTblName stringByAppendingString:@" = ?"];
-                [validKeys addObject:propertyTblName];
-                ///之前就存在，则_entry_update中走的也是更新逻辑
-                if (Dw_id) {
-                    [args addObject:Dw_id];
-                } else {
-                    ///走的是插入逻辑，要标记状态
-                    [args addObject:result.result];
-                    objMap[prop.name] = model;
+                if (propertyTblName.length) {
+                    [validKeys addObject:propertyTblName];
+                    ///之前就存在，则_entry_update中走的也是更新逻辑
+                    if (Dw_id) {
+                        [args addObject:Dw_id];
+                    } else {
+                        if (result.result) {
+                            ///走的是插入逻辑，要标记状态
+                            [args addObject:result.result];
+                            objMap[prop.name] = model;
+                        }
+                    }
+                    DWDatabaseOperationRecord * record = [updateChains recordInChainWithModel:model];
+                    record.finishOperationInChain = YES;
                 }
-                DWDatabaseOperationRecord * record = [updateChains recordInChainWithModel:model];
-                record.finishOperationInChain = YES;
             }
         }
     }
@@ -373,14 +383,18 @@
 -(void)updateModelID:(NSObject *)model propertyTblName:(NSString *)propertyTblName validKeysContainer:(NSMutableArray *)validKeys argumentsContaienr:(NSMutableArray *)args {
     if ([model isKindOfClass:[NSNumber class]]) {
         propertyTblName = [propertyTblName stringByAppendingString:@" = ?"];
-        [validKeys addObject:propertyTblName];
-        [args addObject:model];
+        if (propertyTblName.length) {
+            [validKeys addObject:propertyTblName];
+            [args addObject:model];
+        }
     } else {
         NSNumber * Dw_id = Dw_idFromModel(model);
         if (Dw_id) {
             propertyTblName = [propertyTblName stringByAppendingString:@" = ?"];
-            [validKeys addObject:propertyTblName];
-            [args addObject:Dw_id];
+            if (propertyTblName.length) {
+                [validKeys addObject:propertyTblName];
+                [args addObject:Dw_id];
+            }
         }
     }
 }
