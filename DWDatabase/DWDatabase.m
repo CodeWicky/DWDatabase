@@ -585,7 +585,7 @@
                 ///如果还没失败过则执行插入操作
                 if (!hasFailure) {
                     ///如果插入失败则记录失败状态并将模型加入失败数组
-                    DWDatabaseResult * result = [strongSelf excuteUpdate:db WithFactory:obj clear:NO];
+                    DWDatabaseResult * result = [strongSelf excuteUpdate:db WithFactory:obj operation:(DWDatabaseOperationInsert)];
                     if (!result.success) {
                         hasFailure = YES;
                         [failures addObject:obj.model];

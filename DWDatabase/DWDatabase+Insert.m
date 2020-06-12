@@ -102,7 +102,7 @@
     excuteOnDBOperationQueue(self, ^{
         [queue inDatabase:^(FMDatabase * _Nonnull db) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
-            result = [strongSelf excuteUpdate:db WithFactory:fac clear:NO];
+            result = [strongSelf excuteUpdate:db WithFactory:fac operation:(DWDatabaseOperationInsert)];
         }];
     });
     

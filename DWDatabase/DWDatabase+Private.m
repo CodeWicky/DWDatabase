@@ -216,20 +216,33 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
 @implementation DWDatabase (Private)
 @dynamic dbqContainer,dbOperationQueue;
 #pragma mark --- interface method ---
--(DWDatabaseResult *)excuteUpdate:(FMDatabase *)db WithFactory:(DWDatabaseSQLFactory *)fac clear:(BOOL)clear {
+-(DWDatabaseResult *)excuteUpdate:(FMDatabase *)db WithFactory:(DWDatabaseSQLFactory *)fac operation:(DWDatabaseOperation)operation {
     DWDatabaseResult * result = [DWDatabaseResult new];
     result.success = [db executeUpdate:fac.sql withArgumentsInArray:fac.args];
     if (result.success) {
         NSObject * model = fac.model;
         if (model) {
-            if (clear) {
-                SetDw_idForModel(model, nil);
-                SetDbNameForModel(model, nil);
-                SetTblNameForModel(model, nil);
-            } else {
-                SetDw_idForModel(model, @(db.lastInsertRowId));
-                SetDbNameForModel(model, fac.dbName);
-                SetTblNameForModel(model, fac.tblName);
+            switch (operation) {
+                case DWDatabaseOperationDelete:
+                {
+                    SetDw_idForModel(model, nil);
+                    SetDbNameForModel(model, nil);
+                    SetTblNameForModel(model, nil);
+                }
+                    break;
+                case DWDatabaseOperationInsert:
+                {
+                    SetDw_idForModel(model, @(db.lastInsertRowId));
+                    SetDbNameForModel(model, fac.dbName);
+                    SetTblNameForModel(model, fac.tblName);
+                }
+                    break;
+                default:
+                {
+                    SetDbNameForModel(model, fac.dbName);
+                    SetTblNameForModel(model, fac.tblName);
+                }
+                    break;
             }
         }
         result.result = @(db.lastInsertRowId);

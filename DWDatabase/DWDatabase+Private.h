@@ -109,7 +109,7 @@ static void* dbOpQKey = "dbOperationQueueKey";
 
 @property (nonatomic ,strong ,readonly) NSCache * sqlsCache;
 
--(DWDatabaseResult *)excuteUpdate:(FMDatabase *)db WithFactory:(DWDatabaseSQLFactory *)fac clear:(BOOL)clear;
+-(DWDatabaseResult *)excuteUpdate:(FMDatabase *)db WithFactory:(DWDatabaseSQLFactory *)fac operation:(DWDatabaseOperation)operation;
 
 -(NSArray <NSString *>*)validKeysIn:(NSArray <NSString *>*)keys forClass:(Class)cls;
 
