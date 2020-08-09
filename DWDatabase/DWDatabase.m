@@ -128,12 +128,6 @@
 }
 
 -(DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
-    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
-    if (!result.success) {
-        return result;
-    }
-    DWDatabaseConfiguration * conf = result.result;
-    
     DWDatabaseConditionMaker * maker = nil;
     if (condition) {
         maker = [DWDatabaseConditionMaker new];
@@ -153,6 +147,11 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
     }
     
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:cls name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
+    }
+    DWDatabaseConfiguration * conf = result.result;
     [self supplyFieldIfNeededWithClass:cls configuration:conf];
     return [self dw_insertTableWithModel:model dbName:name tableName:tblName inQueue:conf.dbQueue insertChains:nil recursive:YES conditionMaker:maker];
 }
@@ -978,6 +977,7 @@ static DWDatabase * db = nil;
 #pragma mark --- override ---
 -(instancetype)init_prv {
     if (self = [super init]) {
+        _logEnabled = YES;
         _dbOperationQueue = dispatch_queue_create("com.DWDatabase.DBOperationQueue", NULL);
         dispatch_queue_set_specific(_dbOperationQueue, dbOpQKey, &dbOpQKey, NULL);
     }

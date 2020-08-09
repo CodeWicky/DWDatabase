@@ -44,12 +44,12 @@
     model.intNum = -100;
     model.floatNum = 3.14;
     model.string = @"123";
-    DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:dbPath condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
+    DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:nil name:@"Auto" tableName:@"Auto_V_Tbl" path:dbPath condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
-        maker.dw_bindKey(intNum).dw_bindKey(floatNum).bindValue(100);
+        maker.dw_bindKey(intNum).dw_bindKey(floatNum).bindValue(50);
     }];
     if (result.success) {
-        NSLog(@"%@",[DWDatabase fetchDw_idForModel:model]);
+        NSLog(@"%@",result.result);
     } else {
         NSLog(@"%@",result.error);
     }
@@ -614,6 +614,7 @@
         NSLog(@"%@",result.error);
     }
     NSLog(@"%@",defaultSavePath());
+    self.db.logEnabled = NO;
     
     result = [self.db fetchDBConfigurationAutomaticallyWithClass:[V class] name:@"V_SQL" tableName:@"V_tbl" path:dbPath];
     self.tblConf = result.result;

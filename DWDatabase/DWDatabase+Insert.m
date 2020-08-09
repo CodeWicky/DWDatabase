@@ -140,10 +140,7 @@
         error = errorWithMessage(@"Invalid tblName whose length is 0.", 10005);
         return [DWDatabaseResult failResultWithError:error];
     }
-    if (!model) {
-        error = errorWithMessage(@"Invalid model who is nil.", 10016);
-        return [DWDatabaseResult failResultWithError:error];
-    }
+    
     NSDictionary * infos = nil;
     DWDatabaseBindKeyWrapperContainer bindKeyWrapper = [maker fetchBindKeys];
     NSArray<DWDatabaseBindKeyWrapperContainer> * seperateWrappers = [self seperateSubWrappers:bindKeyWrapper fixMainWrappers:YES];

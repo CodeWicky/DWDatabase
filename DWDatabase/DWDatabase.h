@@ -142,6 +142,9 @@ NS_ASSUME_NONNULL_BEGIN
 ///当前所有可用数据库信息
 @property (nonatomic ,strong ,readonly) NSDictionary * allDBs;
 
+///是否打印日志，默认为YES
+@property (nonatomic ,assign) BOOL logEnabled;
+
 #pragma mark --- 实例化方法 ---
 +(instancetype)shareDB;
 -(instancetype)init NS_UNAVAILABLE;
@@ -221,7 +224,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  上述例子中，将自动初始化数据库并按需创建对应数据表，并在数据表中intNum和floatNum对应的字段名下插入数据。
  */
--(DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)insertTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(nullable Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
@@ -434,7 +437,7 @@ NS_ASSUME_NONNULL_BEGIN
  bModel最终落库属性：【b,classA】
  aModel最终落库属性：【a,classC】
  */
--(DWDatabaseResult *)insertTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)insertTableWithModel:(nullable NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 /**
