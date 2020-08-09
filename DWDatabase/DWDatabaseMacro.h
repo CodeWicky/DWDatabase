@@ -157,4 +157,7 @@ loadClass = nil
 ///快速为当前操作绑定操作键值
 #define dw_bindKey(key) bindKey(keyPathString(loadClass,key))
 
+///快速为绑定的操作键值添加一个值（可以为任意类型数据，内部自动转换为对象）
+#define bindValue(value) bindValue(DWDataBaseBoxValue(value))
+
 #endif /* DWDatabaseMacro_h */

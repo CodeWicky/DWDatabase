@@ -324,6 +324,7 @@ NS_INLINE NSString * keyStringFromClass(Class cls) {
                 DWDatabaseBindKeyWrapper * tmp = [DWDatabaseBindKeyWrapper new];
                 tmp.key = key;
                 tmp.recursively = YES;
+                tmp.value = obj.value;
                 [mainWrappers setValue:tmp forKey:key];
             }
         } else if (key.length > 0) {

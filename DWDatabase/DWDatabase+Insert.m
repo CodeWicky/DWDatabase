@@ -38,8 +38,23 @@
     if (!dbName.length) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid name whose length is 0.", 10000)];
     }
+    
     if (!model) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
+        if (![maker fetchQueryClass]) {
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
+        }
+        
+        __block BOOL hasValue = NO;
+        [maker.bindedKeys enumerateObjectsUsingBlock:^(DWDatabaseBindKeyWrapper * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            if (obj.value) {
+                hasValue = YES;
+                *stop = YES;
+            }
+        }];
+        
+        if (!hasValue) {
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
+        }
     }
     
     
@@ -86,7 +101,7 @@
                 }];
                 
                 DWDatabaseConditionMaker * maker = [DWDatabaseConditionMaker new];
-                maker.loadClass([model class]);
+                maker.loadClass(fac.clazz);
                 maker.conditionWith(kUniqueID).equalTo(Dw_id);
                 maker.bindKeyWithWrappers(updateWrappers);
                 ///只更新对象说行，不需要嵌套结构了
@@ -110,8 +125,17 @@
 }
 
 -(DWDatabaseResult *)insertSQLFactoryWithModel:(NSObject *)model dbName:(NSString *)dbName tableName:(NSString *)tblName insertChains:(DWDatabaseOperationChain *)insertChains recursive:(BOOL)recursive conditionMaker:(DWDatabaseConditionMaker *)maker {
-    Class cls = [model class];
     NSError * error = nil;
+    Class cls = [maker fetchQueryClass];
+    if (!cls && model) {
+        cls = [model class];
+    }
+    
+    if (!cls) {
+        error = errorWithMessage(@"Invalid model and condition which cannot get class.", 10017);
+        return [DWDatabaseResult failResultWithError:error];
+    }
+    
     if (!tblName.length) {
         error = errorWithMessage(@"Invalid tblName whose length is 0.", 10005);
         return [DWDatabaseResult failResultWithError:error];
@@ -180,6 +204,7 @@
         }
     }
     DWDatabaseSQLFactory * fac = [DWDatabaseSQLFactory new];
+    fac.clazz = cls;
     fac.dbName = dbName;
     fac.tblName = tblName;
     fac.sql = sql;
@@ -200,13 +225,18 @@
     [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull obj, BOOL * _Nonnull stop) {
         
         if (obj.name) {
-            id value = [model dw_valueForPropertyInfo:obj];
+            DWDatabaseBindKeyWrapper * propWrapper = mainKeyWrappers[obj.name];
+            id value = nil;
+            if (propWrapper.value) {
+                value = transformValueWithPropertyInfo(propWrapper.value,obj);
+            }
+            if (!value) {
+                value = [model dw_valueForPropertyInfo:obj];
+            }
             NSString * propertyTblName = propertyInfoTblName(obj, dbTransformMap);
             if (value && propertyTblName.length) {
                 ///此处考虑模型嵌套
                 if (obj.type == DWPrefix_YYEncodingTypeObject && obj.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                    
-                    DWDatabaseBindKeyWrapper * propWrapper = mainKeyWrappers[obj.name];
                     if (!propWrapper || propWrapper.recursively) {
                         if (recursive) {
                             ///首先应该考虑当前要插入的模型，是否存在于插入链中，如果存在，还要考虑是否完成插入了，如果未完成（代表作为头部节点进入插入链，此时需要执行插入操作），如果完成了，说明同级模型中，存在相同实例，直接插入ID即可。如果不存在，直接执行插入操作

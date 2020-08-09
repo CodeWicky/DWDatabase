@@ -213,6 +213,15 @@
         };
 }
 
+-(DWDataBaseBindValue)bindValue {
+    return ^(id value) {
+        if (value && self.currentBindKeyWrapper) {
+            self.currentBindKeyWrapper.value = value;
+        }
+        return self;
+    };
+}
+
 -(DWDatabaseBindKeyRecursively)recursively {
     return ^(BOOL recursively) {
         if (self.currentBindKeyWrapper) {

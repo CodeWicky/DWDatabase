@@ -180,6 +180,7 @@
                 DWDatabaseBindKeyWrapper * tmp = [DWDatabaseBindKeyWrapper new];
                 tmp.key = obj;
                 tmp.recursively = wrapper.recursively;
+                tmp.value = wrapper.value;
                 [tmpDic setObject:tmp forKey:obj];
             }
         }];

@@ -39,7 +39,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
         maker.loadClass(clazz);
     }
     if (clazz == NULL) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
     }
     
     return [self dw_queryTableWithDbName:conf.dbName tableName:conf.tableName limit:limit offset:offset orderKey:orderKey ascending:ascending inQueue:conf.dbQueue queryChains:queryChains recursive:recursive conditionMaker:maker reprocessing:reprocessing];

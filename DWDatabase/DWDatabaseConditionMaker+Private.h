@@ -112,4 +112,6 @@ typedef DWDatabaseConditionMaker *(^DWDatabaseBindKeyWithWrappers)(DWDatabaseBin
 
 @property (nonatomic ,copy) NSString * key;
 
+@property (nonatomic ,strong) id value;
+
 @end

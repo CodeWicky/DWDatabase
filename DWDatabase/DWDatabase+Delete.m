@@ -123,7 +123,7 @@
     }
     
     if (cls == NULL) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who hasn't load class.", 10017)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
     }
     
     NSMutableArray * args = @[].mutableCopy;

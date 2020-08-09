@@ -46,7 +46,7 @@
     model.string = @"123";
     DWDatabaseResult * result = [self.db insertTableAutomaticallyWithModel:model name:@"Auto" tableName:@"Auto_V_Tbl" path:dbPath condition:^(DWDatabaseConditionMaker * _Nonnull maker) {
         maker.dw_loadClass(V);
-        maker.dw_bindKey(intNum).dw_bindKey(floatNum);
+        maker.dw_bindKey(intNum).dw_bindKey(floatNum).bindValue(100);
     }];
     if (result.success) {
         NSLog(@"%@",[DWDatabase fetchDw_idForModel:model]);

@@ -133,12 +133,27 @@
         return result;
     }
     DWDatabaseConfiguration * conf = result.result;
-    [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
+    
     DWDatabaseConditionMaker * maker = nil;
     if (condition) {
         maker = [DWDatabaseConditionMaker new];
         condition(maker);
     }
+    
+    Class cls = NULL;
+    if (maker) {
+        cls = [maker fetchQueryClass];
+    }
+    
+    if (!cls) {
+        cls = [model class];
+    }
+    
+    if (!cls) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
+    }
+    
+    [self supplyFieldIfNeededWithClass:cls configuration:conf];
     return [self dw_insertTableWithModel:model dbName:name tableName:tblName inQueue:conf.dbQueue insertChains:nil recursive:YES conditionMaker:maker];
 }
 
@@ -187,7 +202,7 @@
     }
     
     if (clazz == NULL) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
     }
     
     DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:clazz name:name tableName:tblName path:path];
@@ -547,6 +562,12 @@
 }
 
 -(DWDatabaseResult *)insertTableWithModels:(NSArray<NSObject *> *)models recursive:(BOOL)recursive rollbackOnFailure:(BOOL)rollback configuration:(DWDatabaseConfiguration *)conf condition:(DWDatabaseConditionHandler)condition {
+    if (!models.count) {
+        NSError * error = errorWithMessage(@"There's no object in models", 10011);
+        DWDatabaseResult * result = [DWDatabaseResult successResultWithResult:nil];
+        result.error = error;
+        return result;
+    }
     DWDatabaseOperationChain * insertChains = [DWDatabaseOperationChain new];
     DWDatabaseConditionMaker * maker = nil;
     if (condition) {
@@ -757,7 +778,7 @@
     
     if ([maker fetchQueryClass] == NULL) {
         if (!cls) {
-            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
+            return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
         }
         maker.loadClass(cls);
     }
