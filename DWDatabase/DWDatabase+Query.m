@@ -395,7 +395,7 @@ typedef NSError *(^DWDatabaseResultSetHandler)(Class cls,FMResultSet * set,NSDic
                     ///拿待补属性信息及Dw_id，并按需建表
                     if (prop && value && [self createTableWithClass:prop.cls tableName:key configuration:dbConf].success) {
                         ///获取表名数据库句柄
-                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:key].result;
+                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:key].result;
                         if (tblConf) {
                             ///取出需要查询的key。由于查询是先查询完自身的逻辑，故当前仅当对象A持有对象A自身的时候会遇到嵌套结构，这时候有可能取到二重属性较自身额外的查询属性，所以直接查找以录得属性即可。其他情况下，keysToQuery为空。
                             DWDatabaseBindKeyWrapperContainer subKeyWrappers = obj.keyWrappersToQuery;

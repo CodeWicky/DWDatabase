@@ -214,7 +214,7 @@
                             if (existResult.success) {
                                 DWDatabaseOperationRecord * record = (DWDatabaseOperationRecord *)existResult.result;
                                 ///获取一下表名数据库句柄，一会插入表或者更新表需要使用
-                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:record.tblName].result;
+                                DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:record.tblName].result;
                                 
                                 DWDatabaseBindKeyWrapperContainer subKeyToInsert = nil;
                                 if (tblConf) {
@@ -357,7 +357,7 @@
         ///建表
         if (dbConf && [self createTableWithClass:prop.cls tableName:inlineTblName configuration:dbConf].success) {
             ///获取表名数据库句柄
-            DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
+            DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:inlineTblName].result;
             
             DWDatabaseBindKeyWrapperContainer subKeyToInsert = nil;
             if (tblConf) {

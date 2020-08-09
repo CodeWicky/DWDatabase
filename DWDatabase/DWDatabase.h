@@ -321,7 +321,7 @@ NS_ASSUME_NONNULL_BEGIN
  @disc 库名数据库句柄相较表名数据库句柄缺少表名信息，故使用表名数据库句柄的地方均不可用表明数据库句柄代替（表名做校验，存在影响）
       若操作成功，result字段将携带表名数据库句柄。
  */
--(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name tabelName:(NSString *)tblName;
+-(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name tableName:(NSString *)tblName;
 
 
 /**

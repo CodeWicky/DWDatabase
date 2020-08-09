@@ -200,7 +200,7 @@
                                     DWDatabaseOperationRecord * operation = (DWDatabaseOperationRecord *)existResult.result;
                                     ///如果还没有完成，说明作为子节点，直接以非递归模式删除即可。如果完成了，跳过即可。
                                     if (!operation.finishOperationInChain) {
-                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:operation.tblName].result;
+                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:operation.tblName].result;
                                         if (tblConf) {
                                             
                                             DWDatabaseBindKeyWrapperContainer subKeyToInsert = [self subKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
@@ -222,7 +222,7 @@
                                     NSString * existTblName = [deleteChains anyRecordInChainWithClass:obj.cls].tblName;
                                     NSString * inlineTblName = inlineModelTblName(obj, inlineTblNameMap, tblName,existTblName);
                                     if (inlineTblName.length) {
-                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
+                                        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:inlineTblName].result;
                                         if (tblConf) {
                                             DWDatabaseBindKeyWrapperContainer subKeyToInsert = [self subKeyWrappersIn:subKeyWrappers withPrefix:obj.name];
                                             

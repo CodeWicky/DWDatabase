@@ -93,7 +93,7 @@
     if (!result.success) {
         return result;
     }
-    DWDatabaseConfiguration * conf = [self fetchDBConfigurationWithName:name tabelName:tblName].result;
+    DWDatabaseConfiguration * conf = [self fetchDBConfigurationWithName:name tableName:tblName].result;
     result = [self validateConfiguration:conf considerTableName:YES];
     if (!result.success) {
         return result;
@@ -303,7 +303,7 @@
         }];
     });
     if (!exist) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tabelName which currentDB doesn't contains a table named it.", 10006)];
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tableName which currentDB doesn't contains a table named it.", 10006)];
     }
     return [DWDatabaseResult successResultWithResult:nil];
 }
@@ -366,7 +366,7 @@
     return result;
 }
 
--(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name tabelName:(NSString *)tblName {
+-(DWDatabaseResult *)fetchDBConfigurationWithName:(NSString *)name tableName:(NSString *)tblName {
     if (!tblName.length) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tblName whose length is 0.", 10005)];
     }

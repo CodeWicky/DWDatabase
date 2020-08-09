@@ -336,7 +336,7 @@
     if (inlineTblName.length) {
         DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName].result;
         if (dbConf && [self createTableWithClass:prop.cls tableName:inlineTblName configuration:dbConf].success) {
-            DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:inlineTblName].result;
+            DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:inlineTblName].result;
             
             DWDatabaseBindKeyWrapperContainer subKeyToUpdate = nil;
             if (tblConf) {
@@ -406,7 +406,7 @@
         DWDatabaseOperationRecord * record = (DWDatabaseOperationRecord *)existResult.result;
         
         ///如果未完成，有存在，证明此次作为子节点递归存在，故不需要再次递归更新，仅更新本层即可
-        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tabelName:record.tblName].result;
+        DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:record.tblName].result;
         
         DWDatabaseBindKeyWrapperContainer subkeyToUpdate = nil;
         if (tblConf) {
