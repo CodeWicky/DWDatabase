@@ -439,6 +439,14 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
     DWDatabaseSetValue(bindedKeyWrappers);
 }
 
+-(BOOL)hasBindedValue {
+    return [DWDatabaseGetValue(hasBindedValue) boolValue];
+}
+
+-(void)setHasBindedValue:(BOOL)hasBindedValue {
+    DWDatabaseSetNumberValue(hasBindedValue);
+}
+
 @end
 
 @implementation DWDatabaseCondition (Private)

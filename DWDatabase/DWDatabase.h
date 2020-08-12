@@ -226,7 +226,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 -(DWDatabaseResult *)insertTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)deleteTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
--(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)updateTableAutomaticallyWithModel:(nullable NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)queryTableAutomaticallyWithClass:(nullable Class)cls name:(NSString *)name tableName:(NSString *)tblName path:(nullable NSString *)path condition:(nullable DWDatabaseConditionHandler)condition;
 
 #pragma mark --- 数据库操作方法 ---
@@ -520,7 +520,7 @@ NS_ASSUME_NONNULL_BEGIN
  更新classC(此处称其为cModelRecursive2)时，由于指定了非递归模式，故若cModelRecursive2不包含Dw_id，则将跳过此次更新操作，若包含，将更新classC字段为该Dw_id。
  */
 
--(DWDatabaseResult *)updateTableWithModel:(NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
+-(DWDatabaseResult *)updateTableWithModel:(nullable NSObject *)model recursive:(BOOL)recursive configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 
 
 typedef void(^DWDatabaseReprocessingHandler)(__kindof NSObject * model,FMResultSet * set);

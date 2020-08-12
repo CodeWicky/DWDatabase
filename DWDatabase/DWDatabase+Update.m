@@ -41,13 +41,32 @@
     if (!tblName.length) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid tblName whose length is 0.", 10005)];
     }
-    if (!model) {
-        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
+    
+    DWDatabaseOperation operation = DWDatabaseOperationUndefined;
+    NSNumber * Dw_id = nil;
+    ///如果模型本身存在Dw_id或者条件中设置过Dw_id，则认为是更新模式，否则是插入模式
+    if (model) {
+        Dw_id = Dw_idFromModel(model);
+        if (maker.conditions.count || Dw_id) {
+            operation = DWDatabaseOperationUpdate;
+        } else {
+            operation = DWDatabaseOperationInsert;
+        }
+    } else {
+        if ([maker fetchQueryClass] == NULL) {
+            operation = DWDatabaseOperationUndefined;
+        } else if (maker.conditions.count) {
+            operation = DWDatabaseOperationUpdate;
+        } else if (maker.hasBindedValue) {
+            operation = DWDatabaseOperationInsert;
+        }
     }
     
-    NSNumber * Dw_id = Dw_idFromModel(model);
-    ///如果模型本身存在Dw_id或者条件中设置过Dw_id，则认为是更新模式，否则是插入模式
-    if (Dw_id || maker.conditions.count) {
+    if (operation == DWDatabaseOperationUndefined) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid condition who have no valid value to update.", 10009)];
+    }
+    
+    if (operation == DWDatabaseOperationUpdate) {
         if (!maker) {
             maker = [DWDatabaseConditionMaker new];
         }
@@ -240,12 +259,20 @@
     NSDictionary * dbTransformMap = databaseMapFromClass(cls);
     [props enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, DWPrefix_YYClassPropertyInfo * _Nonnull prop, BOOL * _Nonnull stop) {
         if (prop.name) {
-            id value = [model dw_valueForPropertyInfo:prop];
+            
+            DWDatabaseBindKeyWrapper * wrapper = mainKeyWrappers[prop.name];
+            id value = nil;
+            if (wrapper.value) {
+                value = transformValueWithPropertyInfo(wrapper.value,prop);
+            }
+            if (!value) {
+                value = [model dw_valueForPropertyInfo:prop];
+            }
+
             NSString * propertyTblName = propertyInfoTblName(prop, dbTransformMap);
             if (propertyTblName.length) {
                 if (value) {
                     if (prop.type == DWPrefix_YYEncodingTypeObject && prop.nsType == DWPrefix_YYEncodingTypeNSUnknown) {
-                        DWDatabaseBindKeyWrapper * wrapper = mainKeyWrappers[prop.name];
                         if (!wrapper || wrapper.recursively) {
                             if (recursive) {
                                 [self updateModelRecursively:value propertyInfo:prop dbName:dbName tblName:tblName propertyTblName:propertyTblName subKeyWrappers:subKeyWrappers updateChains:updateChains inlineTblNameMap:inlineTblNameMap validKeysContainer:validKeys argumentsContaienr:args objMap:objMap];

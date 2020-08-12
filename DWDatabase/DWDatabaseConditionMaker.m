@@ -217,6 +217,7 @@
     return ^(id value) {
         if (value && self.currentBindKeyWrapper) {
             self.currentBindKeyWrapper.value = value;
+            self.hasBindedValue = YES;
         }
         return self;
     };

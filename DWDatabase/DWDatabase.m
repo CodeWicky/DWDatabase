@@ -166,17 +166,33 @@
 }
 
 -(DWDatabaseResult *)updateTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
-    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:[model class] name:name tableName:tblName path:path];
-    if (!result.success) {
-        return result;
-    }
-    DWDatabaseConfiguration * conf = result.result;
-    [self supplyFieldIfNeededWithClass:[model class] configuration:conf];
+    
     DWDatabaseConditionMaker * maker = nil;
     if (condition) {
         maker = [DWDatabaseConditionMaker new];
         condition(maker);
     }
+    
+    Class cls = NULL;
+    if (maker) {
+        cls = [maker fetchQueryClass];
+    }
+    
+    if (!cls) {
+        cls = [model class];
+    }
+    
+    if (!cls) {
+        return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
+    }
+    
+    DWDatabaseResult * result = [self fetchDBConfigurationAutomaticallyWithClass:cls name:name tableName:tblName path:path];
+    if (!result.success) {
+        return result;
+    }
+    DWDatabaseConfiguration * conf = result.result;
+    [self supplyFieldIfNeededWithClass:cls configuration:conf];
+    
     return [self dw_updateTableWithModel:model dbName:name tableName:tblName inQueue:conf.dbQueue updateChains:nil recursive:YES conditionMaker:maker];
 }
 

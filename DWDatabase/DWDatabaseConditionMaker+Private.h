@@ -48,6 +48,8 @@ typedef NS_ENUM(NSUInteger, DWDatabaseValueRelation) {
 
 @property (nonatomic ,strong) NSMutableDictionary * bindedKeyWrappers;
 
+@property (nonatomic ,assign) BOOL hasBindedValue;
+
 typedef NSMutableDictionary <NSString *,DWDatabaseBindKeyWrapper *>* DWDatabaseBindKeyWrapperContainer;
 typedef DWDatabaseConditionMaker *(^DWDatabaseBindKeyWithWrappers)(DWDatabaseBindKeyWrapperContainer wrappers);
 @property (nonatomic ,copy ,readonly) DWDatabaseBindKeyWithWrappers bindKeyWithWrappers;

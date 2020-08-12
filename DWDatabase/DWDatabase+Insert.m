@@ -44,15 +44,7 @@
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model and condition which cannot get class.", 10017)];
         }
         
-        __block BOOL hasValue = NO;
-        [maker.bindedKeys enumerateObjectsUsingBlock:^(DWDatabaseBindKeyWrapper * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-            if (obj.value) {
-                hasValue = YES;
-                *stop = YES;
-            }
-        }];
-        
-        if (!hasValue) {
+        if (!maker.hasBindedValue) {
             return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid model who is nil.", 10016)];
         }
     }
