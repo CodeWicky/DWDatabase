@@ -362,7 +362,7 @@
     NSString * inlineTblName = inlineModelTblName(prop, inlineTblNameMap, tblName,existTblName);
     if (inlineTblName.length) {
         DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName].result;
-        if (dbConf && [self createTableWithClass:prop.cls tableName:inlineTblName configuration:dbConf].success) {
+        if (dbConf && [self createTableWithClass:prop.cls tableName:inlineTblName configuration:dbConf condition:nil].success) {
             DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:inlineTblName].result;
             
             DWDatabaseBindKeyWrapperContainer subKeyToUpdate = nil;

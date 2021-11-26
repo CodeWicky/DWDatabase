@@ -11,7 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface DWDatabase (CreateTable)
 
--(DWDatabaseResult *)dw_createTableWithClass:(Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue;
+-(DWDatabaseResult *)dw_createTableWithClass:(nullable Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue condtion:(nullable DWDatabaseConditionHandler)condition;
 
 @end
 

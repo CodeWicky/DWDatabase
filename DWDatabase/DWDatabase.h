@@ -305,7 +305,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @disc 此处应传入库名数据库句柄
  */
--(DWDatabaseResult *)createTableWithClass:(Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf;
+-(DWDatabaseResult *)createTableWithClass:(nullable Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition;
 -(DWDatabaseResult *)createTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf;
 
 #pragma mark --- 表操作方法 ---

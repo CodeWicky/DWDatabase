@@ -374,7 +374,7 @@
         ///开始准备插入模型，先获取库名数据库句柄
         DWDatabaseConfiguration * dbConf = [self fetchDBConfigurationWithName:dbName].result;
         ///建表
-        if (dbConf && [self createTableWithClass:prop.cls tableName:inlineTblName configuration:dbConf].success) {
+        if (dbConf && [self createTableWithClass:prop.cls tableName:inlineTblName configuration:dbConf condition:nil].success) {
             ///获取表名数据库句柄
             DWDatabaseConfiguration * tblConf = [self fetchDBConfigurationWithName:dbName tableName:inlineTblName].result;
             

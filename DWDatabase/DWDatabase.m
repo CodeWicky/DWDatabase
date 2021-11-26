@@ -62,7 +62,7 @@
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid path which FMDatabaseQueue could not open.", 10003)];
     }
     
-    DWDatabaseResult * result = [self dw_createTableWithClass:[DWDatabaseInfo class] tableName:kSqlSetTblName inQueue:self.privateQueue];
+    DWDatabaseResult * result = [self dw_createTableWithClass:[DWDatabaseInfo class] tableName:kSqlSetTblName inQueue:self.privateQueue condtion:nil];
     if (!result.success) {
         return result;
     }
@@ -124,7 +124,7 @@
     if (result.success) {
         return result;
     }
-    return [self createTableWithClass:cls tableName:tblName configuration:conf];
+    return [self createTableWithClass:cls tableName:tblName configuration:conf condition:nil];
 }
 
 -(DWDatabaseResult *)insertTableAutomaticallyWithModel:(NSObject *)model name:(NSString *)name tableName:(NSString *)tblName path:(NSString *)path condition:(DWDatabaseConditionHandler)condition {
@@ -367,12 +367,12 @@
     return result;
 }
 
--(DWDatabaseResult *)createTableWithClass:(Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf {
+-(DWDatabaseResult *)createTableWithClass:(nullable Class)cls tableName:(NSString *)tblName configuration:(DWDatabaseConfiguration *)conf condition:(nullable DWDatabaseConditionHandler)condition {
     DWDatabaseResult * result = [self validateConfiguration:conf considerTableName:NO];
     if (!result.success) {
         return result;
     }
-    return [self dw_createTableWithClass:cls tableName:tblName inQueue:conf.dbQueue];
+    return [self dw_createTableWithClass:cls tableName:tblName inQueue:conf.dbQueue condtion:condition];
 }
 
 -(DWDatabaseResult *)createTableWithSQL:(NSString *)sql configuration:(DWDatabaseConfiguration *)conf {

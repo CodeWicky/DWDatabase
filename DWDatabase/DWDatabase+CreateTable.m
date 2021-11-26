@@ -13,8 +13,25 @@
 @implementation DWDatabase (CreateTable)
 
 #pragma mark --- interface method ---
--(DWDatabaseResult *)dw_createTableWithClass:(Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue {
-    if (cls == Nil) {
+-(DWDatabaseResult *)dw_createTableWithClass:(nullable Class)cls tableName:(NSString *)tblName inQueue:(FMDatabaseQueue *)queue condtion:(nullable DWDatabaseConditionHandler)condition {
+    
+    DWDatabaseConditionMaker * maker = nil;
+    Class clazz = NULL;
+    if (condition) {
+        maker = [DWDatabaseConditionMaker new];
+        condition(maker);
+        clazz = [maker fetchQueryClass];
+        if (clazz != NULL) {
+            if (cls) {
+                maker.loadClass(cls);
+                clazz = cls;
+            }
+        }
+    } else {
+        clazz = cls;
+    }
+    
+    if (clazz == NULL) {
         return [DWDatabaseResult failResultWithError:errorWithMessage(@"Invalid Class who is Nil.", 10017)];
     }
     if (!queue) {
@@ -24,7 +41,7 @@
         tblName = [NSStringFromClass(cls) stringByAppendingString:@"_tbl"];
     }
     
-    DWDatabaseResult * result = [self createSQLFactoryWithClass:cls tableName:tblName];
+    DWDatabaseResult * result = [self createSQLFactoryWithClass:clazz tableName:tblName conditionMaker:maker];
     if (!result.success) {
         return result;
     }
@@ -42,8 +59,12 @@
 }
 
 #pragma mark --- tool method ---
--(DWDatabaseResult *)createSQLFactoryWithClass:(Class)cls tableName:(NSString *)tblName {
+-(DWDatabaseResult *)createSQLFactoryWithClass:(Class)cls tableName:(NSString *)tblName conditionMaker:(DWDatabaseConditionMaker *)maker {
     NSDictionary * props = [self propertyInfosForSaveKeysWithClass:cls];
+    DWDatabaseBindKeyWrapperContainer bindedKeys = nil;
+    if (maker) {
+        bindedKeys = [maker fetchBindKeys];
+    }
     if (!props.allKeys.count) {
         NSString * msg = [NSString stringWithFormat:@"Invalid Class(%@) who have no save key.",NSStringFromClass(cls)];
         return [DWDatabaseResult failResultWithError:errorWithMessage(msg, 10012)];
@@ -88,5 +109,7 @@
     fac.sql = sql;
     return [DWDatabaseResult successResultWithResult:fac];
 }
+
+
 
 @end
