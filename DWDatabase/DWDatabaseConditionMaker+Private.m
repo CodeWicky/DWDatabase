@@ -453,7 +453,12 @@ DWDatabaseCondition * installCondition(DWDatabaseConditionMaker * maker,id value
     if (!subPropertyEnabled || hasSubProperty) {
         [self.conditionKeys enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
             DWDatabaseConditionValueWrapper * wrapper = [self conditionValuesWithKey:obj];
-            if (!wrapper || !wrapper.value) {
+            if (!wrapper) {
+                return ;
+            }
+            
+            ///当relation是null相关且value为[NSNull null]时，值是合法的，但可能存在转换失败的情况。否则wrapperValue为nil即为非法情况
+            if (!wrapper.value && (self.value != [NSNull null] || !(self.relation == DWDatabaseValueRelationIsNull || self.relation == DWDatabaseValueRelationNotNull))) {
                 return ;
             }
             
